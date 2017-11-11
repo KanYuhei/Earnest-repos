@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{6A513CA5-BB42-4DC2-BA63-65E92F1D3794}" SchemaVersion="80">
+	<AudioObjects>
+		<WorkUnit Name="Default Work Unit" ID="{6A513CA5-BB42-4DC2-BA63-65E92F1D3794}" PersistMode="Standalone">
+			<ChildrenList>
+				<Sound Name="BGM_Yurumu" ID="{30ABF5B0-ED0A-4E14-90DA-B46FD95E6FD4}" ShortID="981298406">
+					<PropertyList>
+						<Property Name="IsLoopingEnabled" Type="bool" Value="True"/>
+						<Property Name="IsStreamingEnabled" Type="bool">
+							<ValueList>
+								<Value>True</Value>
+							</ValueList>
+						</Property>
+						<Property Name="PositioningType" Type="int16" Value="1"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Attenuation">
+							<ObjectRef Name="Object_Attenuation" ID="{8550E52D-999A-4863-8079-93C0179BBB40}" WorkUnitID="{64DA221F-4CCF-4F5F-AC33-F2B26965CFF4}"/>
+						</Reference>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{2D467908-1B8A-40CC-9289-A5129FD1C45E}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Master Audio Bus" ID="{1514A4D8-1DA6-412A-A17E-75CA0C2149F3}" WorkUnitID="{3EAA776D-7905-4933-86D1-783B31522A70}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="BGM_Yurumu" ID="{DE904DCA-015C-43BC-9DC5-08BD7C5EFE5A}" ShortID="873045681">
+							<Language>SFX</Language>
+							<AudioFile>BGM_Yurumu.wav</AudioFile>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="BGM_Yurumu" ID="{DE904DCA-015C-43BC-9DC5-08BD7C5EFE5A}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+				<Sound Name="BGM_Yurumu2" ID="{7E95FCA9-A517-4631-8FB5-77FB79207197}" ShortID="387707273">
+					<PropertyList>
+						<Property Name="IsLoopingEnabled" Type="bool" Value="True"/>
+						<Property Name="IsStreamingEnabled" Type="bool">
+							<ValueList>
+								<Value>True</Value>
+							</ValueList>
+						</Property>
+						<Property Name="PositioningType" Type="int16" Value="1"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Attenuation">
+							<ObjectRef Name="Object_Attenuation" ID="{8550E52D-999A-4863-8079-93C0179BBB40}" WorkUnitID="{64DA221F-4CCF-4F5F-AC33-F2B26965CFF4}"/>
+						</Reference>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{2D467908-1B8A-40CC-9289-A5129FD1C45E}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Master Audio Bus" ID="{1514A4D8-1DA6-412A-A17E-75CA0C2149F3}" WorkUnitID="{3EAA776D-7905-4933-86D1-783B31522A70}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="eternal troding this yurumu!!!_02_24bit" ID="{03014FAF-0C36-4092-8B7B-BA26D4DED9B7}" ShortID="80547042">
+							<Language>SFX</Language>
+							<AudioFile>eternal troding this yurumu!!!_02_24bit.wav</AudioFile>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="eternal troding this yurumu!!!_02_24bit" ID="{03014FAF-0C36-4092-8B7B-BA26D4DED9B7}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+			</ChildrenList>
+		</WorkUnit>
+	</AudioObjects>
+</WwiseDocument>

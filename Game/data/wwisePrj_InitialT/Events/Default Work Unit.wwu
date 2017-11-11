@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{B58E9D89-5BC4-44B5-8212-1CCFFFCA5BA5}" SchemaVersion="80">
+	<Events>
+		<WorkUnit Name="Default Work Unit" ID="{B58E9D89-5BC4-44B5-8212-1CCFFFCA5BA5}" PersistMode="Standalone">
+			<ChildrenList>
+				<Event Name="BGM_Game" ID="{509B2AC0-90BE-4656-9EBD-E8907012F612}">
+					<Comment>ゲーム本編の開始時から流れるBGM</Comment>
+					<ChildrenList>
+						<Action Name="" ID="{1F58F786-362D-4657-899C-180288388209}" ShortID="929768305">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="Segment_BGM_Game" ID="{17E1DEA3-3A01-42C9-A980-A5D8A2A65DD0}" WorkUnitID="{491C2897-0F1C-4694-BE75-BF09D0966D04}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="BGM_Title" ID="{EC0849F6-52C9-409B-A816-B22C3EDA3842}">
+					<Comment>タイトル画面で流れるBGM</Comment>
+					<ChildrenList>
+						<Action Name="" ID="{510AE80A-1AA6-4A17-A143-6A6541679088}" ShortID="950330">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="Segment_BGM_Title" ID="{573DB526-FE33-4155-BF28-D5AA256A3926}" WorkUnitID="{491C2897-0F1C-4694-BE75-BF09D0966D04}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="BGM_Result" ID="{DB70C2F4-DEBE-4650-831B-BC6149782C8E}">
+					<Comment>リザルト画面で流れるBGM</Comment>
+					<ChildrenList>
+						<Action Name="" ID="{4041CF3C-EEE4-4A19-818C-89BF4FDC47C9}" ShortID="331096437">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="Segment_BGM_Result" ID="{44808E0A-F9AC-4167-B6B8-11D17392AF04}" WorkUnitID="{491C2897-0F1C-4694-BE75-BF09D0966D04}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="BGM_Yurumu" ID="{5C7B509D-759D-4504-934F-A11624176DB2}">
+					<Comment>ユルムにおやつをあげたいときに流すBGM
+</Comment>
+					<ChildrenList>
+						<Action Name="" ID="{7D1CBB1F-8656-40BE-977E-A9BE08149B5F}" ShortID="277431158">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="BGM_Yurumu" ID="{30ABF5B0-ED0A-4E14-90DA-B46FD95E6FD4}" WorkUnitID="{6A513CA5-BB42-4DC2-BA63-65E92F1D3794}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="BGM_Yurumu2" ID="{32B52180-6FB8-4A1E-8322-3BB2D24D5AC9}">
+					<Comment>ユルムが困難に陥った時に流すBGM</Comment>
+					<ChildrenList>
+						<Action Name="" ID="{93B2FF94-E67E-4E5A-B089-FCF470B9C1C1}" ShortID="171147028">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="BGM_Yurumu2" ID="{7E95FCA9-A517-4631-8FB5-77FB79207197}" WorkUnitID="{6A513CA5-BB42-4DC2-BA63-65E92F1D3794}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+			</ChildrenList>
+		</WorkUnit>
+	</Events>
+</WwiseDocument>
