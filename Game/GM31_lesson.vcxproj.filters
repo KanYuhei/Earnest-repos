@@ -145,6 +145,18 @@
     <Filter Include="ヘッダー ファイル\Wwise\win32">
       <UniqueIdentifier>{8bcc6108-f01b-4486-a3b2-f8a3d8942e2a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\shadow">
+      <UniqueIdentifier>{fe2b9610-d8fa-4c4e-bc87-2630c17c51da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\shadow">
+      <UniqueIdentifier>{2252cf03-ecb5-43d4-98db-f39f140f5cd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\FBX">
+      <UniqueIdentifier>{e548a7e4-83a0-424c-80e5-e87ab6f08bbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\FBX">
+      <UniqueIdentifier>{47b59d08-44bd-498e-b17b-27abd337b03f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="scene3D.cpp">
@@ -407,6 +419,15 @@
     </ClCompile>
     <ClCompile Include="Wwise\Wwise_Win32\AkDefaultIOHookBlocking.cpp">
       <Filter>ソース ファイル\Wwise\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GitHub_Earnest\Game\stencilShadow.cpp">
+      <Filter>ソース ファイル\shadow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\NewGame\objectFBX.cpp">
+      <Filter>ソース ファイル\FBX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\NewGame\test.cpp">
+      <Filter>ソース ファイル\mode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -709,6 +730,15 @@
     </ClInclude>
     <ClInclude Include="Wwise\Wwise_Win32\AkFileHelpers.h">
       <Filter>ヘッダー ファイル\Wwise\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\GitHub_Earnest\Game\stencilShadow.h">
+      <Filter>ヘッダー ファイル\shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\NewGame\objectFBX.h">
+      <Filter>ヘッダー ファイル\FBX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\NewGame\test.h">
+      <Filter>ヘッダー ファイル\mode</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

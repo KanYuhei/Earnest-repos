@@ -59,7 +59,7 @@ void Tutorial::Init( void )
 	m_bPush = false;
 
 	//  背景
-	SenceBG::Create( SenceBG::TYPE_TUTORIAL , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+	SceneBG::Create( SceneBG::TYPE_TUTORIAL , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 					  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 					  D3DXVECTOR2( 1.0f , 1.0f ) );
 
@@ -88,7 +88,7 @@ void Tutorial::Init( void )
 void Tutorial::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 
 	//  カメラクラスポインタが空ではない場合
 	if( m_pCamera != NULL )
@@ -130,5 +130,5 @@ void Tutorial::Update( void )
 //--------------------------------------------------------------------------------------
 void Tutorial::Draw( void )
 {
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 }

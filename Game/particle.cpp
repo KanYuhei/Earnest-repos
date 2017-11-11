@@ -31,7 +31,7 @@
 //--------------------------------------------------------------------------------------
 //  コンストラクタ
 //--------------------------------------------------------------------------------------
-Particle::Particle( int nPriority ) : Sence3D( nPriority )
+Particle::Particle( int nPriority ) : Scene3D( nPriority )
 {
 
 }
@@ -42,7 +42,7 @@ Particle::Particle( int nPriority ) : Sence3D( nPriority )
 HRESULT Particle::Init( void )
 {
 	//  3Dポリゴンの初期化
-	Sence3D::Init( );
+	Scene3D::Init( );
 
 	m_fAddScale = 0.0f;
 
@@ -55,7 +55,7 @@ HRESULT Particle::Init( void )
 void Particle::Uninit( void )
 {
 	//  3Dポリゴンの解放
-	Sence3D::Uninit( );
+	Scene3D::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -86,11 +86,11 @@ void Particle::Update( void )
 	if( m_fLife <= 0.0f || m_color.a <= 0.0f )
 	{
 		//  自身の破棄
-		Sence::Release( );
+		Scene::Release( );
 	}
 
 	//  3Dポリゴンの更新
-	Sence3D::Update( );
+	Scene3D::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ void Particle::Draw( void )
 			pDevice->SetRenderState( D3DRS_ZWRITEENABLE , FALSE );
 
 			//  3Dポリゴンの描画
-			Sence3D::Draw( );
+			Scene3D::Draw( );
 
 			//  ライトを点ける
 			pLight->LightOn( );

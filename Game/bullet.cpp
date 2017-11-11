@@ -34,7 +34,7 @@
 //--------------------------------------------------------------------------------------
 //  コンストラクタ
 //--------------------------------------------------------------------------------------
-Bullet::Bullet( int nPriority ) : Sence3D( nPriority )
+Bullet::Bullet( int nPriority ) : Scene3D( nPriority )
 {
 	
 }
@@ -45,10 +45,10 @@ Bullet::Bullet( int nPriority ) : Sence3D( nPriority )
 HRESULT Bullet::Init( void )
 {
 	//  3Dポリゴンの初期化
-	Sence3D::Init( );
+	Scene3D::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_BULLET );
+	Scene::SetObjType( Scene::OBJTYPE_BULLET );
 
 	m_bHoming = true;
 	m_hitSphere.fLength = 2.0f;
@@ -64,7 +64,7 @@ HRESULT Bullet::Init( void )
 void Bullet::Uninit( void )
 {
 	//  3Dポリゴンの解放
-	Sence3D::Uninit( );
+	Scene3D::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -95,28 +95,28 @@ void Bullet::Update( void )
 		Release( );
 	}
 
-	Sence *pScene = NULL;										//  シーンクラスのポインタ
+	Scene *pScene = NULL;										//  シーンクラスのポインタ
 
 #pragma omp parallel for
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 	{
 		//  シーンの先頭アドレスを取得
-		pScene = Sence::GetScene( nCntPriority );
+		pScene = Scene::GetScene( nCntPriority );
 
 		//  シーンが空ではない間ループ
 		while( pScene != NULL )
 		{
-			Sence::OBJTYPE objType;						//  物体の種類
+			Scene::OBJTYPE objType;						//  物体の種類
 
 			//  物体の種類の取得
 			objType = pScene->GetObjType( );
 
 			//  種類が敵の弾の場合
-			if( m_objType == Sence::OBJTYPE_BULLET && m_owner == OWNER_ENEMY )
+			if( m_objType == Scene::OBJTYPE_BULLET && m_owner == OWNER_ENEMY )
 			{
 				//  種類がプレイヤーの場合
-				if( objType == Sence::OBJTYPE_PLAYER )
+				if( objType == Scene::OBJTYPE_PLAYER )
 				{
 					//  プレイヤークラスにダウンキャスト
 					Player* pPlayer = ( Player* )pScene;
@@ -159,10 +159,10 @@ void Bullet::Update( void )
 				}
 			}
 			//  種類がプレイヤーの弾の場合
-			else if( m_objType == Sence::OBJTYPE_BULLET && m_owner == OWNER_PLAYER )
+			else if( m_objType == Scene::OBJTYPE_BULLET && m_owner == OWNER_PLAYER )
 			{
 				//  種類が敵の場合
-				if( objType == Sence::OBJTYPE_ENEMY )
+				if( objType == Scene::OBJTYPE_ENEMY )
 				{
 					//  敵クラスにダウンキャスト
 					Enemy* pEnemy = ( Enemy* )pScene;
@@ -174,12 +174,12 @@ void Bullet::Update( void )
 						pEnemy->Damage( 400 );
 
 						//  自身の削除
-						Sence::Release( );
+						Scene::Release( );
 					}
 				}
 			}
 
-			if( objType == Sence::OBJTYPE_HIT_FIELD )
+			if( objType == Scene::OBJTYPE_HIT_FIELD )
 			{
 				//  当たり判定用フィールドクラスにダウンキャスト
 				HitField* pHitField = ( HitField* )pScene;
@@ -201,7 +201,7 @@ void Bullet::Update( void )
 	}
 
 	//  3Dポリゴンの更新
-	Sence3D::Update( );
+	Scene3D::Update( );
 
 	if( m_type == TYPE_WIDE )
 	{
@@ -215,18 +215,18 @@ void Bullet::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene = Sence::GetScene( nCntPriority );
+					pScene = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene->GetObjType( );
 
 						//  種類がプレイヤーの場合
-						if( objType == Sence::OBJTYPE_PLAYER )
+						if( objType == Scene::OBJTYPE_PLAYER )
 						{
 							//  プレイヤークラスにダウンキャスト
 							Player* pPlayer = ( Player* )pScene;
@@ -270,18 +270,18 @@ void Bullet::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene = Sence::GetScene( nCntPriority );
+					pScene = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene->GetObjType( );
 
 						//  種類が敵の場合
-						if( objType == Sence::OBJTYPE_ENEMY )
+						if( objType == Scene::OBJTYPE_ENEMY )
 						{
 							//  プレイヤークラスにダウンキャスト
 							Enemy* pEnemy = ( Enemy* )pScene;
@@ -325,7 +325,7 @@ void Bullet::Update( void )
 						   m_vecDirect.x , m_vecDirect.y , m_vecDirect.z );
 	}
 
-	if( m_objType == Sence::OBJTYPE_BULLET )
+	if( m_objType == Scene::OBJTYPE_BULLET )
 	{
 		//  ライフカウント
 		if( m_nLife > 0 )
@@ -370,7 +370,7 @@ void Bullet::Draw( void )
 		for( int i = 0; i < 8; i++ )
 		{
 			//  3Dポリゴンの描画
-			Sence3D::Draw( );
+			Scene3D::Draw( );
 		}
 
 		//  ライトを点ける
@@ -529,7 +529,7 @@ void Bullet::Hit( D3DXVECTOR3 vecDirect )
 		case TYPE_WIDE:
 		{
 			//  自身の削除
-			Sence::Release( );
+			Scene::Release( );
 
 			::Effekseer::Handle handle;
 

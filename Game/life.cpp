@@ -93,7 +93,7 @@ HRESULT Life::Init( void )
 	int nLife = m_nLife;
 	int nNumber = 0;
 
-	Sence2DL::Init( );
+	Scene2DL::Init( );
 
 	//  桁数分のループ
 	for( int nCntDigit = 4 - 1; nCntDigit >= 0; nCntDigit-- )
@@ -163,7 +163,7 @@ void Life::Uninit( void )
 		it++;
 	}
 
-	Sence2DL::Uninit( );
+	Scene2DL::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ void Life::Update( void )
 	//  座標をずらす
 	m_position = m_basePos + m_seekPos;
 
-	Sence2DL::Update( );
+	Scene2DL::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -270,7 +270,7 @@ void Life::Update( void )
 //--------------------------------------------------------------------------------------
 void Life::Draw( void )
 {
-	Sence2DL::Draw( );
+	Scene2DL::Draw( );
 }
 
 //--------------------------------------------------------------------------------------

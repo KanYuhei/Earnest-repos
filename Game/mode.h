@@ -34,6 +34,7 @@ public:
 		MODE_GAME ,
 		MODE_RESULT ,
 		MODE_TOOL ,
+		MODE_TEST ,
 	} MODE;
 
 	Mode( ){ }											//  コンストラクタ

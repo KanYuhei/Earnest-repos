@@ -23,7 +23,7 @@
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスの定義
 //--------------------------------------------------------------------------------------
-class PlayerResult : public SenceModelAnim
+class PlayerResult : public SceneModelAnim
 {
 public:
 	PlayerResult( int nPriority = 3 );								//  コンストラクタ

@@ -166,6 +166,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\GitHub_Earnest\Game\stencilShadow.cpp" />
+    <ClCompile Include="..\..\NewGame\objectFBX.cpp" />
+    <ClCompile Include="..\..\NewGame\test.cpp" />
     <ClCompile Include="AIManager.cpp" />
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="behaviorAI.cpp" />
@@ -255,6 +258,9 @@
     <ClCompile Include="xboxController.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\GitHub_Earnest\Game\stencilShadow.h" />
+    <ClInclude Include="..\..\NewGame\objectFBX.h" />
+    <ClInclude Include="..\..\NewGame\test.h" />
     <ClInclude Include="..\..\OpenGL_FBX\math.h" />
     <ClInclude Include="actionAI.h" />
     <ClInclude Include="AIManager.h" />

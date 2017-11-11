@@ -36,7 +36,7 @@ static const float	LIGHTNING_BLOW_POWER = 10.0f;
 HRESULT MagicLightning::Init( void )
 {
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_MAGIC_LIGHTNING );
+	Scene::SetObjType( Scene::OBJTYPE_MAGIC_LIGHTNING );
 
 	m_firstPos = m_position;
 	m_magicPos = m_position + m_vecDirect * 2.0f;
@@ -86,25 +86,25 @@ void MagicLightning::Update( void )
 		m_magicPos.z = Game::GetFieldMin( ).z;
 	}
 
-	Sence* pScene = NULL;
+	Scene* pScene = NULL;
 
 #pragma omp parallel for
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 	{
 		//  シーンの先頭アドレスを取得
-		pScene = Sence::GetScene( nCntPriority );
+		pScene = Scene::GetScene( nCntPriority );
 
 		//  シーンが空ではない間ループ
 		while( pScene != NULL )
 		{
-			Sence::OBJTYPE objType;						//  物体の種類
+			Scene::OBJTYPE objType;						//  物体の種類
 
 			//  物体の種類の取得
 			objType = pScene->GetObjType( );
 
 			//  種類がゴールの場合
-			if( objType == Sence::OBJTYPE_HIT_FIELD )
+			if( objType == Scene::OBJTYPE_HIT_FIELD )
 			{
 				//  当たり判定用フィールドクラスにダウンキャスト
 				HitField* pHitField = ( HitField* )pScene;
@@ -128,12 +128,12 @@ void MagicLightning::Update( void )
 			for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 			{
 				//  シーンの先頭アドレスを取得
-				pScene = Sence::GetScene( nCntPriority );
+				pScene = Scene::GetScene( nCntPriority );
 
 				//  シーンが空ではない間ループ
 				while( pScene != NULL )
 				{
-					Sence::OBJTYPE objType;						//  物体の種類
+					Scene::OBJTYPE objType;						//  物体の種類
 
 					//  物体の種類の取得
 					objType = pScene->GetObjType( );
@@ -145,7 +145,7 @@ void MagicLightning::Update( void )
 						if( m_owner == OWNER_ENEMY )
 						{
 							//  種類がプレイヤーの場合
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  プレイヤークラスにダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -177,7 +177,7 @@ void MagicLightning::Update( void )
 						else if( m_owner == OWNER_PLAYER )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  敵クラスにダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene;
@@ -208,7 +208,7 @@ void MagicLightning::Update( void )
 						if( m_owner == OWNER_PLAYER )
 						{
 							//  種類がプレイヤーの場合
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  プレイヤークラスにダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -293,7 +293,7 @@ void MagicLightning::Update( void )
 		}
 
 		//  魔法陣の設定
-		EffekseerManager::SetPos( m_handle , m_magicPos );
+		EffekseerManager::SetPosition( m_handle , m_magicPos );
 		EffekseerManager::SetScale( m_handle , m_size * m_fScale * 10.0f );
 	}
 }
@@ -355,7 +355,7 @@ MagicLightning::OWNER MagicLightning::GetOwner( void )
 void MagicLightning::Hit( void )				
 {
 	//  自身の削除
-	Sence::Release( );
+	Scene::Release( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -391,7 +391,7 @@ void MagicLightning::MoveMagicPos( D3DXVECTOR3 vecDirect , float fSpeed )
 //--------------------------------------------------------------------------------------
 void MagicLightning::Delete( void )				
 {
-	Sence::Release( );
+	Scene::Release( );
 
 	if( m_handle != -1 )
 	{

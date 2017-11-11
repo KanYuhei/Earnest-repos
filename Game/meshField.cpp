@@ -29,7 +29,7 @@
 //--------------------------------------------------------------------------------------
 //  メッシュフィールドクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-MeshField::MeshField( void ) : Sence( 5 )
+MeshField::MeshField( void ) : Scene( 2 )
 {
 	m_pVtxBuff = NULL;
 	m_pIndexBuff = NULL;
@@ -112,6 +112,8 @@ void MeshField::Update( void )
 
 	//  頂点情報の設定
 	SetVertex( );
+
+	ChangeHeight( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -119,64 +121,64 @@ void MeshField::Update( void )
 //--------------------------------------------------------------------------------------
 void MeshField::ChangeHeight( void )
 {
-	//// キーボード情報の取得
-	//Keyboard* pKeyboard = SceneManager::GetKeyboard( );
+	// キーボード情報の取得
+	Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 
-	////  Aキーが押された場合
-	//if( pKeyboard->GetKeyboardTrigger( DIK_J ) )
-	//{
-	//	m_nFocusSide--;
+	//  Aキーが押された場合
+	if( pKeyboard->GetKeyboardTrigger( DIK_J ) )
+	{
+		m_nFocusSide--;
 
-	//	if( m_nFocusSide < 0 )
-	//	{
-	//		m_nFocusSide = m_nDivideSide;
-	//	}
-	//}
+		if( m_nFocusSide < 0 )
+		{
+			m_nFocusSide = m_nDivideSide;
+		}
+	}
 
-	////  Dキーが押された場合
-	//if( pKeyboard->GetKeyboardTrigger( DIK_L ) )
-	//{
-	//	m_nFocusSide++;
+	//  Dキーが押された場合
+	if( pKeyboard->GetKeyboardTrigger( DIK_L ) )
+	{
+		m_nFocusSide++;
 
-	//	if( m_nFocusSide > m_nDivideSide )
-	//	{
-	//		m_nFocusSide = 0;
-	//	}
-	//}
+		if( m_nFocusSide > m_nDivideSide )
+		{
+			m_nFocusSide = 0;
+		}
+	}
 
-	////  Aキーが押された場合
-	//if( pKeyboard->GetKeyboardTrigger( DIK_I ) )
-	//{
-	//	m_nFocusVertical--;
+	//  Aキーが押された場合
+	if( pKeyboard->GetKeyboardTrigger( DIK_I ) )
+	{
+		m_nFocusVertical--;
 
-	//	if( m_nFocusVertical < 0 )
-	//	{
-	//		m_nFocusVertical = m_nDivideVertical;
-	//	}
-	//}
+		if( m_nFocusVertical < 0 )
+		{
+			m_nFocusVertical = m_nDivideVertical;
+		}
+	}
 
-	////  Dキーが押された場合
-	//if( pKeyboard->GetKeyboardTrigger( DIK_K ) )
-	//{
-	//	m_nFocusVertical++;
+	//  Dキーが押された場合
+	if( pKeyboard->GetKeyboardTrigger( DIK_K ) )
+	{
+		m_nFocusVertical++;
 
-	//	if( m_nFocusVertical > m_nDivideVertical )
-	//	{
-	//		m_nFocusVertical = 0;
-	//	}
-	//}
+		if( m_nFocusVertical > m_nDivideVertical )
+		{
+			m_nFocusVertical = 0;
+		}
+	}
 
-	////  ↑キーが押された場合
-	//if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
-	//{
-	//	m_fieldPos[ m_nFocusVertical ][ m_nFocusSide ].y += 1.0f;
-	//}
+	//  ↑キーが押された場合
+	if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
+	{
+		m_fieldPos[ m_nFocusVertical ][ m_nFocusSide ].y += 1.0f;
+	}
 
-	////  ↓キーが押された場合
-	//if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
-	//{
-	//	m_fieldPos[ m_nFocusVertical ][ m_nFocusSide ].y -= 1.0f;
-	//}
+	//  ↓キーが押された場合
+	if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
+	{
+		m_fieldPos[ m_nFocusVertical ][ m_nFocusSide ].y -= 1.0f;
+	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -289,7 +291,7 @@ void MeshField::Draw( void )
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
 MeshField* MeshField::Create( TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 size , D3DXCOLOR color ,
-								int nDivedeSide , int nDivideVertical , D3DXVECTOR2 changeScroll )
+							  int nDivedeSide , int nDivideVertical , D3DXVECTOR2 changeScroll )
 {
 	MeshField *pMeshField;
 
@@ -501,7 +503,7 @@ void MeshField::SetVertex( void )
 			for( int nCntSide = 0; nCntSide < m_nDivideSide + 1; nCntSide++ )
 			{
 				//  頂点座標の設定( 2D座標 ・ 右回り )
-				//pVtx[ 0 ].position = m_fieldPos[ nCntVertical ][ nCntSide ];
+				pVtx[ 0 ].position = m_fieldPos[ nCntVertical ][ nCntSide ];
 
 				//  UV座標の指定
 				pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * 5.0f + m_scroll.x  , ( float )nCntVertical * 5.0f + m_scroll.y );

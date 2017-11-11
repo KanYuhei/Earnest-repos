@@ -35,7 +35,7 @@
 //--------------------------------------------------------------------------------------
 //  xモデルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceModelAnim::SenceModelAnim( int nPriority ) : Sence( nPriority )
+SceneModelAnim::SceneModelAnim( int nPriority ) : Scene( nPriority )
 {
 	m_posAt = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_scale = D3DXVECTOR3( 1.0f, 1.0f , 1.0f );
@@ -45,7 +45,7 @@ SenceModelAnim::SenceModelAnim( int nPriority ) : Sence( nPriority )
 //--------------------------------------------------------------------------------------
 //  xモデルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceModelAnim::SenceModelAnim( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
+SceneModelAnim::SceneModelAnim( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
 {
 	m_position = position;
 	m_rot = rot;
@@ -55,7 +55,7 @@ SenceModelAnim::SenceModelAnim( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVEC
 //--------------------------------------------------------------------------------------
 //  xモデルのデストラクタ
 //--------------------------------------------------------------------------------------
-SenceModelAnim::~SenceModelAnim( )
+SceneModelAnim::~SceneModelAnim( )
 {
 
 }
@@ -63,7 +63,7 @@ SenceModelAnim::~SenceModelAnim( )
 //--------------------------------------------------------------------------------------
 //  xモデルの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT SenceModelAnim::Init( void )
+HRESULT SceneModelAnim::Init( void )
 {
 	D3DXMATERIAL*	pMat = NULL;									//  マテリアル
 	FILE*			pFile = NULL;
@@ -268,7 +268,7 @@ HRESULT SenceModelAnim::Init( void )
 			workScale.y = m_scale.y;
 			workScale.z = m_scale.z;
 
-			m_pModelParts[ nCntModelChar ] = SenceModelParts::Create( nWorkIndex ,
+			m_pModelParts[ nCntModelChar ] = SceneModelParts::Create( nWorkIndex ,
 																	   nWorkParent ,
 																	   aModelName[ nCntModelChar ] ,
 																	   workPos ,
@@ -428,7 +428,7 @@ HRESULT SenceModelAnim::Init( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの終了処理
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::Uninit( void )
+void SceneModelAnim::Uninit( void )
 {
 #pragma omp parallel for
 	//  パーツ数分のループ
@@ -457,7 +457,7 @@ void SenceModelAnim::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの更新処理
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::Update( void )
+void SceneModelAnim::Update( void )
 {
 	D3DXMATRIX		mtxWorld;								//  ワールド行列
 	D3DXVECTOR3		workRot( 0.0f, 0.0f , 0.0f );			//  回転角格納用
@@ -625,7 +625,7 @@ void SenceModelAnim::Update( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの描画処理
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::Draw( void )
+void SceneModelAnim::Draw( void )
 {
 #pragma omp parallel for
 	//  パーツ数分のループ
@@ -641,7 +641,7 @@ void SenceModelAnim::Draw( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの大きさ設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::SetScale( D3DXVECTOR3 scale )
+void SceneModelAnim::SetScale( D3DXVECTOR3 scale )
 {
 	m_scale = scale;
 }
@@ -649,7 +649,7 @@ void SenceModelAnim::SetScale( D3DXVECTOR3 scale )
 //--------------------------------------------------------------------------------------
 //  xポリゴンの大きさを取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 SenceModelAnim::GetScale( void )
+D3DXVECTOR3 SceneModelAnim::GetScale( void )
 {
 	return m_scale;
 }
@@ -657,7 +657,7 @@ D3DXVECTOR3 SenceModelAnim::GetScale( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの注視点設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::SetPosAt( D3DXVECTOR3 posAt )
+void SceneModelAnim::SetPositionAt( D3DXVECTOR3 posAt )
 {
 	m_posAt = posAt;
 }
@@ -665,7 +665,7 @@ void SenceModelAnim::SetPosAt( D3DXVECTOR3 posAt )
 //--------------------------------------------------------------------------------------
 //  xモデルのアニメーションが終了かしたかを確認する関数
 //--------------------------------------------------------------------------------------
-bool SenceModelAnim::GetAnimationFinish( void )
+bool SceneModelAnim::GetAnimationFinish( void )
 {
 	return m_bAnimationFinish;
 }
@@ -673,7 +673,7 @@ bool SenceModelAnim::GetAnimationFinish( void )
 //--------------------------------------------------------------------------------------
 //  xモデルのアニメーションの設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelAnim::SetAnimation( StateAnimator::MOTION motion )
+void SceneModelAnim::SetAnimation( StateAnimator::MOTION motion )
 {
 	if( !( m_motion == motion && !m_pAnimation[ motion ]->GetLoop( ) ) )
 	{
@@ -703,12 +703,12 @@ void SenceModelAnim::SetAnimation( StateAnimator::MOTION motion )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-SenceModelAnim* SenceModelAnim::Create( TYPE type ,  D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
+SceneModelAnim* SceneModelAnim::Create( TYPE type ,  D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
 {
-	SenceModelAnim *pSceneModel;
+	SceneModelAnim *pSceneModel;
 
 	//  インスタンス生成
-	pSceneModel = new SenceModelAnim;
+	pSceneModel = new SceneModelAnim;
 
 	//  種類の代入
 	pSceneModel->m_type = type;
@@ -731,7 +731,7 @@ SenceModelAnim* SenceModelAnim::Create( TYPE type ,  D3DXVECTOR3 position , D3DX
 //--------------------------------------------------------------------------------------
 //  モデルパーツの座標を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 SenceModelAnim::GetModelPartsPos( int nIndex )
+D3DXVECTOR3 SceneModelAnim::GetModelPartsPos( int nIndex )
 {
 	if( m_pModelParts[ nIndex ] != NULL )
 	{
@@ -748,7 +748,7 @@ D3DXVECTOR3 SenceModelAnim::GetModelPartsPos( int nIndex )
 //--------------------------------------------------------------------------------------
 //  受ける側の球体当たり判定を取得する関数
 //--------------------------------------------------------------------------------------
-Utility::HIT_SPHERE	SenceModelAnim::GetHitSphere( void )
+Utility::HIT_SPHERE	SceneModelAnim::GetHitSphere( void )
 {
 	return m_hitSphere;
 }
@@ -756,7 +756,7 @@ Utility::HIT_SPHERE	SenceModelAnim::GetHitSphere( void )
 //--------------------------------------------------------------------------------------
 //  攻撃側の球体当たり判定を取得する関数
 //--------------------------------------------------------------------------------------
-Utility::HIT_SPHERE	SenceModelAnim::GetAttackHitSphere( void )
+Utility::HIT_SPHERE	SceneModelAnim::GetAttackHitSphere( void )
 {
 	return m_attackHitSphere;
 }

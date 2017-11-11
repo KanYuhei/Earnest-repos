@@ -22,17 +22,17 @@
 //--------------------------------------------------------------------------------------
 //  ステートマシン( AI用 )管理クラスの定義
 //--------------------------------------------------------------------------------------
-class CStateAIManager : HerarchyCharacterAI
+class StateAIManager : HerarchyCharacterAI
 {
 public: 
 	typedef enum
 	{
-		SENCEE_NORMAL = 0,
+		SENCE_NORMAL = 0,
 		SENCE_CAUTION ,
 		SENCE_CHASE ,
 	} SENCE;
 
-	CStateAIManager( );								//  コンストラクタ
+	StateAIManager( );								//  コンストラクタ
 
 private:
 

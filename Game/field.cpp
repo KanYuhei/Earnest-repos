@@ -41,10 +41,10 @@ Field::~Field( )
 HRESULT Field::Init( void )
 {
 	//  シーンモデル
-	SenceModel::Init( );
+	SceneModel::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_FIELD );
+	Scene::SetObjType( Scene::OBJTYPE_FIELD );
 
 	return S_OK;
 }
@@ -55,7 +55,7 @@ HRESULT Field::Init( void )
 void Field::Uninit( void )
 {
 	//  シーンモデル
-	SenceModel::Uninit( );
+	SceneModel::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ void Field::Uninit( void )
 void Field::Update( void )
 {
 	//  シーンモデル
-	SenceModel::Update( );
+	SceneModel::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ void Field::Update( void )
 void Field::Draw( void )
 {
 	//  シーンモデル
-	SenceModel::Draw( );
+	SceneModel::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ Field* Field::Create( Field::TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 rot 
 	if( type == Field::TYPE_STAGE000 )
 	{
 		//  種類の代入
-		pField->m_type = SenceModel::TYPE_FIELD000;
+		pField->m_type = SceneModel::TYPE_FIELD000;
 
 		//  当たり判定用フィールドの生成
 		HitField::Create( HitField::TYPE_HIT_STAGE000 , position , rot , scale );
@@ -106,7 +106,7 @@ Field* Field::Create( Field::TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 rot 
 	else if( type == Field::TYPE_STAGE001 )
 	{
 		//  種類の代入
-		pField->m_type = SenceModel::TYPE_FIELD001;
+		pField->m_type = SceneModel::TYPE_FIELD001;
 
 		//  当たり判定用フィールドの生成
 		HitField::Create( HitField::TYPE_HIT_STAGE001 , position , rot , scale );

@@ -29,6 +29,7 @@
 #include "effekseerManager.h"
 #include "fade.h"
 #include "tutorial.h"
+#include "test.h"
 #include "Wwise.h"
 
 //--------------------------------------------------------------------------------------
@@ -38,20 +39,20 @@
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
-Renderer*			SceneManager::m_pRenderer = NULL;					//  シーンクラスのポインタ
-Keyboard*			SceneManager::m_pKeyboard = NULL;					//  キーボードクラスのポインタ
-XboxController*		SceneManager::m_pXboxInput = NULL;					//  Xboxコントローラークラスのポインタ
-PS4Controller*		SceneManager::m_pPS4Input = NULL;					//  PS4コントローラークラスのポインタ
-Texture*			SceneManager::m_pTexture = NULL;					//  テクスチャクラスのポインタ
-Light*				SceneManager::m_pLight = NULL;						//  ライトクラスのポインタ
-Sound*				SceneManager::m_pSound = NULL;						//  サウンドクラスのポインタ
-Wwise*				SceneManager::m_pWwise = NULL;						//  Wwiseクラスのポインタ
-EffekseerManager*	SceneManager::m_pEffekseer = NULL;					//  エフェクシア管理クラスのポインタ
-Fade*				SceneManager::m_pFade = NULL;						//  フェードクラスのポインタ
-Mode*				SceneManager::m_pMode = NULL;						//  モードクラスのポインタ
-Mode::MODE			SceneManager::m_mode = Mode::MODE_TEAM_LOGO;		//  モード
+Renderer*				SceneManager::m_pRenderer = NULL;					//  シーンクラスのポインタ
+Keyboard*				SceneManager::m_pKeyboard = NULL;					//  キーボードクラスのポインタ
+XboxController*			SceneManager::m_pXboxInput = NULL;					//  Xboxコントローラークラスのポインタ
+PS4Controller*			SceneManager::m_pPS4Input = NULL;					//  PS4コントローラークラスのポインタ
+Texture*				SceneManager::m_pTexture = NULL;					//  テクスチャクラスのポインタ
+Light*					SceneManager::m_pLight = NULL;						//  ライトクラスのポインタ
+Sound*					SceneManager::m_pSound = NULL;						//  サウンドクラスのポインタ
+Wwise*					SceneManager::m_pWwise = NULL;						//  Wwiseクラスのポインタ
+EffekseerManager*		SceneManager::m_pEffekseer = NULL;					//  エフェクシア管理クラスのポインタ
+Fade*					SceneManager::m_pFade = NULL;						//  フェードクラスのポインタ
+Mode*					SceneManager::m_pMode = NULL;						//  モードクラスのポインタ
+Mode::MODE				SceneManager::m_mode = Mode::MODE_TEAM_LOGO;		//  モード
 SceneManager::STAGE		SceneManager::m_stage = STAGE_MAX;					//  ステージの種類
-int					SceneManager::m_nLoop = 0;							//  ループ数
+int						SceneManager::m_nLoop = 0;							//  ループ数
 
 //--------------------------------------------------------------------------------------
 //  管理クラスのコンストラクタ
@@ -481,7 +482,15 @@ void SceneManager::SetMode( Mode::MODE mode )
 		case Mode::MODE_RESULT:
 		{
 			//  結果の初期化
-			m_pMode = new CResult;
+			m_pMode = new Result;
+			m_pMode->Init( );
+
+			break;
+		}
+		case Mode::MODE_TEST:
+		{
+			//  結果の初期化
+			m_pMode = new Test;
 			m_pMode->Init( );
 
 			break;

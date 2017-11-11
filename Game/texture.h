@@ -22,18 +22,18 @@
 class Texture
 {
 public:
-	Texture( );													//  デフォルトコンストラクタ
-	~Texture( );													//  デストラクタ
+	Texture( );															//  デフォルトコンストラクタ
+	~Texture( );														//  デストラクタ
 
-	void Init( void );												//  初期化
-	void Uninit( void );											//  終了
+	void Init( void );													//  初期化
+	void Uninit( void );												//  終了
 
-	void					SetTextureImage( char *aFileName );		//  テクスチャの設定
-	LPDIRECT3DTEXTURE9		GetTextureImage( char *aFileName );			//  テクスチャの取得
+	void					SetTextureImage( const char *aFileName );	//  テクスチャの設定
+	LPDIRECT3DTEXTURE9		GetTextureImage( const char *aFileName );	//  テクスチャの取得
 
 private:
-	LPDIRECT3DTEXTURE9		m_pTexture[ MAX_TEXTURE ];				//  テクスチャへのポインタ
-	char					m_aFileName[ MAX_TEXTURE ][ 512 ];		//  テクスチャ名
+	LPDIRECT3DTEXTURE9		m_pTexture[ MAX_TEXTURE ];					//  テクスチャへのポインタ
+	char					m_aFileName[ MAX_TEXTURE ][ 512 ];			//  テクスチャ名
 };
 
 #endif

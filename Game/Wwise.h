@@ -84,12 +84,12 @@ public:
 //	void SetMaterial(void *gameScene, int materialid);	// ゲームオブジェクトにマテリアルIDを設定
 
 	// メインリスナー系
-	void SetPos(const D3DXVECTOR3 &position) { m_pMainListener->position = position; }		// 座標
+	void SetPosition(const D3DXVECTOR3 &position) { m_pMainListener->position = position; }		// 座標
 	void SetRot(const D3DXVECTOR3 &rot) { m_pMainListener->rot = rot; }		// 回転
 	void SetVel(const D3DXVECTOR3 &vel) { m_pMainListener->vel = vel; }		// 速度
 
 	// 各ゲームオブジェクト
-	void SetPos(const std::string &name, const D3DXVECTOR3 &position) {			// 座標
+	void SetPosition(const std::string &name, const D3DXVECTOR3 &position) {			// 座標
 		if (m_umapGameObj.count(name) < 1) { assert(!"引数の名前が不正"); }
 		m_umapGameObj[name]->position = position;
 	}

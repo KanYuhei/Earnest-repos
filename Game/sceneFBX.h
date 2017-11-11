@@ -1,10 +1,10 @@
 ﻿//--------------------------------------------------------------------------------------
-//  レンダリング処理   ( sceneModelGL.h )
+//  レンダリング処理   ( sceneFBX.h )
 //
 //  Author : SHUN YAMASHITA
 //--------------------------------------------------------------------------------------
-#ifndef _CSCENE_FBX_H_
-#define _CSCENE_FBX_H_
+#ifndef _SCENE_FBX_H_
+#define _SCENE_FBX_H_
 
 //--------------------------------------------------------------------------------------
 //  ヘッダーファイル
@@ -16,6 +16,25 @@
 #include <list>
 #include "scene.h"
 #include "math.h"
+#include "main.h"
+
+//--------------------------------------------------------------------------------------
+//  クラスの前方宣言
+//--------------------------------------------------------------------------------------
+class FBXNode;
+class FBXMesh;
+
+//--------------------------------------------------------------------------------------
+//  ヘッダーファイル
+//--------------------------------------------------------------------------------------
+#include <Windows.h>
+#include <string>
+#include <fbxsdk.h>
+#include <vector>
+#include <list>
+#include "scene.h"
+#include "math.h"
+#include "main.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -24,122 +43,109 @@
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの定義
 //--------------------------------------------------------------------------------------
-class SenceFBX : public Sence
+class SceneFBX : public Scene
 {
 public: 
-	struct myNode
-	{
-		std::vector<myNode*> childlen;
-		FbxString name;
-		std::vector<FbxString> attributeNames;
-		FbxDouble3 translation;
-		FbxDouble3 rotation;
-		FbxDouble3 scaling;
-	};
+	////////////////////////////////////////////////////////////////////////////////////////
+	//  ① バイナリー化した場合は、ポインタは基本何番目のデータ( 配列 )を持たせたほうがいい
+	//  ② 回転の順番が不明( XYZの順番で回転など)
+	////////////////////////////////////////////////////////////////////////////////////////
 
-	struct Face
-	{
-		unsigned int v;
-		unsigned int vt;
-		unsigned int vn;
-	};
-
-	// マテリアルタイプ取得。 
-	enum eMATERIAL_TYPE 
-	{ 
-		MATERIAL_LAMBERT = 0, 
-		MATERIAL_PHONG, 
+	struct BornRefarence 
+	{     
+		BornRefarence(unsigned char index, float weight) : index(index), weight(weight) {}     
+		unsigned char index;     
+		float weight; 
 	}; 
+ 
+	struct Point 
+	{     
+		Point(const D3DXVECTOR3& positions) : positions(positions) {}     
+		D3DXVECTOR3 positions;     
+		std::vector<BornRefarence> bornRefarences; 
+	}; 
+ 
+	struct Mesh 
+	{     
+		std::vector<Point> points;     
+		std::vector<D3DXVECTOR3> normals;      
+		std::vector<D3DXVECTOR2> texcoords; 
+ 
+		std::vector<unsigned short> positionIndices;     
+		std::vector<unsigned short> normalIndices;     
+		std::vector<unsigned short> texcoordIndices;          
+		int materialIndex; 
+ 
+		D3DXMATRIX initInvMatrix;
+		std::vector<std::vector<D3DXMATRIX>> matrixes;
+	};
 
-	typedef struct Point2DF 
+	struct MATERIAL
 	{
-		float x, y;
+		D3DXCOLOR	Diffuse;
+		D3DXCOLOR	Ambient;
+		D3DXCOLOR	Specular;
+		D3DXCOLOR	Emission;
+		float		Shininess;
+	};
+ 
+	struct myNode 
+	{     
+		std::list<myNode*> children;     
+		std::string name;     
+		std::vector<std::string> attributeNames;     
+		D3DXVECTOR3 translation;      
+		D3DXVECTOR3 rotation;      
+		D3DXVECTOR3 scaling;  
+ 
+		std::vector<std::string> textures; // のマテリアル     
+		std::vector<Mesh> meshes; 
 
-		bool operator==(Point2DF& val) 
-		{
-			if(this->x == val.x && this->y == val.y) 
-			{
-				return true;
-			}
+		LPDIRECT3DVERTEXBUFFER9	m_pVtxBuff;								//  頂点バッファへのポインタ
 
-			return false;
-		}
-	} point2;
+		static FbxTime	m_startTime;
+		static FbxTime	m_endTime;
+		static int		m_currentFrame;
+		static int		m_allTime;
+		static bool		m_makeVertrx;
+ 
+		static myNode* recursiveNode( FbxManager* pManager, FbxNode* pNode, bool bTexcoordVReverse,
+									  FbxTime startTime, FbxTime endTime );     
+		void MakeVertex( int size );
 
-	typedef struct __UV_SET__ 
-	{
-		std::string uvSetName;
-		std::list<std::string> textures;
-		std::vector<point2> uvBuffer;
-	} UvSet;
+		void recursiveDraw(void);
+ 
+	private:     
+		void analyzePosition(FbxMesh* pMesh);    
+		void analyzeNormal(FbxMesh* pMesh);     
+		void analyzeTexcoord(FbxMesh* pMesh, bool bRevers = false);     
+		void analyzeMaterial(FbxNode* pNode);     
+		void analyzeMaterial(FbxMesh* pMesh);     
+		void analyzeCluster(FbxMesh* pMesh);     
+		FbxAMatrix GetGeometry(FbxNode* pNode);
 
-	SenceFBX( );													//  コンストラクタ
-	~SenceFBX( );													//  デストラクタ
+		static std::string GetAttributeTypeName(FbxNodeAttribute::EType type);
+	};
+ 
+	SceneFBX( );																//  コンストラクタ
+	~SceneFBX( );																//  デストラクタ
 
-	HRESULT					Init( void );							//  初期化
-	void					Uninit( void );							//  終了
-	void					Update( void );							//  更新
-	void					Draw( void );							//  描画
+	HRESULT				Init( void );											//  初期化
+	void				Uninit( void );											//  終了
+	void				Update( void );											//  更新
+	void				Draw( void );											//  描画
 
-	void					SetPos( D3DXVECTOR3 position );				//  座標の代入
-	void					SetScale( D3DXVECTOR3 scale );				//  大きさの代入
-	void					SetRot( float fRot );					//  回転角の代入
-	void					SetScale( float fScale );				//  大きさ倍率の代入
+	void				SetPosition( D3DXVECTOR3 pos );								//  座標の代入
+	void				SetSize( D3DXVECTOR3 size );								//  大きさの代入
+	void				SetRot( float fRot );									//  回転角の代入
+	void				SetScale( float fScale );								//  大きさ倍率の代入
 
-	void					MovePos( D3DXVECTOR3 movePos );			//  座標の移動
-	void					ChangeRot( float fChangeRot );			//  回転角の変化
-	void					ChangeScale( float fChangeScale );		//  大きさ倍率の変化
-
-	static SenceFBX*		Create( D3DXVECTOR3 position ,
-									D3DXVECTOR3 rot ,
-									D3DXVECTOR3 scale );			//  生成
+	void				MovePos( D3DXVECTOR3 movePos );							//  座標の移動
+	void				ChangeRot( float fChangeRot );							//  回転角の変化
+	void				ChangeScale( float fChangeScale );						//  大きさ倍率の変化
 
 private:
-	int						GetStrToken( FILE* pFile ,
-										 const char* pToken ,
-										 char* pBuf );
-	int						GetStrCount( FILE* pFile ,
-										 const char* pToken ,
-										 char* pStr );
-	void					MakeVertex( void );
-	void					SetVertex( void );
-
-	void					PrintTabs( void ); 
-	FbxString				GetAttributeTypeName( FbxNodeAttribute::EType type );
-	void					PrintAttribute( FbxNodeAttribute* pAttribute );
-	void					PrintNode( FILE* pFile , FbxNode* pNode );
-	myNode*					RecursiveNode( FbxNode* pNode );
-	void					AnalizePosition( FbxMesh* pMesh );
-	void					AnalizeNormalize( FbxMesh* pMesh );
-	void					AnalizeMaterial( FbxMesh* pMesh );
-	void					AnalizeCluster( FbxMesh* pMesh );
-	void					AnalizeUV( FbxMesh* pMesh );
-	void					AnalizeTextureName( FbxMesh* pMesh );
-
-	LPDIRECT3DVERTEXBUFFER9	m_pVtxBuff;								//  頂点バッファへのポインタ
-	LPDIRECT3DINDEXBUFFER9	m_pIndexBuff;							//  インデックスバッファインターフェースへのポインタ
-
-	D3DXVECTOR3				m_position;									//  座標
-	D3DXVECTOR3				m_scale;									//  大きさ
-	D3DXVECTOR3				m_rot;									//  回転
-	float					m_fRot;									//  回転角度
-	float					m_fRot2;								//  
-	float					m_fScale;								//  大きさの倍率
-	int						m_nTexID;								//  テクスチャ識別番号
-	int						m_nCntV;								//  頂点数
-	int						m_nCntVt;								//  UV座標数
-	int						m_nCntVn;								//  法線の数
-	int						m_nCntF;								//  面の数
-	Vector3D*				m_pV;									//  頂点のポインタ
-	Vector2D*				m_pVt;									//  UV座標のポインタ
-	Vector3D*				m_pVn;									//  法線のポインタ
-	Face*					m_pFace;								//  面のポインタ
-
-	std::string				m_fileName;								//  ファイル名
-
-	int						numTabs; 
-
-	UvSet					m_uvSet;
+	myNode*				m_pTopNode;
 };
 
 #endif

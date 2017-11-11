@@ -23,7 +23,7 @@
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスの定義
 //--------------------------------------------------------------------------------------
-class PlayerSelect : public SenceModelAnim
+class PlayerSelect : public SceneModelAnim
 {
 public:
 	typedef enum

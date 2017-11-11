@@ -404,7 +404,7 @@ std::vector<std::string> EffekseerManager::get_file_path_in_dir( const std::stri
 //--------------------------------------------------------------------------------------
 //  エフェクシアの座標を設定する処理
 //--------------------------------------------------------------------------------------
-void EffekseerManager::SetPos( ::Effekseer::Handle handle , D3DXVECTOR3 position )
+void EffekseerManager::SetPosition( ::Effekseer::Handle handle , D3DXVECTOR3 position )
 {
 	if( handle == -1 )
 	{

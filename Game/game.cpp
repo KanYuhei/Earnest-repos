@@ -51,16 +51,16 @@ static const float	STAGE1_DISTACE= 300.0f;
 //--------------------------------------------------------------------------------------
 Game::MODE_VS	Game::m_modeVS = Game::MODE_VS_CPU;				//  対戦モード
 Game::CRYSTAL	Game::m_crystal[ 2 ] = { Game::CRYSTAL_FIRE };	//  魔法クリスタル
-Camera*		Game::m_pCamera[ 2 ] = { NULL };					//  カメラクラスのポインタ
+Camera*			Game::m_pCamera[ 2 ] = { NULL };				//  カメラクラスのポインタ
 int				Game::m_nNumDivide = MESH_FIELD_DIVIDE;			//  フィールド分割数
-int				Game::m_nNumField = 0;								//  フィールド数
-int				Game::m_nFocusField = 0;							//  フォーカスがあっているフィールド数
-float			Game::m_fSize = ONE_CUBE_SIZE;						//  フォーカスがあっているフィールド数
+int				Game::m_nNumField = 0;							//  フィールド数
+int				Game::m_nFocusField = 0;						//  フォーカスがあっているフィールド数
+float			Game::m_fSize = ONE_CUBE_SIZE;					//  フォーカスがあっているフィールド数
 bool			Game::m_bClear = false;							//  クリアしたかどうか
 D3DXVECTOR3		Game::m_fieldPos( 0.0f , 0.0f , 0.0f );			//  フォーカスがあっているフィールド数
 D3DXVECTOR3		Game::m_fieldMin( 0.0f , 0.0f , 0.0f );			//  フィールド最小座標
 D3DXVECTOR3		Game::m_fieldMax( 0.0f , 0.0f , 0.0f );			//  フィールド最大座標
-Mode::MODE		Game::m_nextMode = Mode::MODE_RESULT;				//  次の場面
+Mode::MODE		Game::m_nextMode = Mode::MODE_RESULT;			//  次の場面
 
 //--------------------------------------------------------------------------------------
 //  ゲームクラスのコンストラクタ
@@ -84,10 +84,6 @@ Game::~Game( )
 void Game::Init( void )
 {
 	m_bClear = false;
-
-	//SenceFBX::Create( D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , 
-	//				   D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-	//				   D3DXVECTOR3( 4.0f , 4.0f , 4.0f ) );
 
 	for( int i = 0; i < 2; i++ )
 	{
@@ -113,7 +109,7 @@ void Game::Uninit( void )
 	ImGui_ImplDX9_Shutdown( );
 
 	//  オブジェクトクラスの全解放
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 
 	for( int i = 0; i < 2; i++ )
 	{
@@ -213,7 +209,7 @@ void Game::Update( void )
 void Game::Draw( void )
 {
 	//  シーン全ての描画
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 
 	//  GUIの描画
 	//ImGui::Render( );
@@ -295,7 +291,7 @@ void Game::SetStage( void )
 		if( m_modeVS == Game::MODE_VS_CPU )
 		{
 			//  背景
-			SenceBG::Create( SenceBG::TYPE_GAME , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+			SceneBG::Create( SceneBG::TYPE_GAME , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 							  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 							  D3DXVECTOR2( 1.0f , 1.0f ) );
 
@@ -448,7 +444,7 @@ void Game::SetStage( void )
 		if( m_modeVS == Game::MODE_VS_CPU )
 		{
 			//  背景
-			SenceBG::Create( SenceBG::TYPE_GAME , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+			SceneBG::Create( SceneBG::TYPE_GAME , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 							  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 							  D3DXVECTOR2( 1.0f , 1.0f ) );
 

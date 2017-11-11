@@ -24,7 +24,7 @@
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence3D::Sence3D( int nPriority ) : Sence( nPriority )
+Scene3D::Scene3D( int nPriority ) : Scene( nPriority )
 {
 	//  値のクリア
 	m_pVtxBuff = NULL;
@@ -43,7 +43,7 @@ Sence3D::Sence3D( int nPriority ) : Sence( nPriority )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence3D::Sence3D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR3 normal , D3DXVECTOR3 rot , D3DXCOLOR color )
+Scene3D::Scene3D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR3 normal , D3DXVECTOR3 rot , D3DXCOLOR color )
 {
 	//  値の代入
 	m_position = position;
@@ -59,7 +59,7 @@ Sence3D::Sence3D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR3 normal ,
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンのデストラクタ
 //--------------------------------------------------------------------------------------
-Sence3D::~Sence3D( )
+Scene3D::~Scene3D( )
 {
 
 }
@@ -67,7 +67,7 @@ Sence3D::~Sence3D( )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT Sence3D::Init( void )
+HRESULT Scene3D::Init( void )
 {
 	//  テクスチャクラスの取得
 	Texture* pTexture = SceneManager::GetTexture( );
@@ -84,7 +84,7 @@ HRESULT Sence3D::Init( void )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの終了処理
 //--------------------------------------------------------------------------------------
-void Sence3D::Uninit( void )
+void Scene3D::Uninit( void )
 {
 	// 頂点バッファの破棄
 	if( m_pVtxBuff != NULL )
@@ -104,7 +104,7 @@ void Sence3D::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの更新処理
 //--------------------------------------------------------------------------------------
-void Sence3D::Update( void )
+void Scene3D::Update( void )
 {
 	//  回転させる
 	m_fRot += m_fAddRot;
@@ -116,7 +116,7 @@ void Sence3D::Update( void )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの描画処理
 //--------------------------------------------------------------------------------------
-void Sence3D::Draw( void )
+void Scene3D::Draw( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -185,7 +185,7 @@ void Sence3D::Draw( void )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの大きさの設定をする関数
 //--------------------------------------------------------------------------------------
-void Sence3D::SetSize( D3DXVECTOR3 size )
+void Scene3D::SetSize( D3DXVECTOR3 size )
 {
 	m_size = size;
 }
@@ -193,7 +193,7 @@ void Sence3D::SetSize( D3DXVECTOR3 size )
 //--------------------------------------------------------------------------------------
 // ポリゴンの大きさを取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 Sence3D::GetSize( void )
+D3DXVECTOR3 Scene3D::GetSize( void )
 {
 	return m_size;
 }
@@ -201,7 +201,7 @@ D3DXVECTOR3 Sence3D::GetSize( void )
 //--------------------------------------------------------------------------------------
 //  3Dポリゴンの大きさ比率の設定をする関数
 //--------------------------------------------------------------------------------------
-void Sence3D::SetScale( float fScale )
+void Scene3D::SetScale( float fScale )
 {
 	m_fScale = fScale;
 }
@@ -209,7 +209,7 @@ void Sence3D::SetScale( float fScale )
 //--------------------------------------------------------------------------------------
 //  テクスチャ名の設定
 //--------------------------------------------------------------------------------------
-void Sence3D::SetTextureName( char* pFileName )
+void Scene3D::SetTextureName( char* pFileName )
 {
 	strcpy( m_aFileName , pFileName );
 }
@@ -217,14 +217,14 @@ void Sence3D::SetTextureName( char* pFileName )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-Sence3D* Sence3D::Create( D3DXVECTOR3 position , D3DXVECTOR3 normal , D3DXVECTOR3 size , D3DXVECTOR3 rot , D3DXCOLOR color ,
+Scene3D* Scene3D::Create( D3DXVECTOR3 position , D3DXVECTOR3 normal , D3DXVECTOR3 size , D3DXVECTOR3 rot , D3DXCOLOR color ,
 							char *pTextureName , float fScale  , bool bInverse , float fPosU , float fPosV , float fDivideU , float fDivideV ,
 							float fAddRot )
 {
-	Sence3D *pScene3D;
+	Scene3D *pScene3D;
 
 	//  インスタンス生成
-	pScene3D = new Sence3D( 7 );
+	pScene3D = new Scene3D( 7 );
 
 	//  座標の代入
 	pScene3D->m_position = position;
@@ -268,7 +268,7 @@ Sence3D* Sence3D::Create( D3DXVECTOR3 position , D3DXVECTOR3 normal , D3DXVECTOR
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-HRESULT Sence3D::MakeVertex( void )
+HRESULT Scene3D::MakeVertex( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -358,7 +358,7 @@ HRESULT Sence3D::MakeVertex( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-void Sence3D::SetVertex( void )
+void Scene3D::SetVertex( void )
 {
 	VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
 	D3DXVECTOR3 LeftTop;				//  左上座標

@@ -25,7 +25,7 @@
 //--------------------------------------------------------------------------------------
 //  メッシュウォールクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-MeshWall::MeshWall( int nPriority ) : Sence( nPriority )
+MeshWall::MeshWall( int nPriority ) : Scene( nPriority )
 {
 	m_pVtxBuff = NULL;
 	m_pIndexBuff = NULL;

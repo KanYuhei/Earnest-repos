@@ -40,7 +40,7 @@ void TeamLogo::Init( void )
 	m_nTime = TeamLogo::FADE_TIME;
 
 	//  背景
-	SenceBG::Create( SenceBG::TYPE_TEAM_LOGO , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+	SceneBG::Create( SceneBG::TYPE_TEAM_LOGO , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 					  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 					  D3DXVECTOR2( 1.0f , 1.0f ) );
 }
@@ -51,7 +51,7 @@ void TeamLogo::Init( void )
 void TeamLogo::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -87,5 +87,5 @@ void TeamLogo::Update( void )
 //--------------------------------------------------------------------------------------
 void TeamLogo::Draw( void )
 {
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 }

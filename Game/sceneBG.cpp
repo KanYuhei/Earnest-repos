@@ -35,7 +35,7 @@
 //--------------------------------------------------------------------------------------
 //  BGポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceBG::SenceBG( ) : Sence( 7 )
+SceneBG::SceneBG( ) : Scene( 7 )
 {
 	//  情報の代入
 	m_pVtxBuff = NULL;
@@ -54,7 +54,7 @@ SenceBG::SenceBG( ) : Sence( 7 )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceBG::SenceBG( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
+SceneBG::SceneBG( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
 {
 	//  情報の代入
 	m_position = position;
@@ -71,7 +71,7 @@ SenceBG::SenceBG( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , 
 //--------------------------------------------------------------------------------------
 //  BGポリゴンクラスのデストラクタ
 //--------------------------------------------------------------------------------------
-SenceBG::~SenceBG( )
+SceneBG::~SceneBG( )
 {
 
 }
@@ -79,7 +79,7 @@ SenceBG::~SenceBG( )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT SenceBG::Init( void )
+HRESULT SceneBG::Init( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -109,7 +109,7 @@ HRESULT SenceBG::Init( void )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンの終了処理
 //--------------------------------------------------------------------------------------
-void SenceBG::Uninit( void )
+void SceneBG::Uninit( void )
 {
 	// 頂点バッファの破棄
 	if( m_pVtxBuff != NULL )
@@ -129,7 +129,7 @@ void SenceBG::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンの更新処理
 //--------------------------------------------------------------------------------------
-void SenceBG::Update( void )
+void SceneBG::Update( void )
 {
 	//  頂点の設定
 	SetVertex( );
@@ -155,7 +155,7 @@ void SenceBG::Update( void )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンの描画処理
 //--------------------------------------------------------------------------------------
-void SenceBG::Draw( void )
+void SceneBG::Draw( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -251,7 +251,7 @@ void SenceBG::Draw( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-HRESULT SenceBG::MakeVertex( void )
+HRESULT SceneBG::MakeVertex( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -334,7 +334,7 @@ HRESULT SenceBG::MakeVertex( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-void SenceBG::SetVertex( void )
+void SceneBG::SetVertex( void )
 {
 	VERTEX_2D* pVtx = NULL;				//  頂点バッファのポインタ
 	D3DXVECTOR3 LeftTop;				//  左上座標
@@ -400,7 +400,7 @@ void SenceBG::SetVertex( void )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンのUV座標設定
 //--------------------------------------------------------------------------------------
-void SenceBG::SetPosUV( D3DXVECTOR2 posUV )
+void SceneBG::SetPositionUV( D3DXVECTOR2 posUV )
 {
 	m_posUV = posUV;
 }
@@ -408,7 +408,7 @@ void SenceBG::SetPosUV( D3DXVECTOR2 posUV )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンのUV座標を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 SenceBG::GetPosUV( void )
+D3DXVECTOR2 SceneBG::GetPosUV( void )
 {
 	return m_posUV;
 }
@@ -416,7 +416,7 @@ D3DXVECTOR2 SenceBG::GetPosUV( void )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンのUV分割数設定
 //--------------------------------------------------------------------------------------
-void SenceBG::SetDivideUV( D3DXVECTOR2 divideUV )
+void SceneBG::SetDivideUV( D3DXVECTOR2 divideUV )
 {
 	m_divideUV = divideUV;
 }
@@ -424,7 +424,7 @@ void SenceBG::SetDivideUV( D3DXVECTOR2 divideUV )
 //--------------------------------------------------------------------------------------
 //  BGポリゴンのUV分割数を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 SenceBG::GetDivideUV( void )
+D3DXVECTOR2 SceneBG::GetDivideUV( void )
 {
 	return m_divideUV;
 }
@@ -432,12 +432,12 @@ D3DXVECTOR2 SenceBG::GetDivideUV( void )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-SenceBG* SenceBG::Create( TYPE type ,	 D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
+SceneBG* SceneBG::Create( TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
 {
-	SenceBG *pSceneBG;
+	SceneBG *pSceneBG;
 
 	//  インスタンス生成
-	pSceneBG = new SenceBG;
+	pSceneBG = new SceneBG;
 
 	//  種類の代入
 	pSceneBG->m_type = type;

@@ -58,7 +58,7 @@ void Texture::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  テクスチャの設定をする関数
 //--------------------------------------------------------------------------------------
-void Texture::SetTextureImage( char *aFileName )
+void Texture::SetTextureImage( const char *aFileName )
 {
 	int nCntTexture;
 
@@ -94,7 +94,7 @@ void Texture::SetTextureImage( char *aFileName )
 												   &m_pTexture[ nCntTexture ] ) ) )			//  呼び込む場所
 			{
 				//  エラーだった場合
-				MessageBox( NULL , "テクスチャインタフェースのポインタがありません。" , "エラーメッセージ" , MB_OK | MB_ICONWARNING );
+				//MessageBox( NULL , "テクスチャインタフェースのポインタがありません。" , "エラーメッセージ" , MB_OK | MB_ICONWARNING );
 			}
 
 			break;
@@ -105,7 +105,7 @@ void Texture::SetTextureImage( char *aFileName )
 //--------------------------------------------------------------------------------------
 //  テクスチャの取得をする関数
 //--------------------------------------------------------------------------------------
-LPDIRECT3DTEXTURE9 Texture::GetTextureImage( char *aFileName )
+LPDIRECT3DTEXTURE9 Texture::GetTextureImage( const char *aFileName )
 {
 	//  テクスチャ最大数分のループ
 	for( int nCntTexture = 0; nCntTexture < MAX_TEXTURE; nCntTexture++ )

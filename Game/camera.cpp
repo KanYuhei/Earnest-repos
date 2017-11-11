@@ -16,7 +16,10 @@
 //--------------------------------------------------------------------------------------
 //  マクロ定義
 //--------------------------------------------------------------------------------------
-const float CAMERA_TO_DISTANCE = 20.0f;
+static const float CAMERA_TO_DISTANCE = 20.0f;
+
+#define CAMERA_MOVE_SPEED	( 1.0f )
+#define CAMERA_ROT_SPEED	( 0.02f )
 
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
@@ -230,94 +233,228 @@ void Camera::Update( void )
 	}
 	else
 	{
+		//  注視点と視点座標の一時代入
+		work = m_posAt;
+		work.y = 0.0f;
+		work2 = m_posEye;
+		work2.y = 0.0f;
+
+		//  カメラの方向ベクトルの算出( 視野角カリング用 )
+		D3DXVec3Normalize( &m_vecDirect , &( work - work2 ) );
+
 		// キーボード情報の取得
-		Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
+		Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 		float fAxisX = 0.0f;
 		float fAxisY = 0.0f;
 
-		if( pKeyboard->GetKeyboardPress( DIK_A ) )
-		{
-			m_basePos.x -= 1.0f;
-		}
-		if( pKeyboard->GetKeyboardPress( DIK_D ) )
-		{
-			m_basePos.x += 1.0f;
-		}	
+		//  Wキーが押された場合
 		if( pKeyboard->GetKeyboardPress( DIK_W ) )
 		{
-			m_basePos.z += 1.0f;
+			//  X座標を方向ベクトル×カメラ移動スピード分を加える
+			m_posEye.x += m_vecDirect.x * CAMERA_MOVE_SPEED;
+			m_posAt.x += m_vecDirect.x * CAMERA_MOVE_SPEED;
+
+			//  Z座標を方向ベクトル×カメラ移動スピード分を加える
+			m_posEye.z += m_vecDirect.z * CAMERA_MOVE_SPEED;
+			m_posAt.z += m_vecDirect.z * CAMERA_MOVE_SPEED;
 		}
+		//  Sキーが押された場合
 		if( pKeyboard->GetKeyboardPress( DIK_S ) )
 		{
-			m_basePos.z -= 1.0f;
+			//  X座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.x -= m_vecDirect.x * CAMERA_MOVE_SPEED;
+			m_posAt.x -= m_vecDirect.x * CAMERA_MOVE_SPEED;
+
+			//  Z座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.z -= m_vecDirect.z * CAMERA_MOVE_SPEED;
+			m_posAt.z -= m_vecDirect.z * CAMERA_MOVE_SPEED;
 		}
+		//  Aキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_A ) )
+		{
+			//  X座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.x -= m_vecDirect.z * CAMERA_MOVE_SPEED;
+			m_posAt.x -= m_vecDirect.z * CAMERA_MOVE_SPEED;
+
+			//  Z座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.z += m_vecDirect.x * CAMERA_MOVE_SPEED;
+			m_posAt.z += m_vecDirect.x * CAMERA_MOVE_SPEED;
+		}
+		//  Dキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_D ) )
+		{
+			//  X座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.x += m_vecDirect.z * CAMERA_MOVE_SPEED;
+			m_posAt.x += m_vecDirect.z * CAMERA_MOVE_SPEED;
+
+			//  Z座標を方向ベクトル×カメラ移動スピード分を減らす
+			m_posEye.z -= m_vecDirect.x * CAMERA_MOVE_SPEED;
+			m_posAt.z -= m_vecDirect.x * CAMERA_MOVE_SPEED;
+		}
+		//  Tキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_T ) )
+		{
+			//  カメラのY軸移動
+			m_posEye.y += CAMERA_MOVE_SPEED * 0.2f;
+		}
+		//  Bキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_B ) )
+		{
+			//  カメラのY軸移動
+			m_posEye.y -= CAMERA_MOVE_SPEED * 0.2f;
+		}
+		//  Yキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_Y ) )
+		{
+			//  注視点のY軸移動
+			m_posAt.y += CAMERA_MOVE_SPEED * 0.2f;
+		}
+		//  Nキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_N ) )
+		{
+			//  注視点のY軸移動
+			m_posAt.y -= CAMERA_MOVE_SPEED * 0.2f;
+		}
+
+		float fAngle = 0.0f;
+
+		//  Zキーが押された場合
 		if( pKeyboard->GetKeyboardPress( DIK_Z ) )
 		{
-			m_basePos.y += 1.0f;
-		}
-		if( pKeyboard->GetKeyboardPress( DIK_X ) )
-		{
-			m_basePos.y -= 1.0f;
-		}
+			//  角度の算出
+			fAngle = atan2f( ( m_posEye.z - m_posAt.z ) , ( m_posEye.x - m_posAt.x ) );
 
-		if( pKeyboard->GetKeyboardPress( DIK_J ) )
-		{
-			fAxisX -= 0.1f;
-		}
-		if( pKeyboard->GetKeyboardPress( DIK_L ) )
-		{
-			fAxisX += 0.1f;
-		}	
-		if( pKeyboard->GetKeyboardPress( DIK_I ) )
-		{
-			fAxisY += 0.1f;
-		}
-		if( pKeyboard->GetKeyboardPress( DIK_K ) )
-		{
-			fAxisY -= 0.1f;
-		}	
+			//  角度の更新
+			fAngle += CAMERA_ROT_SPEED;
 
-		m_fRotY -= fAxisX / ( float )SCREEN_WIDTH * D3DX_PI * 2.0f;
-		m_fRotX -= fAxisY / ( float )SCREEN_HEIGHT * D3DX_PI * 2.0f;
-
-		float fWhile = 0.0f;
-
-		if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
-		{
-			fWhile += 1.0f;
+			//  座標の更新
+			m_posEye.x = cosf( fAngle ) * CAMERA_TO_DISTANCE + m_posAt.x;
+			m_posEye.z = sinf( fAngle ) * CAMERA_TO_DISTANCE + m_posAt.z;
 		}
-		if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
+		//  Cキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_C ) )
 		{
-			fWhile -= 1.0f;
+			//  角度の算出
+			fAngle = atan2f( ( m_posEye.z - m_posAt.z ) , ( m_posEye.x - m_posAt.x ) );
+
+			//  角度の更新
+			fAngle -= CAMERA_ROT_SPEED;
+
+			//  座標の更新
+			m_posEye.x = cosf( fAngle ) * CAMERA_TO_DISTANCE + m_posAt.x;
+			m_posEye.z = sinf( fAngle ) * CAMERA_TO_DISTANCE + m_posAt.z;
 		}
 
-		//  物体までの距離の調整( ズームイン 、ズームアウト )
-		m_fDistance -= fWhile * 0.002f;
+		//  Qキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_Q ) )
+		{
+			//  角度の算出
+			fAngle = atan2f( ( m_posAt.z - m_posEye.z ) , ( m_posAt.x - m_posEye.x ) );
 
-		//  一時座標の格納
-		D3DXVECTOR3 position( m_basePos.x , m_basePos.y , m_basePos.z - m_fDistance );
+			//  角度の更新
+			fAngle += CAMERA_ROT_SPEED;
 
-		//  Y軸回転行列の作成
-		D3DXMATRIX mtxRotY;
-		D3DXMatrixIdentity( &mtxRotY );
-		D3DXMatrixRotationY( &mtxRotY , m_fRotY );
+			//  座標の更新
+			m_posAt.x = cosf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.x;
+			m_posAt.z = sinf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.z;
+		}
+		//  Eキーが押された場合
+		if( pKeyboard->GetKeyboardPress( DIK_E ) )
+		{
+			//  角度の算出
+			fAngle = atan2f( ( m_posAt.z - m_posEye.z ) , ( m_posAt.x - m_posEye.x ) );
 
-		//  X軸回転行列の作成
-		D3DXMATRIX mtxRotX;
-		D3DXMatrixIdentity( &mtxRotX );
-		D3DXMatrixRotationX( &mtxRotX , m_fRotX );
+			//  角度の更新
+			fAngle -= CAMERA_ROT_SPEED;
 
-		//  回転行列の合成
-		D3DXMATRIX mtxRot;
-		D3DXMatrixMultiply( &mtxRot , &mtxRotX , &mtxRotY );
+			//  座標の更新
+			m_posAt.x = cosf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.x;
+			m_posAt.z = sinf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.z;
+		}
 
-		//  座標変換
-		D3DXVec3TransformCoord( &m_posEye , &position , &mtxRot );
+		//if( pKeyboard->GetKeyboardPress( DIK_A ) )
+		//{
+		//	m_basePos.x -= 1.0f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_D ) )
+		//{
+		//	m_basePos.x += 1.0f;
+		//}	
+		//if( pKeyboard->GetKeyboardPress( DIK_W ) )
+		//{
+		//	m_basePos.z += 1.0f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_S ) )
+		//{
+		//	m_basePos.z -= 1.0f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_Z ) )
+		//{
+		//	m_basePos.y += 1.0f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_X ) )
+		//{
+		//	m_basePos.y -= 1.0f;
+		//}
 
-		//  座標変換
-		D3DXVec3TransformCoord( &m_vecUp , &D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) , &mtxRot );
+		//if( pKeyboard->GetKeyboardPress( DIK_J ) )
+		//{
+		//	fAxisX -= 0.1f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_L ) )
+		//{
+		//	fAxisX += 0.1f;
+		//}	
+		//if( pKeyboard->GetKeyboardPress( DIK_I ) )
+		//{
+		//	fAxisY += 0.1f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_K ) )
+		//{
+		//	fAxisY -= 0.1f;
+		//}	
 
-		m_posAt = m_basePos;
+		//m_fRotY -= fAxisX / ( float )SCREEN_WIDTH * D3DX_PI * 2.0f;
+		//m_fRotX -= fAxisY / ( float )SCREEN_HEIGHT * D3DX_PI * 2.0f;
+
+		//float fWhile = 0.0f;
+
+		//if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
+		//{
+		//	fWhile += 1.0f;
+		//}
+		//if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
+		//{
+		//	fWhile -= 1.0f;
+		//}
+
+		////  物体までの距離の調整( ズームイン 、ズームアウト )
+		//m_fDistance -= fWhile * 0.002f;
+
+		////  一時座標の格納
+		//D3DXVECTOR3 position( m_basePos.x , m_basePos.y , m_basePos.z - m_fDistance );
+
+		////  Y軸回転行列の作成
+		//D3DXMATRIX mtxRotY;
+		//D3DXMatrixIdentity( &mtxRotY );
+		//D3DXMatrixRotationY( &mtxRotY , m_fRotY );
+
+		////  X軸回転行列の作成
+		//D3DXMATRIX mtxRotX;
+		//D3DXMatrixIdentity( &mtxRotX );
+		//D3DXMatrixRotationX( &mtxRotX , m_fRotX );
+
+		////  回転行列の合成
+		//D3DXMATRIX mtxRot;
+		//D3DXMatrixMultiply( &mtxRot , &mtxRotX , &mtxRotY );
+
+		////  座標変換
+		//D3DXVec3TransformCoord( &m_posEye , &position , &mtxRot );
+
+		////  座標変換
+		//D3DXVec3TransformCoord( &m_vecUp , &D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) , &mtxRot );
+
+		//m_posAt = m_basePos;
 	}
 }
 

@@ -21,7 +21,7 @@
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-PlayerSelect::PlayerSelect( int nPriority ) : SenceModelAnim( nPriority )
+PlayerSelect::PlayerSelect( int nPriority ) : SceneModelAnim( nPriority )
 {
 	m_beforePos = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_vecDirect = D3DXVECTOR3( 0.0f , 0.0f , 1.0f );
@@ -43,10 +43,10 @@ PlayerSelect::~PlayerSelect( )
 HRESULT PlayerSelect::Init( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Init( );
+	SceneModelAnim::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_PLAYER );
+	Scene::SetObjType( Scene::OBJTYPE_PLAYER );
 
 	//  ステートマシン( アニメーター )の生成
 	m_pStateAnimator = StateAnimator::Create( StateAnimator::MOTION_NEUTRAL );
@@ -63,7 +63,7 @@ HRESULT PlayerSelect::Init( void )
 void PlayerSelect::Uninit( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Uninit( );
+	SceneModelAnim::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ void PlayerSelect::Uninit( void )
 void PlayerSelect::Update( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Update( );
+	SceneModelAnim::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ void PlayerSelect::Update( void )
 void PlayerSelect::Draw( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Draw( );
+	SceneModelAnim::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ PlayerSelect* PlayerSelect::Create( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D
 	pPlayerSelect = new PlayerSelect( nPriority );
 
 	//  モデルの種類の代入
-	pPlayerSelect->m_type = SenceModelAnim::TYPE_PLAYER;
+	pPlayerSelect->m_type = SceneModelAnim::TYPE_PLAYER;
 
 	//  座標の代入
 	pPlayerSelect->m_position = position;

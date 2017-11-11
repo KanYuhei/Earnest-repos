@@ -25,7 +25,7 @@
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence2DL::Sence2DL( ) : Sence( 7 )
+Scene2DL::Scene2DL( ) : Scene( 7 )
 {
 	//  情報の代入
 	m_pVtxBuff = NULL;
@@ -46,7 +46,7 @@ Sence2DL::Sence2DL( ) : Sence( 7 )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence2DL::Sence2DL( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
+Scene2DL::Scene2DL( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
 {
 	//  情報の代入
 	m_position = position;
@@ -64,7 +64,7 @@ Sence2DL::Sence2DL( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV 
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのデストラクタ
 //--------------------------------------------------------------------------------------
-Sence2DL::~Sence2DL( )
+Scene2DL::~Scene2DL( )
 {
 
 }
@@ -72,7 +72,7 @@ Sence2DL::~Sence2DL( )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT Sence2DL::Init( void )
+HRESULT Scene2DL::Init( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -94,7 +94,7 @@ HRESULT Sence2DL::Init( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの終了処理
 //--------------------------------------------------------------------------------------
-void Sence2DL::Uninit( void )
+void Scene2DL::Uninit( void )
 {
 	// 頂点バッファの破棄
 	if( m_pVtxBuff != NULL )
@@ -114,7 +114,7 @@ void Sence2DL::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの更新処理
 //--------------------------------------------------------------------------------------
-void Sence2DL::Update( void )
+void Scene2DL::Update( void )
 {
 	//  頂点の設定
 	SetVertex( );
@@ -140,7 +140,7 @@ void Sence2DL::Update( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの描画処理
 //--------------------------------------------------------------------------------------
-void Sence2DL::Draw( void )
+void Scene2DL::Draw( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -171,7 +171,7 @@ void Sence2DL::Draw( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-HRESULT Sence2DL::MakeVertex( void )
+HRESULT Scene2DL::MakeVertex( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -258,7 +258,7 @@ HRESULT Sence2DL::MakeVertex( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetVertex( void )
+void Scene2DL::SetVertex( void )
 {
 	VERTEX_2D* pVtx = NULL;				//  頂点バッファのポインタ
 	D3DXVECTOR3 LeftTop;				//  左上座標
@@ -319,7 +319,7 @@ void Sence2DL::SetVertex( void )
 //--------------------------------------------------------------------------------------
 //  大きさの倍率設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetScale( D3DXVECTOR2 scale )
+void Scene2DL::SetScale( D3DXVECTOR2 scale )
 {
 	m_scale = scale;
 }
@@ -327,7 +327,7 @@ void Sence2DL::SetScale( D3DXVECTOR2 scale )
 //--------------------------------------------------------------------------------------
 //  大きさの倍率設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetScaleX( float fScaleX )
+void Scene2DL::SetScaleX( float fScaleX )
 {
 	m_scale.x = fScaleX;
 }
@@ -335,7 +335,7 @@ void Sence2DL::SetScaleX( float fScaleX )
 //--------------------------------------------------------------------------------------
 //  大きさの倍率設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetScaleY( float fScaleY )
+void Scene2DL::SetScaleY( float fScaleY )
 {
 	m_scale.y = fScaleY;
 }
@@ -343,7 +343,7 @@ void Sence2DL::SetScaleY( float fScaleY )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV座標設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetPosUV( D3DXVECTOR2 posUV )
+void Scene2DL::SetPositionUV( D3DXVECTOR2 posUV )
 {
 	m_posUV = posUV;
 }
@@ -351,7 +351,7 @@ void Sence2DL::SetPosUV( D3DXVECTOR2 posUV )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV座標を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 Sence2DL::GetPosUV( void )
+D3DXVECTOR2 Scene2DL::GetPosUV( void )
 {
 	return m_posUV;
 }
@@ -359,7 +359,7 @@ D3DXVECTOR2 Sence2DL::GetPosUV( void )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV分割数設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetDivideUV( D3DXVECTOR2 divideUV )
+void Scene2DL::SetDivideUV( D3DXVECTOR2 divideUV )
 {
 	m_divideUV = divideUV;
 }
@@ -367,7 +367,7 @@ void Sence2DL::SetDivideUV( D3DXVECTOR2 divideUV )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV分割数を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 Sence2DL::GetDivideUV( void )
+D3DXVECTOR2 Scene2DL::GetDivideUV( void )
 {
 	return m_divideUV;
 }
@@ -375,7 +375,7 @@ D3DXVECTOR2 Sence2DL::GetDivideUV( void )
 //--------------------------------------------------------------------------------------
 //  テクスチャ名の設定
 //--------------------------------------------------------------------------------------
-void Sence2DL::SetTextureName( char* pFileName )
+void Scene2DL::SetTextureName( char* pFileName )
 {
 	strcpy( m_aFileName , pFileName );
 }
@@ -383,12 +383,12 @@ void Sence2DL::SetTextureName( char* pFileName )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-Sence2DL* Sence2DL::Create( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
+Scene2DL* Scene2DL::Create( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
 {
-	Sence2DL *pScene2D;
+	Scene2DL *pScene2D;
 
 	//  インスタンス生成
-	pScene2D = new Sence2DL;
+	pScene2D = new Scene2DL;
 
 	//  座標の代入
 	pScene2D->m_position = position;

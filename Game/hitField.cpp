@@ -42,10 +42,10 @@ HitField::~HitField( )
 HRESULT HitField::Init( void )
 {
 	//  シーンモデル
-	SenceModel::Init( );
+	SceneModel::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_HIT_FIELD );
+	Scene::SetObjType( Scene::OBJTYPE_HIT_FIELD );
 
 	//////////////////////////////////////////////////////////
 	//  頂点座標の取得と、最小、最大XZ座標の取得
@@ -162,7 +162,7 @@ HRESULT HitField::Init( void )
 void HitField::Uninit( void )
 {
 	//  シーンモデル
-	SenceModel::Uninit( );
+	SceneModel::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -171,7 +171,7 @@ void HitField::Uninit( void )
 void HitField::Update( void )
 {
 	//  シーンモデル
-	SenceModel::Update( );
+	SceneModel::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ void HitField::Update( void )
 void HitField::Draw( void )
 {
 	//  シーンモデル
-	//SenceModel::Draw( );
+	//SceneModel::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -205,12 +205,12 @@ HitField* HitField::Create( HitField::TYPE type , D3DXVECTOR3 position , D3DXVEC
 	if( type == HitField::TYPE_HIT_STAGE000 )
 	{
 		//  種類の代入
-		pHitField->m_type = SenceModel::TYPE_HIT_FIELD000;
+		pHitField->m_type = SceneModel::TYPE_HIT_FIELD000;
 	}
 	else if( type == HitField::TYPE_HIT_STAGE001 )
 	{
 		//  種類の代入
-		pHitField->m_type = SenceModel::TYPE_HIT_FIELD001;
+		pHitField->m_type = SceneModel::TYPE_HIT_FIELD001;
 	}
 
 	//  初期化

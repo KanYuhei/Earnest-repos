@@ -26,13 +26,13 @@ static const float THIEF_SIZE = 1.0f;
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
-CResult::RESULT	CResult::m_result = CResult::GAME_CLEAR;	//  結果
-bool	CResult::m_bPush = false;							//  ボタンを押したかどうか
+Result::RESULT	Result::m_result = Result::GAME_CLEAR;	//  結果
+bool	Result::m_bPush = false;							//  ボタンを押したかどうか
 
 //--------------------------------------------------------------------------------------
 //  リザルトクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-CResult::CResult( )
+Result::Result( )
 {
 
 }
@@ -40,7 +40,7 @@ CResult::CResult( )
 //--------------------------------------------------------------------------------------
 //  リザルトクラスのデストラクタ
 //--------------------------------------------------------------------------------------
-CResult::~CResult( )
+Result::~Result( )
 {
 
 }
@@ -48,7 +48,7 @@ CResult::~CResult( )
 //--------------------------------------------------------------------------------------
 //  リザルトクラスの初期化処理
 //--------------------------------------------------------------------------------------
-void CResult::Init( void )
+void Result::Init( void )
 {
 	m_bPush = false;
 
@@ -74,26 +74,26 @@ void CResult::Init( void )
 					   32 , 32 );
 
 	//  ゲームクリアの場合
-	if( m_result == CResult::GAME_CLEAR )
+	if( m_result == Result::GAME_CLEAR )
 	{
 		//  背景
-		SenceBG::Create( SenceBG::TYPE_RESULT , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+		SceneBG::Create( SceneBG::TYPE_RESULT , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 						  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 						  D3DXVECTOR2( 1.0f , 1.0f ) );
 	}
 	//  ゲームオーバーの場合
-	else if( m_result == CResult::GAME_OVER )
+	else if( m_result == Result::GAME_OVER )
 	{
 		//  背景
-		SenceBG::Create( SenceBG::TYPE_RESULT2 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+		SceneBG::Create( SceneBG::TYPE_RESULT2 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 						  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 						  D3DXVECTOR2( 1.0f , 1.0f ) );
 	}
 	//  ゲームオーバーの場合
-	else if( m_result == CResult::GAME_PLAYER1_WIN )
+	else if( m_result == Result::GAME_PLAYER1_WIN )
 	{
 		//  背景
-		SenceBG::Create( SenceBG::TYPE_RESULT3 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+		SceneBG::Create( SceneBG::TYPE_RESULT3 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 						  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 						  D3DXVECTOR2( 1.0f , 1.0f ) );
 
@@ -118,10 +118,10 @@ void CResult::Init( void )
 		}
 	}
 	//  ゲームオーバーの場合
-	else if( m_result == CResult::GAME_PLAYER2_WIN )
+	else if( m_result == Result::GAME_PLAYER2_WIN )
 	{
 		//  背景
-		SenceBG::Create( SenceBG::TYPE_RESULT4 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+		SceneBG::Create( SceneBG::TYPE_RESULT4 , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 						  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 						  D3DXVECTOR2( 1.0f , 1.0f ) );
 
@@ -151,10 +151,10 @@ void CResult::Init( void )
 //--------------------------------------------------------------------------------------
 //  リザルトクラスの終了処理
 //--------------------------------------------------------------------------------------
-void CResult::Uninit( void )
+void Result::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 
 	//  カメラクラスポインタが空ではない場合
 	if( m_pCamera != NULL )
@@ -169,7 +169,7 @@ void CResult::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  リザルトクラスの更新処理
 //--------------------------------------------------------------------------------------
-void CResult::Update( void )
+void Result::Update( void )
 {
 	// キーボード情報の取得
 	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
@@ -194,15 +194,15 @@ void CResult::Update( void )
 //--------------------------------------------------------------------------------------
 //  リザルトクラスの描画処理
 //--------------------------------------------------------------------------------------
-void CResult::Draw( void )
+void Result::Draw( void )
 {
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 }
 
 //--------------------------------------------------------------------------------------
 //  結果の代入
 //--------------------------------------------------------------------------------------
-void CResult::SetResult( CResult::RESULT result )
+void Result::SetResult( Result::RESULT result )
 {
 	m_result = result;
 }

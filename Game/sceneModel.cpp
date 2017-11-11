@@ -15,6 +15,7 @@
 #include "renderer.h"
 #include "camera.h"
 #include "keyboard.h"
+#include "sceneBG.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -30,6 +31,8 @@
 
 #define MAX_MODEL_PARTS		( 20 )								//  マテリアル最大数
 
+#define SHADOW_TEXTURENAME	"data/TEXTURE/fade.png"				//  テクスチャ名
+
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
@@ -37,7 +40,7 @@
 //--------------------------------------------------------------------------------------
 //  xモデルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceModel::SenceModel( )
+SceneModel::SceneModel( )
 {
 	m_pMeshModel = NULL;
 	m_pBuffMatModel = NULL;
@@ -55,7 +58,7 @@ SenceModel::SenceModel( )
 //--------------------------------------------------------------------------------------
 //  xモデルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceModel::SenceModel( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
+SceneModel::SceneModel( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
 {
 	m_pMeshModel = NULL;
 	m_pBuffMatModel = NULL;
@@ -71,7 +74,7 @@ SenceModel::SenceModel( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 sca
 //--------------------------------------------------------------------------------------
 //  xモデルのデストラクタ
 //--------------------------------------------------------------------------------------
-SenceModel::~SenceModel( )
+SceneModel::~SceneModel( )
 {
 
 }
@@ -79,7 +82,7 @@ SenceModel::~SenceModel( )
 //--------------------------------------------------------------------------------------
 //  xモデルの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT SenceModel::Init( void )
+HRESULT SceneModel::Init( void )
 {
 	D3DXMATERIAL*	pMat = NULL;									//  マテリアル
 	char			aTextureFileName[ 128 ] = { };
@@ -252,13 +255,16 @@ HRESULT SenceModel::Init( void )
 		}
 	}
 
+	//  テクスチャの登録
+	pTexture->SetTextureImage( SHADOW_TEXTURENAME );
+
 	return S_OK;
 }
 
 //--------------------------------------------------------------------------------------
 //  xモデルの終了処理
 //--------------------------------------------------------------------------------------
-void SenceModel::Uninit( void )
+void SceneModel::Uninit( void )
 {
 	//  メッシュ情報の解放
 	SAFE_RELEASE( m_pMeshModel );
@@ -270,7 +276,7 @@ void SenceModel::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの更新処理
 //--------------------------------------------------------------------------------------
-void SenceModel::Update( void )
+void SceneModel::Update( void )
 {
 	D3DXQUATERNION quaternion;
 
@@ -360,7 +366,7 @@ void SenceModel::Update( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの描画処理
 //--------------------------------------------------------------------------------------
-void SenceModel::Draw( void )
+void SceneModel::Draw( void )
 {
 	D3DMATERIAL9	matDef;							//  マテリアルの初期情報
 	D3DXMATERIAL*	pMat = NULL;					//  マテリアル
@@ -454,7 +460,7 @@ void SenceModel::Draw( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの大きさ設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModel::SetScale( D3DXVECTOR3 scale )
+void SceneModel::SetScale( D3DXVECTOR3 scale )
 {
 	m_scale = scale;
 }
@@ -462,7 +468,7 @@ void SenceModel::SetScale( D3DXVECTOR3 scale )
 //--------------------------------------------------------------------------------------
 //  xポリゴンの大きさを取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 SenceModel::GetScale( void )
+D3DXVECTOR3 SceneModel::GetScale( void )
 {
 	return m_scale;
 }
@@ -470,7 +476,7 @@ D3DXVECTOR3 SenceModel::GetScale( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの注視点設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModel::SetPosAt( D3DXVECTOR3 posAt )
+void SceneModel::SetPositionAt( D3DXVECTOR3 posAt )
 {
 	m_posAt = posAt;
 }
@@ -478,12 +484,12 @@ void SenceModel::SetPosAt( D3DXVECTOR3 posAt )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-SenceModel* SenceModel::Create( TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
+SceneModel* SceneModel::Create( TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
 {
-	SenceModel *pSceneModel;
+	SceneModel *pSceneModel;
 
 	//  インスタンス生成
-	pSceneModel = new SenceModel;
+	pSceneModel = new SceneModel;
 
 	//  種類の代入
 	pSceneModel->m_type = type;
@@ -506,7 +512,7 @@ SenceModel* SenceModel::Create( TYPE type , D3DXVECTOR3 position , D3DXVECTOR3 r
 //--------------------------------------------------------------------------------------
 //  外積によって求められる垂直ベクトルから行列を作る関数
 //--------------------------------------------------------------------------------------
-D3DXMATRIX* SenceModel::GetFixedLookAtMatrix( D3DXMATRIX* pMtx , D3DXVECTOR3* pPos , D3DXVECTOR3* pPosAt , D3DXVECTOR3* pVecUp )
+D3DXMATRIX* SceneModel::GetFixedLookAtMatrix( D3DXMATRIX* pMtx , D3DXVECTOR3* pPos , D3DXVECTOR3* pPosAt , D3DXVECTOR3* pVecUp )
 {
 	//  ローカル変数の宣言
 	D3DXVECTOR3 X , Y , Z , D;
@@ -556,7 +562,7 @@ D3DXMATRIX* SenceModel::GetFixedLookAtMatrix( D3DXMATRIX* pMtx , D3DXVECTOR3* pP
 //--------------------------------------------------------------------------------------
 //  視界に入ってるかどうか判定する関数
 //--------------------------------------------------------------------------------------
-bool SenceModel::IntoView( D3DXVECTOR3 vec1 , D3DXVECTOR3 vec2 , float fViewAngle )
+bool SceneModel::IntoView( D3DXVECTOR3 vec1 , D3DXVECTOR3 vec2 , float fViewAngle )
 {
 	//  ローカル変数の宣言
 	float fAngle = 0.0f;

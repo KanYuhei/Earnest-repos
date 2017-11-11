@@ -37,7 +37,7 @@ static const float	FIRE_BLOW_POWER = 1.0f;
 HRESULT MagicFire::Init( void )
 {
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_MAGIC_FIRE );
+	Scene::SetObjType( Scene::OBJTYPE_MAGIC_FIRE );
 
 	m_firstPos = m_position;
 	m_bHoming = true;
@@ -75,7 +75,7 @@ void MagicFire::Update( void )
 		//  壁との当たり判定
 		if( m_position.x > Game::GetFieldMax( ).x )
 		{
-			Sence::Release( );
+			Scene::Release( );
 
 			if( m_handle != -1 )
 			{
@@ -87,7 +87,7 @@ void MagicFire::Update( void )
 		}
 		if( m_position.x < Game::GetFieldMin( ).x )
 		{
-			Sence::Release( );
+			Scene::Release( );
 
 			if( m_handle != -1 )
 			{
@@ -99,7 +99,7 @@ void MagicFire::Update( void )
 		}
 		if( m_position.z > Game::GetFieldMax( ).z )
 		{
-			Sence::Release( );
+			Scene::Release( );
 
 			if( m_handle != -1 )
 			{
@@ -111,7 +111,7 @@ void MagicFire::Update( void )
 		}
 		if( m_position.z < Game::GetFieldMin( ).z )
 		{
-			Sence::Release( );
+			Scene::Release( );
 
 			if( m_handle != -1 )
 			{
@@ -125,19 +125,19 @@ void MagicFire::Update( void )
 		//  速度分の移動
 		m_position += m_vecDirect * ( m_fSpeed + m_fScale * 0.2f );
 
-		Sence *pScene = NULL;										//  シーンクラスのポインタ
+		Scene *pScene = NULL;										//  シーンクラスのポインタ
 
 #pragma omp parallel for
 		//  優先度の最大数分のループ
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene = Sence::GetScene( nCntPriority );
+			pScene = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene->GetObjType( );
@@ -149,7 +149,7 @@ void MagicFire::Update( void )
 					if( m_owner == OWNER_ENEMY )
 					{
 						//  種類がプレイヤーの場合
-						if( objType == Sence::OBJTYPE_PLAYER )
+						if( objType == Scene::OBJTYPE_PLAYER )
 						{
 							//  プレイヤークラスにダウンキャスト
 							Player* pPlayer = ( Player* )pScene;
@@ -186,7 +186,7 @@ void MagicFire::Update( void )
 					else if( m_owner == OWNER_PLAYER )
 					{
 						//  種類が敵の場合
-						if( objType == Sence::OBJTYPE_ENEMY )
+						if( objType == Scene::OBJTYPE_ENEMY )
 						{
 							//  敵クラスにダウンキャスト
 							Enemy* pEnemy = ( Enemy* )pScene;
@@ -198,7 +198,7 @@ void MagicFire::Update( void )
 								pEnemy->Damage( ( int )( 75 * m_fScale ) );
 
 								//  自身の削除
-								Sence::Release( );
+								Scene::Release( );
 
 								if( m_handle != -1 )
 								{
@@ -218,7 +218,7 @@ void MagicFire::Update( void )
 					if( m_owner == OWNER_PLAYER )
 					{
 						//  種類がプレイヤーの場合
-						if( objType == Sence::OBJTYPE_PLAYER )
+						if( objType == Scene::OBJTYPE_PLAYER )
 						{
 							//  プレイヤークラスにダウンキャスト
 							Player* pPlayer = ( Player* )pScene;
@@ -233,7 +233,7 @@ void MagicFire::Update( void )
 									pPlayer->Damage( m_vecDirect , FIRE_BLOW_POWER , ( int )( 75 * m_fScale ) );
 
 									//  自身の削除
-									Sence::Release( );
+									Scene::Release( );
 
 									if( m_handle != -1 )
 									{
@@ -248,7 +248,7 @@ void MagicFire::Update( void )
 					}
 				}
 
-				if( objType == Sence::OBJTYPE_HIT_FIELD )
+				if( objType == Scene::OBJTYPE_HIT_FIELD )
 				{
 					//  当たり判定用フィールドクラスにダウンキャスト
 					HitField* pHitField = ( HitField* )pScene;
@@ -290,18 +290,18 @@ void MagicFire::Update( void )
 					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 					{
 						//  シーンの先頭アドレスを取得
-						pScene = Sence::GetScene( nCntPriority );
+						pScene = Scene::GetScene( nCntPriority );
 
 						//  シーンが空ではない間ループ
 						while( pScene != NULL )
 						{
-							Sence::OBJTYPE objType;						//  物体の種類
+							Scene::OBJTYPE objType;						//  物体の種類
 
 							//  物体の種類の取得
 							objType = pScene->GetObjType( );
 
 							//  種類がプレイヤーの場合
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  プレイヤークラスにダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -345,18 +345,18 @@ void MagicFire::Update( void )
 					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 					{
 						//  シーンの先頭アドレスを取得
-						pScene = Sence::GetScene( nCntPriority );
+						pScene = Scene::GetScene( nCntPriority );
 
 						//  シーンが空ではない間ループ
 						while( pScene != NULL )
 						{
-							Sence::OBJTYPE objType;						//  物体の種類
+							Scene::OBJTYPE objType;						//  物体の種類
 
 							//  物体の種類の取得
 							objType = pScene->GetObjType( );
 
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  プレイヤークラスにダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene;
@@ -404,18 +404,18 @@ void MagicFire::Update( void )
 					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 					{
 						//  シーンの先頭アドレスを取得
-						pScene = Sence::GetScene( nCntPriority );
+						pScene = Scene::GetScene( nCntPriority );
 
 						//  シーンが空ではない間ループ
 						while( pScene != NULL )
 						{
-							Sence::OBJTYPE objType;						//  物体の種類
+							Scene::OBJTYPE objType;						//  物体の種類
 
 							//  物体の種類の取得
 							objType = pScene->GetObjType( );
 
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  プレイヤークラスにダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -460,7 +460,7 @@ void MagicFire::Update( void )
 		}
 
 		//  座標の代入
-		EffekseerManager::SetPos( m_handle , m_position );
+		EffekseerManager::SetPosition( m_handle , m_position );
 
 		float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
 
@@ -480,7 +480,7 @@ void MagicFire::Update( void )
 		else
 		{
 			//  自身の削除
-			Sence::Release( );
+			Scene::Release( );
 
 			if( m_handle != -1 )
 			{
@@ -598,7 +598,7 @@ MagicFire::OWNER MagicFire::GetOwner( void )
 void MagicFire::Hit( void )				
 {
 	//  自身の削除
-	Sence::Release( );
+	Scene::Release( );
 
 	//  停止
 	EffekseerManager::Stop( m_handle );
@@ -627,7 +627,7 @@ void MagicFire::SetActive( void )
 //--------------------------------------------------------------------------------------
 void MagicFire::Delete( void )				
 {
-	Sence::Release( );
+	Scene::Release( );
 
 	if( m_handle != -1 )
 	{

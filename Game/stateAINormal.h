@@ -32,7 +32,7 @@ public:
 		STATE_SEARCH_ENEMY 
 	} STATE;
 
-	SenceNormal( );								//  コンストラクタ
+	SenceNormal( );									//  コンストラクタ
 
 private:
 	STATE	m_state;								//  状態

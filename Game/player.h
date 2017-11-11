@@ -11,19 +11,24 @@
 //--------------------------------------------------------------------------------------
 #include "main.h"
 #include "sceneModelAnim.h"
-#include "utility.h"
-#include "shadow.h"
-#include "life.h"
-#include "brave.h"
-#include "stateAnimator.h"
 #include "effekseerManager.h"
-#include "magic.h"
-#include "playerUI.h"
+
+//--------------------------------------------------------------------------------------
+//  クラスの前方宣言
+//--------------------------------------------------------------------------------------
+class MeshTracing;
+class StencilShadow;
+class StateAnimator;
+class PlayerUI;
+class Life;
+class Shadow;
+class Brave;
+class Magic;
 
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスの定義
 //--------------------------------------------------------------------------------------
-class Player : public SenceModelAnim
+class Player : public SceneModelAnim
 {
 public:
 	typedef enum
@@ -88,14 +93,16 @@ private:
 	bool				m_bSlashEffekseer;							//  攻撃エフェクト
 	MAGIC				m_magic;									//  魔法
 
-	Shadow*			m_pShadow;									//  影のクラスのポインタ
+	Shadow*				m_pShadow;									//  影のクラスのポインタ
 	Life*				m_pLife;									//  体力クラスのポインタ
 	Brave*				m_pBrave;									//  ブレイブクラスのポインタ
 	PlayerUI*			m_pPlayerUI;								//  プレイヤーUIクラスのポインタ
 	Magic*				m_pMagic;									//  魔法クラスのポインタ
 	StateAnimator*		m_pStateAnimator;							//  ステートマシン( アニメーター )クラスのポインタ
+	MeshTracing*		m_pMeshTracing;								//  軌跡メッシュクラスのポインタ
+	StencilShadow*		m_stencilShadow;							//  ステンシルシャドウクラスのポインタ
 
-	::Effekseer::Handle m_handle[ EffekseerManager::TYPE_MAX ];	//  エフェクシアハンドル
+	::Effekseer::Handle m_handle[ EffekseerManager::TYPE_MAX ];		//  エフェクシアハンドル
 
 	const int			BASE_LIFE = 3000;							//  体力初期値
 	const int			BASE_BRAVE = 1000;							//  ブレイブ初期値

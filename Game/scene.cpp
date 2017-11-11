@@ -13,13 +13,13 @@
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
-Sence*	Sence::m_pTop[ MAX_PRIORITY ] = { NULL };
-int		Sence::m_nNumScene;
+Scene*	Scene::m_pTop[ MAX_PRIORITY ] = { NULL };
+int		Scene::m_nNumScene;
 
 //--------------------------------------------------------------------------------------
 //  シーンのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence::Sence( int nPriority )
+Scene::Scene( int nPriority )
 {
 	//  最初の1回目の場合
 	if( NULL == m_pTop[ nPriority ] )
@@ -29,7 +29,7 @@ Sence::Sence( int nPriority )
 	else
 	{
 		//  先頭ポインタの代入
-		Sence* pScene = m_pTop[ nPriority ];
+		Scene* pScene = m_pTop[ nPriority ];
 
 		//  終端ポインタの検索
 		while( NULL != pScene->m_pNext )
@@ -55,7 +55,7 @@ Sence::Sence( int nPriority )
 //--------------------------------------------------------------------------------------
 //  シーンのデストラクタ
 //--------------------------------------------------------------------------------------
-Sence::~Sence( )
+Scene::~Scene( )
 {
 
 }
@@ -63,7 +63,7 @@ Sence::~Sence( )
 //--------------------------------------------------------------------------------------
 //  全てのシーンの更新処理
 //--------------------------------------------------------------------------------------
-void Sence::UpdateAll( void )
+void Scene::UpdateAll( void )
 {
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
@@ -71,9 +71,9 @@ void Sence::UpdateAll( void )
 		if( m_pTop[ nCntPriority ] != NULL )
 		{
 			//  先頭ポインタの代入
-			Sence* pScene = m_pTop[ nCntPriority ];
-			Sence* pSceneNext = NULL;
-			Sence* pScenePrev = m_pTop[ nCntPriority ];
+			Scene* pScene = m_pTop[ nCntPriority ];
+			Scene* pSceneNext = NULL;
+			Scene* pScenePrev = m_pTop[ nCntPriority ];
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
@@ -91,7 +91,7 @@ void Sence::UpdateAll( void )
 //--------------------------------------------------------------------------------------
 //  全てのシーンの更新処理
 //--------------------------------------------------------------------------------------
-void Sence::UpdateAllDelete( void )
+void Scene::UpdateAllDelete( void )
 {
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
@@ -99,9 +99,9 @@ void Sence::UpdateAllDelete( void )
 		if( m_pTop[ nCntPriority ] != NULL )
 		{
 			//  先頭ポインタの代入
-			Sence* pScene = m_pTop[ nCntPriority ];
-			Sence* pSceneNext = NULL;
-			Sence* pScenePrev = m_pTop[ nCntPriority ];
+			Scene* pScene = m_pTop[ nCntPriority ];
+			Scene* pSceneNext = NULL;
+			Scene* pScenePrev = m_pTop[ nCntPriority ];
 
 			//  シーンが空ではない場合ループ
 			while( pScene != NULL )
@@ -141,7 +141,7 @@ void Sence::UpdateAllDelete( void )
 //--------------------------------------------------------------------------------------
 //  全てのシーンの描画処理
 //--------------------------------------------------------------------------------------
-void Sence::DrawAll( void )
+void Scene::DrawAll( void )
 {
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
@@ -149,7 +149,7 @@ void Sence::DrawAll( void )
 		if( m_pTop[ nCntPriority ] != NULL )
 		{
 			//  先頭ポインタの代入
-			Sence* pScene = m_pTop[ nCntPriority ];
+			Scene* pScene = m_pTop[ nCntPriority ];
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
@@ -172,7 +172,7 @@ void Sence::DrawAll( void )
 //--------------------------------------------------------------------------------------
 //  全てのシーンの解放処理
 //--------------------------------------------------------------------------------------
-void Sence::ReleaseAll( void )
+void Scene::ReleaseAll( void )
 {
 	//  優先度の最大数分のループ
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
@@ -180,8 +180,8 @@ void Sence::ReleaseAll( void )
 		if( m_pTop[ nCntPriority ] != NULL )
 		{
 			//  先頭ポインタの代入
-			Sence* pScene = m_pTop[ nCntPriority ];
-			Sence* pNextScene = pScene->m_pNext;
+			Scene* pScene = m_pTop[ nCntPriority ];
+			Scene* pNextScene = pScene->m_pNext;
 
 			while( pScene != NULL )
 			{
@@ -200,7 +200,7 @@ void Sence::ReleaseAll( void )
 //--------------------------------------------------------------------------------------
 //  シーンの解放処理
 //--------------------------------------------------------------------------------------
-void Sence::Release( void )
+void Scene::Release( void )
 {
 	m_bDelete = true;
 }
@@ -208,7 +208,7 @@ void Sence::Release( void )
 //--------------------------------------------------------------------------------------
 //  シーン情報の次のアドレスの取得
 //--------------------------------------------------------------------------------------
-Sence* Sence::GetNextScene( Sence* pScene )
+Scene* Scene::GetNextScene( Scene* pScene )
 {
 	return pScene->m_pNext;
 }
@@ -216,7 +216,7 @@ Sence* Sence::GetNextScene( Sence* pScene )
 //--------------------------------------------------------------------------------------
 //  シーン情報先頭アドレスの取得
 //--------------------------------------------------------------------------------------
-Sence* Sence::GetScene( int nCntPriority )
+Scene* Scene::GetScene( int nCntPriority )
 {
 	return m_pTop[ nCntPriority ];
 }
@@ -224,7 +224,7 @@ Sence* Sence::GetScene( int nCntPriority )
 //--------------------------------------------------------------------------------------
 //  シーンの種類の設定
 //--------------------------------------------------------------------------------------
-void Sence::SetObjType( OBJTYPE objType )
+void Scene::SetObjType( OBJTYPE objType )
 {
 	m_objType = objType;
 }
@@ -232,7 +232,7 @@ void Sence::SetObjType( OBJTYPE objType )
 //--------------------------------------------------------------------------------------
 //  シーンの種類の取得
 //--------------------------------------------------------------------------------------
-Sence::OBJTYPE Sence::GetObjType( void )
+Scene::OBJTYPE Scene::GetObjType( void )
 {
 	return m_objType;
 }
@@ -240,7 +240,7 @@ Sence::OBJTYPE Sence::GetObjType( void )
 //--------------------------------------------------------------------------------------
 //  シーンの座標設定
 //--------------------------------------------------------------------------------------
-void Sence::SetPos( D3DXVECTOR3 position )
+void Scene::SetPosition( D3DXVECTOR3 position )
 {
 	m_position = position;
 }
@@ -248,7 +248,7 @@ void Sence::SetPos( D3DXVECTOR3 position )
 //--------------------------------------------------------------------------------------
 //  シーンの座標を移動させる関数
 //--------------------------------------------------------------------------------------
-void Sence::MovePos( D3DXVECTOR3 velocity )
+void Scene::MovePos( D3DXVECTOR3 velocity )
 {
 	m_position += velocity;
 }
@@ -256,7 +256,7 @@ void Sence::MovePos( D3DXVECTOR3 velocity )
 //--------------------------------------------------------------------------------------
 //  シーンの座標を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 Sence::GetPos( void )
+D3DXVECTOR3 Scene::GetPos( void )
 {
 	return m_position;
 }
@@ -264,7 +264,7 @@ D3DXVECTOR3 Sence::GetPos( void )
 //--------------------------------------------------------------------------------------
 //  ポリゴンの大きさ設定
 //--------------------------------------------------------------------------------------
-void Sence::SetSize( D3DXVECTOR3 size )
+void Scene::SetSize( D3DXVECTOR3 size )
 {
 	m_size = size;
 }
@@ -272,7 +272,7 @@ void Sence::SetSize( D3DXVECTOR3 size )
 //--------------------------------------------------------------------------------------
 //  ポリゴンの大きさを取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 Sence::GetSize( void )
+D3DXVECTOR3 Scene::GetSize( void )
 {
 	return m_size;
 }
@@ -280,7 +280,7 @@ D3DXVECTOR3 Sence::GetSize( void )
 //--------------------------------------------------------------------------------------
 //  色を設定する関数
 //--------------------------------------------------------------------------------------
-void Sence::SetColor( D3DXCOLOR color )
+void Scene::SetColor( D3DXCOLOR color )
 {
 	m_color = color;
 }

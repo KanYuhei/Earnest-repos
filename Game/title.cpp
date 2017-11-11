@@ -78,9 +78,9 @@ void Title::Init( void )
 					   32 , 32 );
 
 	//  背景
-	SenceBG::Create( SenceBG::TYPE_TITLE , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.27f , 0.0f ) ,
-					  D3DXVECTOR3( 800.0f , 200.0f , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
-					  D3DXVECTOR2( 1.0f , 1.0f ) );
+	SceneBG::Create( SceneBG::TYPE_TITLE , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.27f , 0.0f ) ,
+					 D3DXVECTOR3( 800.0f , 200.0f , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
+					 D3DXVECTOR2( 1.0f , 1.0f ) );
 
 	//  プレスボタン
 	TitlePress::Create( D3DXVECTOR3( TITLE_PRESS_POS_X , TITLE_PRESS_POS_Y , 0.0f ) ,
@@ -224,7 +224,7 @@ void Title::Init( void )
 void Title::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 
 	//  カメラクラスポインタが空ではない場合
 	if( m_pCamera != NULL )
@@ -266,5 +266,5 @@ void Title::Update( void )
 //--------------------------------------------------------------------------------------
 void Title::Draw( void )
 {
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 }

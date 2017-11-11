@@ -36,7 +36,7 @@ private:
 class CharacterAI
 {
 public: 
-	CharacterAI( );									//  コンストラクタ
+	CharacterAI( );										//  コンストラクタ
 
 private:
 	HerarchyCharacterAI*	m_pHerarchy;				//  AI階層クラスのポインタ

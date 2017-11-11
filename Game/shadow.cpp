@@ -26,7 +26,7 @@
 //--------------------------------------------------------------------------------------
 //  コンストラクタ
 //--------------------------------------------------------------------------------------
-Shadow::Shadow( int nPriority ) : Sence3D( nPriority )
+Shadow::Shadow( int nPriority ) : Scene3D( nPriority )
 {
 
 }
@@ -37,7 +37,7 @@ Shadow::Shadow( int nPriority ) : Sence3D( nPriority )
 HRESULT Shadow::Init( void )
 {
 	//  3Dポリゴンの初期化
-	Sence3D::Init( );
+	Scene3D::Init( );
 
 	return S_OK;
 }
@@ -48,7 +48,7 @@ HRESULT Shadow::Init( void )
 void Shadow::Uninit( void )
 {
 	//  3Dポリゴンの解放
-	Sence3D::Uninit( );
+	Scene3D::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ void Shadow::Uninit( void )
 void Shadow::Update( void )
 {
 	//  3Dポリゴンの更新
-	Sence3D::Update( );
+	Scene3D::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ void Shadow::Draw( void )
 	pDevice->SetRenderState( D3DRS_ZWRITEENABLE , FALSE );
 
 	//  3Dポリゴンの描画
-	Sence3D::Draw( );
+	Scene3D::Draw( );
 
 	//  Zバッファの書き込み設定
 	pDevice->SetRenderState( D3DRS_ZWRITEENABLE , TRUE );

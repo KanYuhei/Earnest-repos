@@ -15,23 +15,23 @@
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの定義
 //--------------------------------------------------------------------------------------
-class Sence3D : public Sence
+class Scene3D : public Scene
 {
 public:
-	Sence3D( int nPriority = 4 );									//  デフォルトコンストラクタ
-	Sence3D( D3DXVECTOR3 position ,										//  コンストラクタ
+	Scene3D( int nPriority = 4 );									//  デフォルトコンストラクタ
+	Scene3D( D3DXVECTOR3 position ,										//  コンストラクタ
 			  D3DXVECTOR3 normal ,
 			  D3DXVECTOR3 size ,
 			  D3DXVECTOR3 rot ,
 			  D3DXCOLOR color );									
-	~Sence3D( );													//  デストラクタ
+	~Scene3D( );													//  デストラクタ
 
 	HRESULT					Init( void );							//  初期化
 	void					Uninit( void );							//  終了
 	void					Update( void );							//  更新
 	void					Draw( void );							//  描画
 
-	static Sence3D*		Create( D3DXVECTOR3 position ,				//  生成
+	static Scene3D*		Create( D3DXVECTOR3 position ,				//  生成
 									D3DXVECTOR3 normal ,
 									D3DXVECTOR3 size ,
 									D3DXVECTOR3 rot ,

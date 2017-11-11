@@ -24,22 +24,15 @@
 //--------------------------------------------------------------------------------------
 class BehaviorAIManager : HerarchyCharacterAI
 {
-public: 
-	typedef enum
+public:
+	enum class SENCE
 	{
 		SENCEE_NORMAL = 0,
 		SENCE_CAUTION ,
 		SENCE_CHASE ,
-	} SENCE;
+	};
 
-	typedef enum
-	{
-		SENCEE_NORMAL = 0,
-		SENCE_CAUTION ,
-		SENCE_CHASE ,
-	} SENCE;
-
-	CBehaviorAIManager( );								//  コンストラクタ
+	BehaviorAIManager( );								//  コンストラクタ
 
 private:
 

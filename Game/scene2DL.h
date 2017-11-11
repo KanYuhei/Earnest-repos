@@ -15,23 +15,23 @@
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの定義
 //--------------------------------------------------------------------------------------
-class Sence2DL : public Sence
+class Scene2DL : public Scene
 {
 public:
-	Sence2DL( );														//  デフォルトコンストラクタ
-	Sence2DL( D3DXVECTOR3 position ,
+	Scene2DL( );														//  デフォルトコンストラクタ
+	Scene2DL( D3DXVECTOR3 position ,
 			   D3DXVECTOR3 size ,
 			   D3DXVECTOR2 divideUV ,
 			   D3DXVECTOR2 posUV ,
 			   D3DXCOLOR color );										//  コンストラクタ
-	~Sence2DL( );														//  デストラクタ
+	~Scene2DL( );														//  デストラクタ
 
 	HRESULT					Init( void );								//  初期化
 	void					Uninit( void );								//  終了
 	void					Update( void );								//  更新
 	void					Draw( void );								//  描画
 
-	static Sence2DL*		Create( D3DXVECTOR3 position,					//  生成
+	static Scene2DL*		Create( D3DXVECTOR3 position,					//  生成
 									D3DXVECTOR3 size , 
 									D3DXVECTOR2 posUV ,
 									D3DXVECTOR2 divideUV );
@@ -50,7 +50,7 @@ protected:
 	char					m_aFileName[ 256 ];							//  ファイル名
 
 private:
-	void					SetPosUV( D3DXVECTOR2 size );				//  UV座標の設定
+	void					SetPositionUV( D3DXVECTOR2 size );				//  UV座標の設定
 	D3DXVECTOR2				GetPosUV( void);							//  UV座標の取得
 
 	void					SetDivideUV( D3DXVECTOR2 size );			//  UV分割数の設定

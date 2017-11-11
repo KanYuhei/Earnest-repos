@@ -80,7 +80,7 @@ public:
 	static void						Stop( ::Effekseer::Handle handle );							//  停止
 	static void						StopAll( void );											//  全て停止
 
-	static void						SetPos( Effekseer::Handle handle , D3DXVECTOR3 position );		//  エフェクト座標の設定
+	static void						SetPosition( Effekseer::Handle handle , D3DXVECTOR3 position );		//  エフェクト座標の設定
 	static void						SetRot( Effekseer::Handle handle , D3DXVECTOR3 rot );		//  エフェクト回転の設定
 	static void						SetScale( Effekseer::Handle handle , D3DXVECTOR3 scale );	//  エフェクト大きさの設定
 	static void						SetSpeed( Effekseer::Handle handle , float fSpeed );		//  エフェクト再生速度の設定

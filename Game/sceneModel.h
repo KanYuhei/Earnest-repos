@@ -12,10 +12,12 @@
 #include "main.h"
 #include "scene.h"
 
+class SceneBG;
+
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの定義
 //--------------------------------------------------------------------------------------
-class SenceModel : public Sence
+class SceneModel : public Scene
 {
 public:
 	typedef enum
@@ -28,18 +30,18 @@ public:
 		TYPE_HIT_FIELD001 ,
 	} TYPE;
 
-	SenceModel(  );													//  デフォルトコンストラクタ
-	SenceModel( D3DXVECTOR3 position ,										//  コンストラクタ
-				 D3DXVECTOR3 rot ,
-				 D3DXVECTOR3 scale );				
-	~SenceModel( );													//  デストラクタ
+	SceneModel(  );														//  デフォルトコンストラクタ
+	SceneModel( D3DXVECTOR3 position ,									//  コンストラクタ
+				D3DXVECTOR3 rot ,
+				D3DXVECTOR3 scale );				
+	~SceneModel( );														//  デストラクタ
 
 	HRESULT				Init( void );									//  初期化
 	void				Uninit( void );									//  終了
 	void				Update( void );									//  更新
-	void				Draw( void );									//  描画
+	void				Draw( void );									//  描画			
 
-	static SenceModel* Create( TYPE type ,								//  生成
+	static SceneModel* Create( TYPE type ,								//  生成
 								D3DXVECTOR3 position ,						
 								D3DXVECTOR3 rot ,
 								D3DXVECTOR3 scale );
@@ -57,7 +59,7 @@ protected:
 	void				SetScale( D3DXVECTOR3 scale );					//  大きさの設定
 	D3DXVECTOR3			GetScale( void);								//  大きさの取得
 
-	void				SetPosAt( D3DXVECTOR3 posAt );					//  注視点の設定
+	void				SetPositionAt( D3DXVECTOR3 posAt );					//  注視点の設定
 
 	D3DXVECTOR3			m_posAt;										//  注視点の座標
 

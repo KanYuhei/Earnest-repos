@@ -28,7 +28,7 @@
 //--------------------------------------------------------------------------------------
 //  xモデルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-SenceModelParts::SenceModelParts( )
+SceneModelParts::SceneModelParts( )
 {
 	m_pMeshModel = NULL;
 	m_pBuffMatModel = NULL;
@@ -42,7 +42,7 @@ SenceModelParts::SenceModelParts( )
 //--------------------------------------------------------------------------------------
 //  xモデルのデストラクタ
 //--------------------------------------------------------------------------------------
-SenceModelParts::~SenceModelParts( )
+SceneModelParts::~SceneModelParts( )
 {
 
 }
@@ -50,7 +50,7 @@ SenceModelParts::~SenceModelParts( )
 //--------------------------------------------------------------------------------------
 //  xモデルの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT SenceModelParts::Init( void )
+HRESULT SceneModelParts::Init( void )
 {
 	D3DXMATERIAL*	pMat = NULL;									//  マテリアル
 	char			aTextureFileName[ 128 ] = { };
@@ -141,7 +141,7 @@ HRESULT SenceModelParts::Init( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの終了処理
 //--------------------------------------------------------------------------------------
-void SenceModelParts::Uninit( void )
+void SceneModelParts::Uninit( void )
 {
 	//  メッシュ情報の解放
 	SAFE_RELEASE( m_pMeshModel );
@@ -153,7 +153,7 @@ void SenceModelParts::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの更新処理
 //--------------------------------------------------------------------------------------
-void SenceModelParts::Update( D3DXMATRIX mtxParent )
+void SceneModelParts::Update( D3DXMATRIX mtxParent )
 {
 	D3DXMATRIX		mtxWorld;						//  ワールド行列
 	D3DXMATRIX		mtxWorld2;						//  ワールド行列2
@@ -198,7 +198,7 @@ void SenceModelParts::Update( D3DXMATRIX mtxParent )
 //--------------------------------------------------------------------------------------
 //  xモデルの描画処理
 //--------------------------------------------------------------------------------------
-void SenceModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR color )
+void SceneModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR color )
 {
 	D3DMATERIAL9	matDef;							//  マテリアルの初期情報
 	D3DXMATERIAL*	pMat = NULL;					//  マテリアル
@@ -237,7 +237,7 @@ void SenceModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR
 						&mtxScale );
 
 	//  回転行列の作成
-	SenceModel::GetFixedLookAtMatrix( &mtxRot , &position , &posAt , &D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) );
+	SceneModel::GetFixedLookAtMatrix( &mtxRot , &position , &posAt , &D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) );
 
 	//  平行移動行列の作成
 	D3DXMatrixTranslation( &mtxTrans , position.x , position.y , position.z );
@@ -291,7 +291,7 @@ void SenceModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR
 //--------------------------------------------------------------------------------------
 //  xモデルの大きさ設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetScale( D3DXVECTOR3 scale )
+void SceneModelParts::SetScale( D3DXVECTOR3 scale )
 {
 	m_scale = scale;
 }
@@ -299,7 +299,7 @@ void SenceModelParts::SetScale( D3DXVECTOR3 scale )
 //--------------------------------------------------------------------------------------
 //  xポリゴンの大きさを取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 SenceModelParts::GetScale( void )
+D3DXVECTOR3 SceneModelParts::GetScale( void )
 {
 	return m_scale;
 }
@@ -307,7 +307,7 @@ D3DXVECTOR3 SenceModelParts::GetScale( void )
 //--------------------------------------------------------------------------------------
 //  xモデルの回転角を設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetRot( D3DXVECTOR3 rot )
+void SceneModelParts::SetRot( D3DXVECTOR3 rot )
 {
 	m_rot = rot;
 }
@@ -315,7 +315,7 @@ void SenceModelParts::SetRot( D3DXVECTOR3 rot )
 //--------------------------------------------------------------------------------------
 //  xポリゴンの回転角を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR3 SenceModelParts::GetRot( void )
+D3DXVECTOR3 SceneModelParts::GetRot( void )
 {
 	return m_rot;
 }
@@ -323,7 +323,7 @@ D3DXVECTOR3 SenceModelParts::GetRot( void )
 //--------------------------------------------------------------------------------------
 //  xモデルのずらす座標を設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetSeekPos( D3DXVECTOR3 seekPos )
+void SceneModelParts::SetSeekPos( D3DXVECTOR3 seekPos )
 {
 	m_seekPos = seekPos;
 }
@@ -331,7 +331,7 @@ void SenceModelParts::SetSeekPos( D3DXVECTOR3 seekPos )
 //--------------------------------------------------------------------------------------
 //  xモデルの注視点設定をする関数
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetPosAt( D3DXVECTOR3 posAt )
+void SceneModelParts::SetPositionAt( D3DXVECTOR3 posAt )
 {
 	m_posAt = posAt;
 }
@@ -339,7 +339,7 @@ void SenceModelParts::SetPosAt( D3DXVECTOR3 posAt )
 //--------------------------------------------------------------------------------------
 //  モデル名の設定
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetModelName( char* pFileName )
+void SceneModelParts::SetModelName( char* pFileName )
 {
 	strcpy( m_aModelName , pFileName );
 }
@@ -347,7 +347,7 @@ void SenceModelParts::SetModelName( char* pFileName )
 //--------------------------------------------------------------------------------------
 //  識別番号の設定
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetIndex( int nIndex )
+void SceneModelParts::SetIndex( int nIndex )
 {
 	m_nIndex = nIndex;
 }
@@ -355,7 +355,7 @@ void SenceModelParts::SetIndex( int nIndex )
 //--------------------------------------------------------------------------------------
 //  識別番号を取得する関数
 //--------------------------------------------------------------------------------------
-int SenceModelParts::GetIndex( void )
+int SceneModelParts::GetIndex( void )
 {
 	return m_nIndex;
 }
@@ -363,7 +363,7 @@ int SenceModelParts::GetIndex( void )
 //--------------------------------------------------------------------------------------
 //  親番号の設定
 //--------------------------------------------------------------------------------------
-void SenceModelParts::SetParent( int nParent )
+void SceneModelParts::SetParent( int nParent )
 {
 	m_nParent = nParent;
 }
@@ -371,7 +371,7 @@ void SenceModelParts::SetParent( int nParent )
 //--------------------------------------------------------------------------------------
 //  親番号を取得する関数
 //--------------------------------------------------------------------------------------
-int SenceModelParts::GetParent( void )
+int SceneModelParts::GetParent( void )
 {
 	return m_nParent;
 }
@@ -379,7 +379,7 @@ int SenceModelParts::GetParent( void )
 //--------------------------------------------------------------------------------------
 //  親行列を設定する関数
 //--------------------------------------------------------------------------------------
-D3DXMATRIX SenceModelParts::GetMtxWorld( void )
+D3DXMATRIX SceneModelParts::GetMtxWorld( void )
 {
 	return m_mtxWorld;
 }
@@ -387,12 +387,12 @@ D3DXMATRIX SenceModelParts::GetMtxWorld( void )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-SenceModelParts* SenceModelParts::Create( int nIndex , int nParent , char* pFileName , D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
+SceneModelParts* SceneModelParts::Create( int nIndex , int nParent , char* pFileName , D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
 {
-	SenceModelParts *pSceneModel;
+	SceneModelParts *pSceneModel;
 
 	//  インスタンス生成
-	pSceneModel = new SenceModelParts;
+	pSceneModel = new SceneModelParts;
 
 	//  識別番号の代入
 	pSceneModel->m_nIndex = nIndex;

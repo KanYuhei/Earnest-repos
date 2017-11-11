@@ -23,7 +23,7 @@
 #define FIELD_SIZE_X			( 10000.0f )
 #define FIELD_SIZE_Z			( 10000.0f )
 
-//#define KEYBOARD_ENABLE
+#define KEYBOARD_ENABLE
 
 //--------------------------------------------------------------------------------------
 //  前方宣言
@@ -58,12 +58,12 @@ public:
 	void					Update( void );							//  更新
 	void					Draw( void );							//  描画
 
-	static	Camera*		GetCamera( int nCameraNo = 0 );			//  カメラクラスの取得
+	static	Camera*			GetCamera( int nCameraNo = 0 );			//  カメラクラスの取得
 	static	int				GetNumDivide( void );					//  フィールド分割数の取得
 	static	int				GetNumField( void );					//  フィールド数の取得
 	static	int				GetFocusField( void );					//  フォーカスがあっているフィールド番号
 	
-	static	void			SetNextMode( Mode::MODE nextMode );	//  次のモードを設定
+	static	void			SetNextMode( Mode::MODE nextMode );		//  次のモードを設定
 	static	void			SetModeVS( MODE_VS modeVS );			//  対戦モードを設定
 	static	MODE_VS			GetModeVS( void );						//  対戦モードを取得
 	static	void			SetCrystal( int nIndex ,
@@ -78,7 +78,7 @@ private:
 	void					SetStage( void );						//  ステージの設定
 
 	static	MODE_VS			m_modeVS;								//  対戦モード
-	static	Camera*		m_pCamera[ 2 ];							//  カメラクラスのポインタ
+	static	Camera*			m_pCamera[ 2 ];							//  カメラクラスのポインタ
 	static	CRYSTAL			m_crystal[ 2 ];							//  魔法クリスタル
 
 	static	D3DXVECTOR3		m_fieldPos;								//  現在フィールド座標

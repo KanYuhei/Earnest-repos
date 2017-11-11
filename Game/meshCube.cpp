@@ -83,35 +83,35 @@ void MeshCube::Update( void )
 	{
 		//  大きさの更新
 		m_pMeshField->SetSize( m_size );
-		m_pMeshField->SetPos( D3DXVECTOR3( m_position.x , m_position.y + m_size.y , m_position.z ) );
+		m_pMeshField->SetPosition( D3DXVECTOR3( m_position.x , m_position.y + m_size.y , m_position.z ) );
 		m_pMeshField->SetColor( m_color );
 	}
 
 	if( m_pMeshWall[ 0 ] != NULL )
 	{
 		m_pMeshWall[ 0 ]->SetSize( m_size );
-		m_pMeshWall[ 0 ]->SetPos( D3DXVECTOR3( m_position.x , m_position.y , m_position.z + m_size.z * 0.5f ) );
+		m_pMeshWall[ 0 ]->SetPosition( D3DXVECTOR3( m_position.x , m_position.y , m_position.z + m_size.z * 0.5f ) );
 		m_pMeshWall[ 0 ]->SetColor( m_color );
 	}
 
 	if( m_pMeshWall[ 1 ] != NULL )
 	{				 
 		m_pMeshWall[ 1 ]->SetSize( m_size );
-		m_pMeshWall[ 1 ]->SetPos( D3DXVECTOR3( m_position.x , m_position.y , m_position.z - m_size.z * 0.5f  ) );
+		m_pMeshWall[ 1 ]->SetPosition( D3DXVECTOR3( m_position.x , m_position.y , m_position.z - m_size.z * 0.5f  ) );
 		m_pMeshWall[ 1 ]->SetColor( m_color );
 	}
 
 	if( m_pMeshWall[ 2 ] != NULL )
 	{	
 		m_pMeshWall[ 2 ]->SetSize( m_size );
-		m_pMeshWall[ 2 ]->SetPos( D3DXVECTOR3( m_position.x - m_size.x * 0.5f  , m_position.y , m_position.z ) );
+		m_pMeshWall[ 2 ]->SetPosition( D3DXVECTOR3( m_position.x - m_size.x * 0.5f  , m_position.y , m_position.z ) );
 		m_pMeshWall[ 2 ]->SetColor( m_color );
 	}
 	
 	if( m_pMeshWall[ 3 ] != NULL )
 	{	
 		m_pMeshWall[ 3 ]->SetSize( m_size );
-		m_pMeshWall[ 3 ]->SetPos( D3DXVECTOR3( m_position.x + m_size.x * 0.5f  , m_position.y , m_position.z ) );
+		m_pMeshWall[ 3 ]->SetPosition( D3DXVECTOR3( m_position.x + m_size.x * 0.5f  , m_position.y , m_position.z ) );
 		m_pMeshWall[ 3 ]->SetColor( m_color );
 	}
 }

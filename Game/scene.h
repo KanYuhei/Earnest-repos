@@ -21,7 +21,7 @@
 //--------------------------------------------------------------------------------------
 //  シーンクラスの定義
 //--------------------------------------------------------------------------------------
-class Sence
+class Scene
 {
 public:
 	typedef enum
@@ -39,8 +39,8 @@ public:
 		OBJTPE_MAX
 	} OBJTYPE;
 
-	Sence( int nPriority = 3 );												//  コンストラクタ
-	virtual	~Sence( );															//  デストラクタ
+	Scene( int nPriority = 3 );													//  コンストラクタ
+	virtual	~Scene( );															//  デストラクタ
 	virtual HRESULT				Init( void ) = 0;								//  初期化
 	virtual void				Uninit( void ) = 0;								//  終了
 	virtual void				Update( void ) = 0;								//  更新
@@ -54,11 +54,11 @@ public:
 
 	void						Release( void );								//  解放
 
-	static Sence*				GetScene( int nIdxPriority , int nIdxScene );	//  シーンの情報を取得  
+	static Scene*				GetScene( int nIdxPriority , int nIdxScene );	//  シーンの情報を取得  
 	void						SetObjType( OBJTYPE objType );					//  種類設定
 	OBJTYPE						GetObjType( void );								//  種類情報の取得
 
-	void						SetPos( D3DXVECTOR3 position );						//  座標の設定
+	void						SetPosition( D3DXVECTOR3 position );					//  座標の設定
 	void						MovePos( D3DXVECTOR3 velocity );				//  座標の移動
 	D3DXVECTOR3					GetPos( void);									//  座標の取得
 
@@ -67,16 +67,16 @@ public:
 
 	void						SetColor( D3DXCOLOR color );					//  色の設定
 
-	Sence*						GetNextScene( Sence* pScene );					//  シーン情報次のアドレスの取得
-	static Sence*				GetScene( int nCntPriority );					//  シーン情報先頭アドレスの取得
+	Scene*						GetNextScene( Scene* pScene );					//  シーン情報次のアドレスの取得
+	static Scene*				GetScene( int nCntPriority );					//  シーン情報先頭アドレスの取得
 
 protected:
-	D3DXVECTOR3					m_position;											//  座標
+	D3DXVECTOR3					m_position;										//  座標
 	D3DXVECTOR3					m_size;											//  大きさ
 	D3DXCOLOR					m_color;										//  色情報
 
-	Sence*						m_pNext;										//  シーンの次のポインタ
-	static Sence*				m_pTop[ MAX_PRIORITY ];							//  シーンの先頭ポインタ
+	Scene*						m_pNext;										//  シーンの次のポインタ
+	static Scene*				m_pTop[ MAX_PRIORITY ];							//  シーンの先頭ポインタ
 	bool						m_bDelete;										//  削除フラグ
 	int							m_nPriority;									//  優先順位
 

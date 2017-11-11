@@ -93,10 +93,10 @@ Enemy::~Enemy( )
 HRESULT Enemy::Init( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Init( );
+	SceneModelAnim::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_ENEMY );
+	Scene::SetObjType( Scene::OBJTYPE_ENEMY );
 
 	//  影の生成
 	m_pShadow = Shadow::Create( m_position , D3DXVECTOR3( 3.0f , 0.0f , 3.0f ) , D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) ,
@@ -133,7 +133,7 @@ HRESULT Enemy::Init( void )
 void Enemy::Uninit( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Uninit( );
+	SceneModelAnim::Uninit( );
 
 	if( m_pShadow != NULL )
 	{
@@ -169,7 +169,7 @@ void Enemy::Update( void )
 	Camera* pCamera = Game::GetCamera( 0 );
 
 	//  シーンクラスのポインタ
-	Sence *pScene = NULL;										
+	Scene *pScene = NULL;										
 
 	//  壁との当たり判定
 	if( m_position.x > Game::GetFieldMax( ).x )
@@ -193,18 +193,18 @@ void Enemy::Update( void )
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 	{
 		//  シーンの先頭アドレスを取得
-		pScene = Sence::GetScene( nCntPriority );
+		pScene = Scene::GetScene( nCntPriority );
 
 		//  シーンが空ではない間ループ
 		while( pScene != NULL )
 		{
-			Sence::OBJTYPE objType;						//  物体の種類
+			Scene::OBJTYPE objType;						//  物体の種類
 
 			//  物体の種類の取得
 			objType = pScene->GetObjType( );
 
 			//  種類が当たり判定用フィールドの場合
-			if( objType == Sence::OBJTYPE_HIT_FIELD )
+			if( objType == Scene::OBJTYPE_HIT_FIELD )
 			{
 				//  当たり判定用フィールドクラスにダウンキャスト
 				HitField* pHitField = ( HitField* )pScene;
@@ -241,7 +241,7 @@ void Enemy::Update( void )
 					m_pShadow->SetScale( fScale );
 
 					//  座標の代入
-					m_pShadow->SetPos( D3DXVECTOR3( m_position.x , pHitField->GetHeight( m_position ) + 0.01f , m_position.z ) );
+					m_pShadow->SetPosition( D3DXVECTOR3( m_position.x , pHitField->GetHeight( m_position ) + 0.01f , m_position.z ) );
 				}
 			}
 
@@ -262,18 +262,18 @@ void Enemy::Update( void )
 	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 	{
 		//  シーンの先頭アドレスを取得
-		pScene = Sence::GetScene( nCntPriority );
+		pScene = Scene::GetScene( nCntPriority );
 
 		//  シーンが空ではない間ループ
 		while( pScene != NULL )
 		{
-			Sence::OBJTYPE objType;						//  物体の種類
+			Scene::OBJTYPE objType;						//  物体の種類
 
 			//  物体の種類の取得
 			objType = pScene->GetObjType( );
 
 			//  種類がプレイヤーの場合
-			if( objType == Sence::OBJTYPE_PLAYER )
+			if( objType == Scene::OBJTYPE_PLAYER )
 			{
 				//  ダウンキャスト
 				Player* pPlayer = ( Player* )pScene;
@@ -306,7 +306,7 @@ void Enemy::Update( void )
 	}
 
 	//  シーンモデル
-	SenceModelAnim::Update( );
+	SceneModelAnim::Update( );
 
 	if( m_state == STATE_ATTACK_FIRE )
 	{
@@ -346,7 +346,7 @@ void Enemy::Update( void )
 void Enemy::Draw( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Draw( );
+	SceneModelAnim::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -360,7 +360,7 @@ Enemy* Enemy::Create( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale
 	pEnemy = new Enemy;
 
 	//  モデルの種類の代入
-	pEnemy->m_type = SenceModelAnim::TYPE_PLAYER;
+	pEnemy->m_type = SceneModelAnim::TYPE_PLAYER;
 
 	//  座標の代入
 	pEnemy->m_position = position;
@@ -429,7 +429,7 @@ void Enemy::Damage( int nDamage )
 		Release( );
 
 		//  ゲームクリア画面へ
-		CResult::SetResult( CResult::GAME_CLEAR );
+		Result::SetResult( Result::GAME_CLEAR );
 
 		//  結果画面への移行フラグをたてる
 		Game::SetNextMode( Mode::MODE_RESULT );	

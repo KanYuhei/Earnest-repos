@@ -21,7 +21,7 @@
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-PlayerResult::PlayerResult( int nPriority ) : SenceModelAnim( nPriority )
+PlayerResult::PlayerResult( int nPriority ) : SceneModelAnim( nPriority )
 {
 	m_beforePos = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_vecDirect = D3DXVECTOR3( 0.0f , 0.0f , 1.0f );
@@ -43,10 +43,10 @@ PlayerResult::~PlayerResult( )
 HRESULT PlayerResult::Init( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Init( );
+	SceneModelAnim::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_PLAYER );
+	Scene::SetObjType( Scene::OBJTYPE_PLAYER );
 
 	//  ステートマシン( アニメーター )の生成
 	m_pStateAnimator = StateAnimator::Create( StateAnimator::MOTION_NEUTRAL );
@@ -63,7 +63,7 @@ HRESULT PlayerResult::Init( void )
 void PlayerResult::Uninit( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Uninit( );
+	SceneModelAnim::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ void PlayerResult::Uninit( void )
 void PlayerResult::Update( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Update( );
+	SceneModelAnim::Update( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ void PlayerResult::Update( void )
 void PlayerResult::Draw( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Draw( );
+	SceneModelAnim::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ PlayerResult* PlayerResult::Create( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D
 	pPlayerResult = new PlayerResult( nPriority );
 
 	//  モデルの種類の代入
-	pPlayerResult->m_type = SenceModelAnim::TYPE_PLAYER;
+	pPlayerResult->m_type = SceneModelAnim::TYPE_PLAYER;
 
 	//  座標の代入
 	pPlayerResult->m_position = position;

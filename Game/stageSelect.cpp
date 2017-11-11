@@ -157,7 +157,7 @@ void CStageSelect::Init( void )
 	m_pReadySelect = NULL;
 
 	//  背景
-	SenceBG::Create( SenceBG::TYPE_STAGE_SELECT , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
+	SceneBG::Create( SceneBG::TYPE_STAGE_SELECT , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.5f , 0.0f ) ,
 					  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 					  D3DXVECTOR2( 1.0f , 1.0f ) );
 
@@ -209,7 +209,7 @@ void CStageSelect::Init( void )
 //--------------------------------------------------------------------------------------
 void CStageSelect::Uninit( void )
 {
-	Sence::ReleaseAll( );
+	Scene::ReleaseAll( );
 
 	for( int nCntVS = 0; nCntVS < VS_MAX; nCntVS++ )
 	{
@@ -1696,5 +1696,5 @@ void CStageSelect::Update( void )
 //--------------------------------------------------------------------------------------
 void CStageSelect::Draw( void )
 {
-	Sence::DrawAll( );
+	Scene::DrawAll( );
 }

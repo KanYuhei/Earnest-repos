@@ -15,11 +15,11 @@
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの定義
 //--------------------------------------------------------------------------------------
-class SenceModelParts
+class SceneModelParts
 {
 public:
-	SenceModelParts(  );												//  デフォルトコンストラクタ		
-	~SenceModelParts( );												//  デストラクタ
+	SceneModelParts(  );												//  デフォルトコンストラクタ		
+	~SceneModelParts( );												//  デストラクタ
 
 	HRESULT				Init( void );									//  初期化
 	void				Uninit( void );									//  終了
@@ -28,7 +28,7 @@ public:
 							  D3DXVECTOR3 posAt ,
 							  D3DXCOLOR color );	
 
-	static SenceModelParts* Create( int nIndex ,
+	static SceneModelParts* Create( int nIndex ,
 									 int nParent ,
 									 char* pFileName ,
 									 D3DXVECTOR3 position ,
@@ -51,7 +51,7 @@ public:
 
 	void				SetSeekPos( D3DXVECTOR3 seekPos );				//  回転角の設定
 
-	void				SetPosAt( D3DXVECTOR3 posAt );					//  注視点の設定
+	void				SetPositionAt( D3DXVECTOR3 posAt );					//  注視点の設定
 
 private:
 	LPD3DXMESH			m_pMeshModel;									//  メッシュ情報

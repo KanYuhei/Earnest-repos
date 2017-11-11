@@ -25,7 +25,7 @@
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence2D::Sence2D( ) : Sence( 7 )
+Scene2D::Scene2D( ) : Scene( 7 )
 {
 	//  情報の代入
 	m_pVtxBuff = NULL;
@@ -45,7 +45,7 @@ Sence2D::Sence2D( ) : Sence( 7 )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Sence2D::Sence2D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
+Scene2D::Scene2D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV , D3DXCOLOR color )
 {
 	//  情報の代入
 	m_position = position;
@@ -63,7 +63,7 @@ Sence2D::Sence2D( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , 
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンクラスのデストラクタ
 //--------------------------------------------------------------------------------------
-Sence2D::~Sence2D( )
+Scene2D::~Scene2D( )
 {
 
 }
@@ -71,7 +71,7 @@ Sence2D::~Sence2D( )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT Sence2D::Init( void )
+HRESULT Scene2D::Init( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -93,7 +93,7 @@ HRESULT Sence2D::Init( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの終了処理
 //--------------------------------------------------------------------------------------
-void Sence2D::Uninit( void )
+void Scene2D::Uninit( void )
 {
 	// 頂点バッファの破棄
 	if( m_pVtxBuff != NULL )
@@ -113,7 +113,7 @@ void Sence2D::Uninit( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの更新処理
 //--------------------------------------------------------------------------------------
-void Sence2D::Update( void )
+void Scene2D::Update( void )
 {
 	//  頂点の設定
 	SetVertex( );
@@ -139,7 +139,7 @@ void Sence2D::Update( void )
 //--------------------------------------------------------------------------------------
 //  2Dポリゴンの描画処理
 //--------------------------------------------------------------------------------------
-void Sence2D::Draw( void )
+void Scene2D::Draw( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -170,7 +170,7 @@ void Sence2D::Draw( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-HRESULT Sence2D::MakeVertex( void )
+HRESULT Scene2D::MakeVertex( void )
 {
 	LPDIRECT3DDEVICE9 pDevice;
 
@@ -256,7 +256,7 @@ HRESULT Sence2D::MakeVertex( void )
 //--------------------------------------------------------------------------------------
 //  頂点を作成する関数
 //--------------------------------------------------------------------------------------
-void Sence2D::SetVertex( void )
+void Scene2D::SetVertex( void )
 {
 	VERTEX_2D* pVtx = NULL;				//  頂点バッファのポインタ
 	D3DXVECTOR3 LeftTop;				//  左上座標
@@ -324,7 +324,7 @@ void Sence2D::SetVertex( void )
 //--------------------------------------------------------------------------------------
 //  大きさの倍率設定
 //--------------------------------------------------------------------------------------
-void Sence2D::SetScale( float fScale )
+void Scene2D::SetScale( float fScale )
 {
 	m_fScale = fScale;
 }
@@ -332,7 +332,7 @@ void Sence2D::SetScale( float fScale )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV座標設定
 //--------------------------------------------------------------------------------------
-void Sence2D::SetPosUV( D3DXVECTOR2 posUV )
+void Scene2D::SetPositionUV( D3DXVECTOR2 posUV )
 {
 	m_posUV = posUV;
 }
@@ -340,7 +340,7 @@ void Sence2D::SetPosUV( D3DXVECTOR2 posUV )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV座標を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 Sence2D::GetPosUV( void )
+D3DXVECTOR2 Scene2D::GetPosUV( void )
 {
 	return m_posUV;
 }
@@ -348,7 +348,7 @@ D3DXVECTOR2 Sence2D::GetPosUV( void )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV分割数設定
 //--------------------------------------------------------------------------------------
-void Sence2D::SetDivideUV( D3DXVECTOR2 divideUV )
+void Scene2D::SetDivideUV( D3DXVECTOR2 divideUV )
 {
 	m_divideUV = divideUV;
 }
@@ -356,7 +356,7 @@ void Sence2D::SetDivideUV( D3DXVECTOR2 divideUV )
 //--------------------------------------------------------------------------------------
 //  2DポリゴンのUV分割数を取得する関数
 //--------------------------------------------------------------------------------------
-D3DXVECTOR2 Sence2D::GetDivideUV( void )
+D3DXVECTOR2 Scene2D::GetDivideUV( void )
 {
 	return m_divideUV;
 }
@@ -364,7 +364,7 @@ D3DXVECTOR2 Sence2D::GetDivideUV( void )
 //--------------------------------------------------------------------------------------
 //  テクスチャ名の設定
 //--------------------------------------------------------------------------------------
-void Sence2D::SetTextureName( char* pFileName )
+void Scene2D::SetTextureName( char* pFileName )
 {
 	strcpy( m_aFileName , pFileName );
 }
@@ -372,12 +372,12 @@ void Sence2D::SetTextureName( char* pFileName )
 //--------------------------------------------------------------------------------------
 //  インスタンス生成をする関数
 //--------------------------------------------------------------------------------------
-Sence2D* Sence2D::Create( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
+Scene2D* Scene2D::Create( D3DXVECTOR3 position , D3DXVECTOR3 size , D3DXVECTOR2 posUV , D3DXVECTOR2 divideUV )
 {
-	Sence2D *pScene2D;
+	Scene2D *pScene2D;
 
 	//  インスタンス生成
-	pScene2D = new Sence2D;
+	pScene2D = new Scene2D;
 
 	//  座標の代入
 	pScene2D->m_position = position;

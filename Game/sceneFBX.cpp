@@ -8,30 +8,29 @@
 //  ヘッダーファイル
 //--------------------------------------------------------------------------------------
 #include "sceneFBX.h"
-#include "main.h"
+#include "camera.h"
 #include "manager.h"
 #include "renderer.h"
 #include "texture.h"
+#include <algorithm>
+
+FbxTime		SceneFBX::myNode::m_startTime = 0;
+FbxTime		SceneFBX::myNode::m_endTime = 0;
+int			SceneFBX::myNode::m_currentFrame = 0;
+int			SceneFBX::myNode::m_allTime = 0;
+bool		SceneFBX::myNode::m_makeVertrx = false;
 
 //--------------------------------------------------------------------------------------
 //  コンストラクタ
 //--------------------------------------------------------------------------------------
-SenceFBX::SenceFBX( )
+SceneFBX::SceneFBX( )
 {
-	//  メンバ変数の初期化
-	m_position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
-	m_scale = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
-	m_fScale = 1.0f;
-	m_fRot = 0.0f;
-	m_fRot2 = 0.0f;
-	m_nTexID = 0;
-	numTabs = 0;
 }
 
 //--------------------------------------------------------------------------------------
 //  デスストラクタ
 //--------------------------------------------------------------------------------------
-SenceFBX::~SenceFBX( )
+SceneFBX::~SceneFBX( )
 {
 
 }
@@ -39,77 +38,63 @@ SenceFBX::~SenceFBX( )
 //--------------------------------------------------------------------------------------
 //  初期化処理
 //--------------------------------------------------------------------------------------
-HRESULT SenceFBX::Init( void )
+HRESULT SceneFBX::Init( void )
 {
-	numTabs = 0;
-
-	m_nCntV = 0;
-	m_nCntVn = 0;
-	m_nCntVt = 0;
-	m_nCntF = 0;
-
 	//  FBXモデル読み込み実験用プログラム
+	FbxManager* lSdkManager = FbxManager::Create(); 
+ 
+	// Create the IO settings object. 
+	FbxIOSettings *ios = FbxIOSettings::Create(lSdkManager, IOSROOT); lSdkManager->SetIOSettings(ios); 
+ 
+	// Create an importer using the SDK manager. 
+	FbxImporter* lImporter = FbxImporter::Create(lSdkManager,""); 
+ 
+	// Use the first argument as the filename for the importer. 
+	if(!lImporter->Initialize("data/dude/dude.fbx", -1, lSdkManager->GetIOSettings())) 
+	{      
+		char buf[256];     
+		sprintf(buf, "Call to FbxImporter::Initialize() failed.\nError returned: %s\n\n" ,lImporter->GetStatus().GetErrorString());     
+		MessageBox(NULL, buf, "error", MB_OK);     
+		return E_FAIL; 
+	}  
+ 
+	// Create a new scene so that it can be populated by the imported file. 
+	FbxScene* lScene = FbxScene::Create(lSdkManager,"myScene"); 
+ 
+	// Import the contents of the file into the scene. 
+	lImporter->Import(lScene); 
+ 
+	FbxGeometryConverter converter(lSdkManager); 
+	
+	// 三角ポリゴン化 
+	converter.Triangulate(lScene, true); 
+	
+	// 縮退メッシュを削除 
+	converter.RemoveBadPolygonsFromMeshes(lScene); 
+	
+	// マテリアルごとにメッシュ分離 
+	converter.SplitMeshesPerMaterial(lScene, true); 
 
-	//  FBXの作成
-	FbxManager* lSdkManager = FbxManager::Create( );
+	//  アニメーション個数の取得
+	lImporter->GetAnimStackCount( );
 
-	// Create the IO settings object.
-    FbxIOSettings *ios = FbxIOSettings::Create( lSdkManager, IOSROOT );
-    lSdkManager->SetIOSettings(ios);
+	//  アニメーション一覧の取得
+	FbxArray< FbxString* > animationNames;
+	lScene->FillAnimStackNameArray( animationNames );
 
-    // Create an importer using the SDK manager.
-    FbxImporter* lImporter = FbxImporter::Create( lSdkManager , "" );
-    
-    // Use the first argument as the filename for the importer.
-    if( !lImporter->Initialize( "data/pronama/Pronama-chan.fbx" , -1 , lSdkManager->GetIOSettings( ) ) ) 
-	{ 
-		char aBuf[ 256 ];
-		sprintf( aBuf , "Call to FbxImporter::Initialize() failed.\nError returned: %s\n\n" , lImporter->GetStatus().GetErrorString( ) );
-		MessageBox( NULL , aBuf , "Error Message" , MB_OK );
+	//  アニメーション情報の取得
+	FbxTakeInfo* pTakeInfo = lScene->GetTakeInfo( animationNames[ 0 ]->Buffer( ) );
 
-		//  インポーターの削除
-		lImporter->Destroy( );
+	//  アニメーションの開始・終了時間の取得
+	FbxTime startTime = pTakeInfo->mLocalTimeSpan.GetStart( );
+	FbxTime endTime = pTakeInfo->mLocalTimeSpan.GetStop( );
+ 
+	// 再帰的にノードを漁る 
+	m_pTopNode = SceneFBX::myNode::recursiveNode(lSdkManager, lScene->GetRootNode(), true , startTime , endTime );
 
-		//  FBXの削除
-		lSdkManager->Destroy( );
-
-		return E_FAIL;
-	}
-
-	// Create a new scene so that it can be populated by the imported file.
-    FbxScene* lScene = FbxScene::Create( lSdkManager, "myScene" );
-
-    // Import the contents of the file into the scene.
-    lImporter->Import( lScene );
-
-    // The file is imported, so get rid of the importer.
-    lImporter->Destroy( );
-
-	//  三角分割
-	FbxGeometryConverter lCoverter( lSdkManager );
-	lCoverter.Triangulate( lScene , true );
-
-    // Print the nodes of the scene and their attributes recursively.
-    // Note that we are not printing the root node because it should
-    // not contain any attributes.
-    FbxNode* lRootNode = lScene->GetRootNode( );
-
-    if( lRootNode ) 
-	{
-		myNode* pNode = RecursiveNode( lRootNode );
-    }
-
-	//  FBXの削除
-	lSdkManager->Destroy( );
-
-	//  テクスチャクラスの取得
-	Texture* pTexture = SceneManager::GetTexture( );
-
-	//  テクスチャの読み込み
-	pTexture->SetTextureImage( "data/pronama/textures/Tex_skin.png" );
-
-	// 頂点バッファの生成
-	MakeVertex( );
+	lImporter->Destroy(); 
+	lScene->Destroy(); 
+	lSdkManager->Destroy(); 
 
 	return S_OK;
 }
@@ -117,337 +102,709 @@ HRESULT SenceFBX::Init( void )
 //--------------------------------------------------------------------------------------
 //  終了処理
 //--------------------------------------------------------------------------------------
-void SenceFBX::Uninit( void )
+void SceneFBX::Uninit( void )
 {
-	Sence::Release( );
-
-	//  メモリの破棄
-	delete[ ] m_pV; 
-	delete[ ] m_pVt;
-	delete[ ] m_pVn;
-	delete[ ] m_pFace;
-
-	// 頂点バッファの破棄
-	if( m_pVtxBuff != NULL )
-	{
-		m_pVtxBuff->Release( );
-		m_pVtxBuff = NULL;
-	}
-
-	// インデックスバッファの破棄
-	if( m_pIndexBuff != NULL )
-	{
-		m_pIndexBuff->Release( );
-		m_pIndexBuff = NULL;
-	}
+	Scene::Release( );
 }
 
 //--------------------------------------------------------------------------------------
 //  更新処理
 //--------------------------------------------------------------------------------------
-void SenceFBX::Update( void )
+void SceneFBX::Update( void )
 {
-	//  頂点の設定
-	//SetVertex( );
+	myNode::m_currentFrame += 1;
 }
 
 //--------------------------------------------------------------------------------------
 //  描画処理
 //--------------------------------------------------------------------------------------
-void SenceFBX::Draw( void )
-{
-	LPDIRECT3DDEVICE9 pDevice;
-
-	D3DXMATRIX mtxWorld;							//  ワールド行列
-	D3DXMATRIX mtxTrans;							//  平行移動行列
-	D3DXMATRIX mtxScale;							//  拡大行列
-	D3DXMATRIX mtxRot;								//  ビュー座標変換行列
-
-	//  デバイス情報の取得
-	pDevice = SceneManager::GetRenderer( )->GetDevice( );
-
-	//  テクスチャクラスの取得
-	Texture* pTexture = SceneManager::GetTexture( );
-
-	//  行列を単位行列に変換
-	D3DXMatrixIdentity( &mtxWorld );
-
-	//  拡大行列の作成
-	D3DXMatrixScaling( &mtxScale , m_scale.x , m_scale.y , m_scale.z );
-
-	//  拡大行列の掛け算
-	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
-
-	//  平行移動行列の作成
-	D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
-
-	//  平行移動行列の掛け算
-	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
-
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
-
-	// 頂点バッファをデータストリームに設定
-	pDevice->SetStreamSource( 0 ,								//  パイプライン番号
-							  m_pVtxBuff ,						//  頂点バッファのアドレス
-							  0 ,								//  オフセット( byte )
-							  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
-
-	// 頂点フォーマットの設定
-	pDevice->SetFVF( FVF_VERTEX_3D );
-
-	// テクスチャの設定
-	pDevice->SetTexture( 0 , pTexture->GetTextureImage( "data/pronama/textures/Tex_skin.png" ) ); 
-
-	// ポリゴンの描画
-	pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,				//  プリミティブの種類
-							0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
-							m_nCntF / 3 );						//  プリミティブ数
+void SceneFBX::Draw( void )
+{  
+	//  再帰的に描画
+    m_pTopNode->recursiveDraw(); 
 }
 
 //--------------------------------------------------------------------------------------
-//  インスタンス生成をする関数
+//  ノードを辿って再帰的に描画処理
 //--------------------------------------------------------------------------------------
-SenceFBX* SenceFBX::Create( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 scale )
-{
-	SenceFBX *pSceneFBX;
-
-	//  インスタンス生成
-	pSceneFBX = new SenceFBX;
-
-	//  座標の代入
-	pSceneFBX->m_position = position;
-
-	//  回転角の代入
-	pSceneFBX->m_rot = rot;
-
-	//  大きさ倍率の代入
-	pSceneFBX->m_scale = scale;
-
-	//  初期化
-	pSceneFBX->Init( );
-
-	return pSceneFBX;
-}
-
-//--------------------------------------------------------------------------------------
-//  頂点を作成する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::MakeVertex( void )
-{
-	LPDIRECT3DDEVICE9 pDevice;
-
-	//  デバイス情報の取得
-	pDevice = SceneManager::GetRenderer( )->GetDevice( );
-
-	//  頂点バッファの作成
-	if( FAILED( pDevice->CreateVertexBuffer( sizeof( VERTEX_3D ) * m_nCntF ,					//  作成したい頂点バッファのサイズ
-											 D3DUSAGE_WRITEONLY ,								//  使用方法
-											 FVF_VERTEX_3D ,									//  
-											 D3DPOOL_MANAGED ,									//  メモリ管理方法( MANAGED → お任せ )
-											 &m_pVtxBuff ,										//  バッファ
-											 NULL ) ) )
-	{
-		MessageBox( NULL , "頂点バッファインターフェースを正しく取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
-
-		return;
-	}
-
-	VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
-
-	if( m_pVtxBuff != NULL )
-	{
-		//  頂点バッファをロックして、仮想アドレスを取得する
-		m_pVtxBuff->Lock( 0 , 0 ,									//  取る先頭と、サイズ( 0 , 0 で全部 )
-						  ( void** )&pVtx ,							//  アドレスが書かれたメモ帳のアドレス
-						  0 );										//  ロックの種類
-
-		//  頂点の数分のループ
-		for( int i = 0; i < m_nCntF; i++ )
+void SceneFBX::myNode::recursiveDraw( void )
+{ 
+    for( auto itm = meshes.begin(); itm != meshes.end(); ++itm ) 
+	{  
+		if( itm->matrixes.empty() ) 
 		{
-			//  頂点座標の設定( 3D座標 ・ 右回り )
-			pVtx[ 0 ].position = D3DXVECTOR3( m_pV[ m_pFace[ i ].v ].x , m_pV[ m_pFace[ i ].v ].y , m_pV[ m_pFace[ i ].v ].z );;
-
-			//  法線の指定
-			pVtx[ 0 ].normal = D3DXVECTOR3( m_pVn[ m_pFace[ i ].vn ].x , m_pVn[ m_pFace[ i ].vn ].y , m_pVn[ m_pFace[ i ].vn ].z );
-
-			//  頂点色の設定( 0 ～ 255 の整数値 )
-			pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-
-			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( m_uvSet.uvBuffer.at( i ).x , m_uvSet.uvBuffer.at( i ).y );
-
-			//  次の頂点へ
-			pVtx++;
-		}
-
-		//  頂点バッファのアンロック
-		m_pVtxBuff->Unlock( );
-	}
-
-	return;
-}
-
-//--------------------------------------------------------------------------------------
-//  頂点を作成する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::SetVertex( void )
-{
-	VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
-
-	if( m_pVtxBuff != NULL )
-	{
-		//  頂点バッファをロックして、仮想アドレスを取得する
-		m_pVtxBuff->Lock( 0 , 0 ,									//  取る先頭と、サイズ( 0 , 0 で全部 )
-						  ( void** )&pVtx ,							//  アドレスが書かれたメモ帳のアドレス
-						  0 );										//  ロックの種類
-
-		//  頂点の数分のループ
-		for( int i = 0; i < m_nCntF; i++ )
+			//// 骨なし（つまり剛体の塊）   
+			//for( size_t i = 0; i < itm->positionIndices.size(); i++ )
+			//{ 
+			//	if( !itm->normals.empty()   ) 
+			//		glNormal3fv(itm->normals[itm->normalIndices[i]]);                 
+			//		
+			//	if( !itm->texcoords.empty() ) 
+			//		glTexCoord2fv(itm->texcoords[itm->texcoordIndices[i]]);           
+			//	
+			//	glVertex3fv(itm->points[itm->positionIndices[i]].positions);            
+			//}       
+		}      
+		else 
 		{
-			//  頂点座標の設定( 3D座標 ・ 右回り )
-			pVtx[ 0 ].position = D3DXVECTOR3( m_pV[ m_pFace[ i ].v ].x , m_pV[ m_pFace[ i ].v ].y , m_pV[ m_pFace[ i ].v ].z );;
+			// 骨あり（つまりワンスキンなど） 
+ 
+			// 頂点の座標変換             
+			std::vector<D3DXVECTOR3> positions;            
+			positions.reserve(itm->points.size()); 
+ 
+			D3DXMATRIX mtx;             
+				
+			for( auto it = itm->points.begin(); it != itm->points.end(); ++it ) 
+			{                
+				ZeroMemory(&mtx, sizeof(D3DXMATRIX));   
 
-			//  法線の指定
-			pVtx[ 0 ].normal = D3DXVECTOR3( m_pVn[ m_pFace[ i ].vn ].x , m_pVn[ m_pFace[ i ].vn ].y , m_pVn[ m_pFace[ i ].vn ].z );
+				FbxTime allFrame = ( m_endTime - m_startTime );
+				int nAllFrame = allFrame.GetFrameCount( );
+					
+				//for( auto itb = it->bornRefarences.begin(); itb != it->bornRefarences.end(); ++itb ) 
+				//{                    
+				//	//mtx += itm->matrixes[itb->index] * itb->weight;
+				//	mtx += itm->matrixes[itb->index][ m_currentFrame % 73 ] * itb->weight;
+				//}
 
-			//  頂点色の設定( 0 ～ 255 の整数値 )
-			pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+				D3DXVECTOR3 pos;                 
+				D3DXVec3TransformCoord(&pos, &it->positions, &mtx);                
+				positions.push_back(it->positions);             
+			} 
 
-			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( m_uvSet.uvBuffer.at( i ).x , m_uvSet.uvBuffer.at( i ).y );
-
-			//  次の頂点へ
-			pVtx++;
-		}
-
-		//  頂点バッファのアンロック
-		m_pVtxBuff->Unlock( );
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  座標の代入
-//--------------------------------------------------------------------------------------
-void SenceFBX::SetPos( D3DXVECTOR3 position )
-{
-	m_position = position;
-}
-
-//--------------------------------------------------------------------------------------
-//  大きさの代入
-//--------------------------------------------------------------------------------------
-void SenceFBX::SetScale( D3DXVECTOR3 scale )
-{
-	m_scale = scale;
-}
-
-//--------------------------------------------------------------------------------------
-//  回転角の代入
-//--------------------------------------------------------------------------------------
-void SenceFBX::SetRot( float fRot )
-{
-	m_fRot = fRot;
-}
-
-//--------------------------------------------------------------------------------------
-//  大きさ倍率の代入
-//--------------------------------------------------------------------------------------
-void SenceFBX::SetScale( float fScale )
-{
-	m_fScale = fScale;
-}
-
-//--------------------------------------------------------------------------------------
-//  座標の移動
-//--------------------------------------------------------------------------------------
-void SenceFBX::MovePos( D3DXVECTOR3 movePos )
-{
-	m_position += movePos;
-}
-
-//--------------------------------------------------------------------------------------
-//  回転角の変化
-//--------------------------------------------------------------------------------------
-void SenceFBX::ChangeRot( float fChangeRot )
-{
-	m_fRot += fChangeRot;
-}
-
-//--------------------------------------------------------------------------------------
-//  大きさ倍率の変化
-//--------------------------------------------------------------------------------------
-void SenceFBX::ChangeScale( float fChangeScale )
-{
-	m_fScale += fChangeScale;
-}
-
-//--------------------------------------------------------------------------------------
-//  現在のファイルポインタからある文字列まで検索する関数
-//--------------------------------------------------------------------------------------
-int SenceFBX::GetStrToken( FILE* pFile , const char* pToken , char* pBuf )
-{
-	int		nCntStr = 0;
-	char	buf;
-
-	//  1文字分の文字を格納
-	while( ( buf = ( char )fgetc( pFile ) ) != EOF )
-	{
-		//  検索文字列の長さ分の検索
-		for( unsigned int nCntBuf = 0; nCntBuf < strlen( pToken ); nCntBuf++ )
-		{
-			if( buf == pToken[ nCntBuf ] )
+			if( m_makeVertrx == false )
 			{
-				pBuf[ nCntStr ] = 0;
+				MakeVertex( itm->positionIndices.size( ) );
 
-				return nCntStr;
+				m_makeVertrx = true;
 			}
-		}
 
-		//  文字列の代入
-		pBuf[ nCntStr++ ] = buf;
+			VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
+
+			if( m_pVtxBuff != NULL )
+			{
+				//  頂点バッファをロックして、仮想アドレスを取得する
+				m_pVtxBuff->Lock( 0 , 0 ,									//  取る先頭と、サイズ( 0 , 0 で全部 )
+								  ( void** )&pVtx ,							//  アドレスが書かれたメモ帳のアドレス
+								  0 );										//  ロックの種類
+
+				for( size_t i = 0; i < itm->positionIndices.size( ); i++ ) 
+				{             
+					//  頂点座標の設定( 3D座標 ・ 右回り )
+					pVtx[ i ].position = positions[ itm->positionIndices[ i ] ];
+
+					//  法線の指定
+					pVtx[ i ].normal = itm->normals[itm->normalIndices[ i ] ];
+
+					//  頂点色の設定( 0 ～ 255 の整数値 )
+					pVtx[ i ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+					//  UV座標の指定
+					pVtx[ i ].tex = itm->texcoords[ itm->texcoordIndices[ i ] ];
+				}
+
+				//  頂点バッファのアンロック
+				m_pVtxBuff->Unlock( );     
+			}
+
+			LPDIRECT3DDEVICE9 pDevice;
+
+			D3DXMATRIX mtxWorld;							//  ワールド行列
+			D3DXMATRIX mtxTrans;							//  平行移動行列
+			D3DXMATRIX mtxScale;							//  拡大行列
+			D3DXMATRIX mtxRot;								//  ビュー座標変換行列
+
+			//  デバイス情報の取得
+			pDevice = SceneManager::GetRenderer( )->GetDevice( );
+
+			//  テクスチャクラスの取得
+			Texture* pTexture = SceneManager::GetTexture( );
+
+			D3DXMatrixIdentity( &mtxWorld );
+			D3DXMatrixIdentity( &mtxScale );
+			D3DXMatrixIdentity( &mtxRot );
+
+			//  拡大行列の作成
+			D3DXMatrixScaling( &mtxScale , 10.0f , 10.0f , 10.0f );
+
+			//  拡大行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+			//  平行移動行列の作成
+			D3DXMatrixTranslation( &mtxTrans , 0.0f , 0.0f , 0.0f );
+
+			//  平行移動行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+			//  ワールド座標変換
+			pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+									  m_pVtxBuff ,						//  頂点バッファのアドレス
+									  0 ,								//  オフセット( byte )
+									  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+			// 頂点フォーマットの設定
+			pDevice->SetFVF( FVF_VERTEX_3D );
+
+			std::string fileName = textures[ itm->materialIndex ];
+
+			// テクスチャの設定
+			pDevice->SetTexture( 0 , pTexture->GetTextureImage( textures[ itm->materialIndex ].c_str( ) ) ); 
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
+									0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
+									itm->positionIndices.size( ) / 3 );		//  プリミティブ数
+		}
 	}
 
-	return -1;
+	std::for_each(children.begin(), children.end(), [](myNode* p){ p->recursiveDraw(); }); 
 }
 
 //--------------------------------------------------------------------------------------
-//  現在のファイルポインタからある文字列の数をカウントする関数
+//  ノードを辿って再帰的に情報を取得する関数
 //--------------------------------------------------------------------------------------
-int SenceFBX::GetStrCount( FILE* pFile , const char* pToken , char* pStr )
+SceneFBX::myNode* SceneFBX::myNode::recursiveNode( FbxManager* pManager, FbxNode* pNode, bool bTexcoordVReverse, FbxTime startTime, FbxTime endTime )
 {
-	char	aBuf[ 256 ];							//  文字列格納用
-	int		nCntStr = 0;							//  数カウント用
+    myNode* p = NULL; 
 
-	//  文字列を区切りごとに検索
-	while( GetStrToken( pFile , pToken , aBuf ) != -1 )
-	{
-		//  文字列を比べる
-		if( strcmp( pStr , aBuf ) == 0 )
-		{
-			nCntStr++;
-		}
-	}
+    if(pNode) 
+	{ 
+        p = new myNode;         
+		p->name = pNode->GetName();         
+		p->translation.x = static_cast<float>(pNode->LclTranslation.Get()[0]);         
+		p->translation.y = static_cast<float>(pNode->LclTranslation.Get()[1]);         
+		p->translation.z = static_cast<float>(pNode->LclTranslation.Get()[2]);         
+		p->rotation.x    = static_cast<float>(pNode->LclRotation.Get()[0]);         
+		p->rotation.y    = static_cast<float>(pNode->LclRotation.Get()[1]);         
+		p->rotation.z    = static_cast<float>(pNode->LclRotation.Get()[2]);         
+		p->scaling.x     = static_cast<float>(pNode->LclScaling.Get()[0]);         
+		p->scaling.y     = static_cast<float>(pNode->LclScaling.Get()[1]);         
+		p->scaling.z     = static_cast<float>(pNode->LclScaling.Get()[2]); 
 
-	return nCntStr;
+        for(int i = 0; i < pNode->GetNodeAttributeCount(); i++) 
+		{ 
+            FbxNodeAttribute::EType type = pNode->GetNodeAttributeByIndex(i)->GetAttributeType();            
+			p->attributeNames.push_back(GetAttributeTypeName(type)); 
+ 
+            if( type == FbxNodeAttribute::eMesh ) 
+			{ 
+				// マテリアル情報の解析（マテリアルリスト化）                 
+				p->analyzeMaterial(pNode); 
+ 
+                p->meshes.push_back(Mesh()); 
+ 
+                // メッシュ情報の取得                 
+				FbxMesh* pMesh = FbxCast<FbxMesh>(pNode->GetNodeAttributeByIndex(i)); 
+ 
+                // 頂点座標解析                 
+				p->analyzePosition(pMesh);                 
+				
+				// 法線解析                 
+				p->analyzeNormal(pMesh);                 
+				
+				// UV解析                 
+				p->analyzeTexcoord(pMesh, bTexcoordVReverse);   
+
+				// マテリアル解析（参照情報の取得）                 
+				p->analyzeMaterial(pMesh); 
+				
+				m_startTime = startTime;
+				m_endTime = endTime;
+
+				// ボーン解析 
+				p->analyzeCluster(pMesh);             
+			}             
+			else 
+			{                 
+				// メッシュではないアトリビュート                 
+				//MessageBox(NULL, GetAttributeTypeName(type).c_str(), "アトリビュート", MB_OK);              
+			}         
+		} 
+ 
+        for(int i = 0; i < pNode->GetChildCount(); i++) 
+		{             
+			p->children.push_back(recursiveNode(pManager, pNode->GetChild(i), bTexcoordVReverse , startTime , endTime )); 
+		}     
+	} 
+ 
+    return p; 
 }
 
-/* Tab character ("\t") counter */
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzePosition(FbxMesh* pMesh) 
+{     
+	// コントロールポイント数の取得     
+	int controlPointsCount = pMesh->GetControlPointsCount(); 
+ 
+    // 頂点座標用コンテナの領域予約     
+	meshes.back().points.reserve(controlPointsCount); 
+ 
+    // 頂点データの取得     
+	FbxVector4* pP = pMesh->GetControlPoints();     
+	
+	for( int i = 0; i < pMesh->GetControlPointsCount(); i++ ) 
+	{         
+		meshes.back().points.push_back( D3DXVECTOR3( static_cast<float>(pP[i][0]) ,                          
+													 static_cast<float>(pP[i][1]) ,                          
+													 static_cast<float>(pP[i][2]) ) );     
+	} 
+ 
+    /* 頂点インデックスの取得 */ 
+ 
+    // インデックス数を取得     
+	int polygonVertexCount = pMesh->GetPolygonVertexCount(); 
+ 
+    // 頂点座標インデックス用コンテナの領域予約     
+	meshes.back().positionIndices.reserve(polygonVertexCount);          
+	
+	// インデックスバッファの取得     
+	for( int i = 0; i < polygonVertexCount; i++ ) 
+	{         
+		meshes.back().positionIndices.push_back(static_cast<unsigned short>(pMesh->GetPolygonVertices()[i]));     
+	} 
+} 
+ 
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzeNormal(FbxMesh* pMesh) 
+{     
+	// レイヤー数の取得     
+	int layerCount = pMesh->GetLayerCount(); 
+ 
+    for(int layer = 0; layer < layerCount; layer++ ) 
+	{ 
+        // 法線の取得         
+		FbxLayerElementNormal* pElementNormal = pMesh->GetElementNormal(layer); 
+ 
+        if( !pElementNormal ) 
+		{ 
+			continue; 
+		} 
+ 
+        // 法線数の取得         
+		int normalCount = pElementNormal->GetDirectArray().GetCount(); 
+ 
+        // 法線格納用コンテナの領域予約         
+		meshes.back().normals.reserve(normalCount); 
+ 
+        // 法線データの取得         
+		for( int i = 0; i < normalCount; i++ ) 
+		{             
+			meshes.back().normals.push_back( D3DXVECTOR3( static_cast<float>(pElementNormal->GetDirectArray()[i][0]),                 
+														  static_cast<float>(pElementNormal->GetDirectArray()[i][1]),                 
+														  static_cast<float>(pElementNormal->GetDirectArray()[i][2])));         
+		} 
+ 
+ 
+        // マッピングモード・リファレンスモード取得         
+		FbxLayerElement::EMappingMode mappingMode = pElementNormal->GetMappingMode();         
+		FbxLayerElement::EReferenceMode referenceMode = pElementNormal->GetReferenceMode(); 
+ 
+        switch(mappingMode) 
+		{ 
+ 
+        case FbxLayerElement::eNone:             
+			MessageBox(NULL, "Normal MappingMode = mappingMode", "未実装", MB_OK);             
+			break; 
+ 
+        case FbxLayerElement::eByControlPoint: 
+ 
+            // 頂点バッファと同じインデックスを使用 
+ 
+            if( referenceMode == FbxLayerElement::eDirect ) 
+			{                 
+				// 法線インデックス格納用コンテナの領域予約                 
+				meshes.back().normalIndices.reserve(meshes.back().points.size());                 
+				
+				// 頂点バッファと同じインデックスをコピー                 
+				meshes.back().normalIndices.assign( meshes.back().positionIndices.begin(), meshes.back().positionIndices.end());             
+			}             
+			else if( referenceMode == FbxLayerElement::eIndexToDirect  || referenceMode == FbxLayerElement::eIndex ) 
+			{                 
+				MessageBox(NULL,  "Normal ReferenceMode = eIndexToDirect or eIndex, MappingMode = eByControlPoint",  "未実装", MB_OK);             
+			}             
+			
+			break; 
+ 
+        case FbxLayerElement::eByPolygonVertex: 
+ 
+            /* 法線独自のインデックスを使用 */ 
+ 
+            if( referenceMode == FbxLayerElement::eDirect ) 
+			{                                  
+				// インデックス参照の必要なし => インデックスを作成 
+ 
+                // 法線インデックス格納用コンテナの領域予約                 
+				meshes.back().normalIndices.reserve(normalCount);                 
+				
+				// 法線インデックスの作成                 
+				for( int i = 0; i < normalCount; i++ ) 
+				{                     
+					meshes.back().normalIndices.push_back(i);                 
+				}             
+			}             
+			else if( referenceMode == FbxLayerElement::eIndexToDirect  || referenceMode == FbxLayerElement::eIndex ) 
+			{ 
+                // 独自インデックスを所持 
+ 
+                // インデックス数の取得                 
+				int normalIndexCount = pElementNormal->GetIndexArray().GetCount();                 
+				
+				// 法線インデックス格納用コンテナの領域予約                 
+				meshes.back().normalIndices.reserve(normalIndexCount);                 
+				
+				// 法線インデックスの取得                 
+				for( int i = 0; i < normalIndexCount; i++ ) 
+				{                     
+					meshes.back().normalIndices.push_back(pElementNormal->GetIndexArray()[i]);                 
+				}             
+			}
 
+            break; 
+ 
+        case FbxLayerElement::eByPolygon:             
+			MessageBox(NULL, "Normal MappingMode = eByPolygon", "未実装", MB_OK);             
+			break;       
+
+		case FbxLayerElement::eByEdge:             
+			MessageBox(NULL, "Normal MappingMode = eByEdge", "未実装", MB_OK);             
+			break;         
+
+		case FbxLayerElement::eAllSame:             
+			MessageBox(NULL, "Normal MappingMode = eAllSame", "未実装", MB_OK);            
+			break;         
+		
+		default:             
+			MessageBox(NULL, "Normal ???", "未実装", MB_OK);             
+			break;         
+		}     
+	} 
+} 
+ 
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzeTexcoord(FbxMesh* pMesh, bool bRevers) 
+{ 
+	int layerCount = pMesh->GetLayerCount(); 
+ 
+	if( !layerCount ) 
+	{ 
+		MessageBox(NULL, "レイヤーを持っていないメッシュを確認", "Analyze Texcoord", MB_OK); 
+		return; 
+	} 
+ 
+	for( int layer = 0; layer < layerCount; layer++ ) 
+	{ 
+        // UVの取得         
+		FbxLayerElementUV* pElementUV = pMesh->GetLayer(layer)->GetUVs(); 
+ 
+        if( !pElementUV ) 
+		{             
+			MessageBox(NULL, "...UVのないメッシュレイヤーを確認", "Analyze Texcoord", MB_OK);             
+			continue;         
+		} 
+ 
+        // UVセット名を取得         
+		// = pElementUV->GetName(); 
+ 
+        // マッピングモード・リファレンスモード取得         
+		FbxLayerElement::EMappingMode mappingMode = pElementUV->GetMappingMode();         
+		FbxLayerElement::EReferenceMode referenceMode = pElementUV->GetReferenceMode(); 
+ 
+        if( mappingMode == FbxLayerElement::eByPolygonVertex ) 
+		{             
+			if( referenceMode == FbxLayerElement::eIndexToDirect || referenceMode == FbxLayerElement::eIndex ) 
+			{                 
+				int uvIndexCount = pElementUV->GetIndexArray().GetCount();                
+				meshes.back().texcoordIndices.reserve(uvIndexCount); 
+ 
+                for( int i = 0; i < uvIndexCount; i++ ) 
+				{                     
+					meshes.back().texcoordIndices.push_back(pElementUV->GetIndexArray().GetAt(i));                 
+				} 
+ 
+                int uvCount = pElementUV->GetDirectArray().GetCount();      
+
+				meshes.back().texcoords.reserve(uvCount); 
+ 
+                for( int i = 0; i < uvCount; i++ ) 
+				{ 
+                    meshes.back().texcoords.push_back(D3DXVECTOR2( static_cast<float>(pElementUV->GetDirectArray().GetAt(i)[0]),                         
+																   static_cast<float>(bRevers ? 1 - pElementUV->GetDirectArray().GetAt(i)[1] : pElementUV->GetDirectArray().GetAt(i)[1])));                 
+				}             
+			}             
+			else 
+			{                 
+				MessageBox(NULL, "Texcoord::未対応のリファレンスモードを取得", "FbxLayerElement::eByPolygonVertex", MB_OK);                 
+				break;             
+			}         
+		}         
+		else if( mappingMode == FbxLayerElement::eByControlPoint ) 
+		{             
+			MessageBox(NULL, "...未対応マッピングモード[eByControlPoint]を取得した", "Analyze Texcoord", MB_OK);         
+		}         
+		else if( mappingMode == FbxLayerElement::eByPolygon) 
+		{             
+			MessageBox(NULL, "...未対応マッピングモード[eByPolygon]を取得した", "Analyze Texcoord", MB_OK);         
+		}         
+		else if( mappingMode == FbxLayerElement::eByEdge ) 
+		{             
+			MessageBox(NULL, "...未対応マッピングモード[eByEdge]を取得した", "Analyze Texcoord", MB_OK);         
+		}         
+		else 
+		{             
+			MessageBox(NULL, "...知らないマッピングモードを取得した", "Analyze Texcoord", MB_OK);         
+		} 
+ 
+        break; // とりあえず１個めだけ     
+	} 
+}
+
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzeMaterial(FbxNode* pNode) 
+{     
+	// マテリアル数の取得     
+	int materialCount = pNode->GetMaterialCount(); 
+ 
+    textures.reserve(materialCount); 
+ 
+    for( int i = 0; i < materialCount; i++ ) 
+	{ 
+		// マテリアル情報の取得     
+		FbxSurfaceMaterial* pMaterial = pNode->GetMaterial(i); 
+    
+		// ディフューズ情報の取得     
+		FbxProperty diffuseProperty = pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse); 
+ 
+		// プロパティが持っているレイヤードテクスチャの枚数をチェック     
+		int layeredTextureCount = diffuseProperty.GetSrcObjectCount<FbxLayeredTexture>(); 
+ 
+		// レイヤードテクスチャが無ければ通常テクスチャ     
+		if ( layeredTextureCount == 0 ) 
+		{ 
+			// 通常テクスチャの枚数をチェック         
+			int textureCount = diffuseProperty.GetSrcObjectCount<FbxFileTexture>(); 
+   
+			// 各テクスチャについてテクスチャ情報をゲット         
+			for( int i = 0; i < textureCount; i++ ) 
+			{ 
+				// i番目のテクスチャオブジェクト取得         
+				FbxFileTexture* pTexture = diffuseProperty.GetSrcObject<FbxFileTexture>(i); 
+ 
+				// テクスチャファイル名の取得         
+				// std::string fileName = pTexture->GetFileName();         
+				std::string relFileName = pTexture->GetRelativeFileName(); 
+ 
+				// UVSet名の取得         
+				std::string uvSetName = pTexture->UVSet.Get().Buffer(); 
+ 
+				// 辞書登録         
+				// texfile2UVset[relFileName] = uvSetName;         
+				std::string strPathName = "data/dude/" + relFileName;        
+
+				//  テクスチャクラスの取得
+				Texture* pTexture2 = SceneManager::GetTexture( );
+
+				// テクスチャの読み込みと管理     
+				pTexture2->SetTextureImage( strPathName.c_str( ) );
+
+				// テクスチャの読み込みと管理         
+				textures.push_back( strPathName );    
+			}         
+		}     
+		else 
+		{ 
+			// レイヤードテクスチャあり         
+			MessageBox(NULL, "レイヤードテクスチャ", "マテリアルの取得", MB_OK);     
+		}     
+	} 
+} 
+ 
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzeMaterial(FbxMesh* pMesh) 
+{     
+	int layerCount = pMesh->GetLayerCount(); 
+ 
+    for(int layer = 0; layer < layerCount; layer++) 
+	{ 
+		FbxLayerElementMaterial* pElementMaterial = pMesh->GetLayer(layer)->GetMaterials();
+
+		if( !pElementMaterial ) 
+		{ 
+			continue; 
+		} 
+ 
+		int materialIndexCount = pElementMaterial->GetIndexArray().GetCount(); 
+ 
+		if( materialIndexCount == 0 ) 
+		{ 
+			continue; 
+		} 
+ 
+		FbxLayerElement::EMappingMode mappingMode = pElementMaterial->GetMappingMode();     
+		FbxLayerElement::EReferenceMode referenceMode = pElementMaterial->GetReferenceMode(); 
+ 
+		if( mappingMode == FbxLayerElement::eAllSame ) 
+		{         
+			if( referenceMode == FbxLayerElement::eIndexToDirect ) 
+			{        
+				// メッシュ全部がこのマテリアルインデックス         
+				meshes.back().materialIndex = pElementMaterial->GetIndexArray().GetAt(0);         
+			}         
+			else 
+			{         
+				MessageBox(NULL, "...未対応のリファレンスモードを取得した", "Material MappingMode = eAllSame", MB_OK);         
+			}     
+		}     
+		else if( mappingMode == FbxLayerElement::eByControlPoint ) 
+		{         
+			MessageBox(NULL, "...未対応のマッピングモード[eByControlPoint]を取得した", "Material MappingMode", MB_OK);     
+		}     
+		else if( mappingMode == FbxLayerElement::eByPolygon ) 
+		{         
+			// マテリアル分割されているはずだから、一番はじめのだけでいい         
+			meshes.back().materialIndex = pElementMaterial->GetIndexArray().GetAt(0);     
+		}     
+		else if( mappingMode == FbxLayerElement::eByEdge ) 
+		{         
+			MessageBox(NULL, "...未対応のマッピングモード[eByEdge]を取得した", "Material MappingMode", MB_OK);     
+		}     
+		else 
+		{         
+			MessageBox(NULL, "...未対応のマッピングモードを取得した", "Material MappingMode", MB_OK);     
+		}     
+	} 
+}
+
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+// Get the geometry offset to a node. It is never inherited by the children. 
+FbxAMatrix SceneFBX::myNode::GetGeometry(FbxNode* pNode) 
+{     
+	const FbxVector4 lT = pNode->GetGeometricTranslation(FbxNode::eSourcePivot);     
+	const FbxVector4 lR = pNode->GetGeometricRotation(FbxNode::eSourcePivot);     
+	const FbxVector4 lS = pNode->GetGeometricScaling(FbxNode::eSourcePivot); 
+ 
+    return FbxAMatrix(lT, lR, lS); 
+} 
+ 
+//--------------------------------------------------------------------------------------
+//  ノードを辿って再帰的に情報を取得する関数
+//--------------------------------------------------------------------------------------
+void SceneFBX::myNode::analyzeCluster(FbxMesh* pMesh) 
+{     
+	D3DXMATRIX mtxIdentitiy;     
+	D3DXMatrixIdentity(&mtxIdentitiy); 
+ 
+    // スキンの数を取得     
+	int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin); 
+ 
+    for( int skinNum = 0; skinNum < skinCount; skinNum++ ) 
+	{ 
+        // スキンを取得         
+		FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(skinNum, FbxDeformer::eSkin); 
+ 
+        // クラスターの数を取得         
+		int clusterCount = pSkin->GetClusterCount(); 
+ 
+        for( int clusterNum = 0; clusterNum < clusterCount; clusterNum++ ) 
+		{ 
+			// クラスタを取得             
+			FbxCluster* pCluster = pSkin->GetCluster(clusterNum); 
+ 
+			// このクラスタが影響を及ぼす頂点インデックスの個数を取得             
+			int pointIndexCount = pCluster->GetControlPointIndicesCount(); 
+ 
+			meshes.back( ).matrixes.emplace_back( 0 );
+
+			if( !pointIndexCount ) 
+			{                 
+				// このメッシュにおいて、このクラスタは無視していいと思う...                 
+				meshes.back().matrixes.back().push_back(mtxIdentitiy);         
+
+				continue;             
+			} 
+ 
+			// 初期姿勢行列の取得             
+			FbxAMatrix lReferenceGlobalInitPosition;             
+			FbxAMatrix lReferenceGlobalCurrentPosition;             
+			FbxAMatrix lReferenceGeometry;             
+			FbxAMatrix lClusterGlobalInitPosition;             
+			FbxAMatrix lClusterGlobalCurrentPosition;             
+			FbxAMatrix lClusterRelativeInitPosition;             
+			FbxAMatrix lClusterRelativeCurrentPositionInverse; 
+ 
+            pCluster->GetTransformMatrix(lReferenceGlobalInitPosition);             
+			
+			// lReferenceGlobalCurrentPosition = pGlobalPosition; // <- たぶんワールド座標変換行列ではないかと                          
+			
+			// Multiply lReferenceGlobalInitPosition by Geometric Transformation             
+			lReferenceGeometry = GetGeometry(pMesh->GetNode());             
+			lReferenceGlobalInitPosition *= lReferenceGeometry; 
+ 
+            // Get the link initial global position and the link current global position.             
+			pCluster->GetTransformLinkMatrix(lClusterGlobalInitPosition);             
+			
+			// lClusterGlobalCurrentPosition = GetGlobalPosition(pCluster->GetLink(), pTime, pPose); // <- ポーズ行列の取り方？？？             
+			
+			FbxTime oneFrameTime;
+			oneFrameTime.SetTime( 0 , 0 , 0 , 1 , 0 , 0 , FbxTime::eFrames60 );
+
+			for( FbxTime currentTime = m_startTime; currentTime < m_endTime; currentTime += oneFrameTime )
+			{
+				lClusterGlobalCurrentPosition = pCluster->GetLink()->EvaluateGlobalTransform(currentTime); 
+ 
+				// Compute the initial position of the link relative to the reference.             
+				lClusterRelativeInitPosition = lClusterGlobalInitPosition.Inverse() * lReferenceGlobalInitPosition; 
+ 
+				// Compute the current position of the link relative to the reference.             
+				lClusterRelativeCurrentPositionInverse = lReferenceGlobalCurrentPosition.Inverse() * lClusterGlobalCurrentPosition; 
+ 
+				// Compute the shift of the link relative to the reference.            
+				FbxAMatrix VertexTransformMatrix = lClusterRelativeCurrentPositionInverse * lClusterRelativeInitPosition; 
+				// ↑ 初期姿勢行列も考慮されたモーションボーン行列なので、これで頂点座標を変換するだけで良い 
+ 
+				D3DXMATRIX d3dMtx; 
+			
+				for( int y = 0; y < 4; y++ ) 
+				{                 
+					for( int x = 0; x < 4; x++ ) 
+					{ 
+						d3dMtx(x, y) = (float)VertexTransformMatrix.Get(x, y);                 
+					}  
+				} 	
+ 
+				meshes.back().matrixes.back().push_back(d3dMtx); 
+			}
+ 
+			int* pointIndexArray = pCluster->GetControlPointIndices();             
+			double* weightArray = pCluster->GetControlPointWeights(); 
+ 
+			for( int i = 0 ; i < pointIndexCount; i++ ) 
+			{                 
+				meshes.back().points[pointIndexArray[i]].bornRefarences.push_back(BornRefarence(clusterNum, static_cast<float>(weightArray[i])));            
+			}     
+		}		
+	} 
+}
 
 //--------------------------------------------------------------------------------------
 //  現在のファイルポインタからある文字列の数をカウントする関数
 //--------------------------------------------------------------------------------------
-void SenceFBX::PrintTabs( ) 
-{
-    for(int i = 0; i < numTabs; i++)
-        printf("\t");
-}
-
-//--------------------------------------------------------------------------------------
-//  現在のファイルポインタからある文字列の数をカウントする関数
-//--------------------------------------------------------------------------------------
-FbxString SenceFBX::GetAttributeTypeName(FbxNodeAttribute::EType type) 
+std::string SceneFBX::myNode::GetAttributeTypeName(FbxNodeAttribute::EType type) 
 { 
     switch(type) { 
         case FbxNodeAttribute::eUnknown: return "unidentified"; 
@@ -475,583 +832,25 @@ FbxString SenceFBX::GetAttributeTypeName(FbxNodeAttribute::EType type)
 }
 
 //--------------------------------------------------------------------------------------
-//  現在のファイルポインタからある文字列の数をカウントする関数
+//  頂点バッファを作成する関数
 //--------------------------------------------------------------------------------------
-void SenceFBX::PrintAttribute(FbxNodeAttribute* pAttribute) 
-{
-    if(!pAttribute) return;
- 
-    FbxString typeName = GetAttributeTypeName(pAttribute->GetAttributeType());
-    FbxString attrName = pAttribute->GetName();
-    PrintTabs();
-    // Note: to retrieve the character array of a FbxString, use its Buffer() method.
-    printf("<attribute type='%s' name='%s'/>\n", typeName.Buffer(), attrName.Buffer());
-}
+void SceneFBX::myNode::MakeVertex( int size )
+{     
+	m_pVtxBuff = nullptr;
 
-//--------------------------------------------------------------------------------------
-//  現在のファイルポインタからある文字列の数をカウントする関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::PrintNode( FILE* pFile , FbxNode* pNode ) 
-{
-    PrintTabs();
-    const char* nodeName = pNode->GetName();
-    FbxDouble3 translation = pNode->LclTranslation.Get(); 
-    FbxDouble3 rotation = pNode->LclRotation.Get(); 
-    FbxDouble3 scaling = pNode->LclScaling.Get();
+	//  デバイス情報の取得
+	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
-    // Print the contents of the node.
-    fprintf( pFile , "<node name='%s' translation='(%f, %f, %f)' rotation='(%f, %f, %f)' scaling='(%f, %f, %f)'>\n", 
-        nodeName, 
-        translation[0], translation[1], translation[2],
-        rotation[0], rotation[1], rotation[2],
-        scaling[0], scaling[1], scaling[2]
-        );
-    numTabs++;
-
-    // Print the node's attributes.
-    for(int i = 0; i < pNode->GetNodeAttributeCount(); i++)
-        PrintAttribute(pNode->GetNodeAttributeByIndex(i));
-
-    // Recursively print the children.
-    for(int j = 0; j < pNode->GetChildCount(); j++)
-        PrintNode( pFile , pNode->GetChild(j));
-
-    numTabs--;
-    PrintTabs();
-    printf("</node>\n");
-}
-
-//--------------------------------------------------------------------------------------
-//  再帰的に必要なデータを取得する関数
-//--------------------------------------------------------------------------------------
-SenceFBX::myNode* SenceFBX::RecursiveNode( FbxNode* pNode ) 
-{
-	myNode* p = NULL;
-
-	if( pNode != NULL )
+	//  頂点バッファの作成
+	if( pDevice->CreateVertexBuffer( sizeof( VERTEX_3D ) * size ,				//  作成したい頂点バッファのサイズ
+											 D3DUSAGE_WRITEONLY ,				//  使用方法
+											 FVF_VERTEX_3D ,					//  
+											 D3DPOOL_MANAGED ,					//  メモリ管理方法( MANAGED → お任せ )
+											 &m_pVtxBuff ,						//  バッファ
+											 NULL ) )
 	{
-		p = new myNode;
-		p->name = pNode->GetName( );
-		p->translation = pNode->LclTranslation.Get( );
-		p->rotation = pNode->LclRotation.Get( );
-		p->scaling = pNode->LclScaling.Get( );
+		MessageBox( NULL , "頂点バッファインターフェースを正しく取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
-		for( int i = 0; i < pNode->GetNodeAttributeCount( ); i++ )
-		{
-			FbxNodeAttribute::EType type = pNode->GetNodeAttributeByIndex( i )->GetAttributeType( );
-			p->attributeNames.push_back( GetAttributeTypeName( type ) );
-
-			//FbxString str = pNode->GetNodeAttributeByIndex( i )->GetName( );
-		 
-			if( type == FbxNodeAttribute::eMesh )
-			{
-				//  メッシュ情報の取得
-				FbxMesh* pMesh = pNode->GetMesh( );
-
-				//  座標の取得
-				AnalizePosition( pMesh );
-
-				//  法線の取得
-				AnalizeNormalize( pMesh );
-
-				//  マテリアル情報の取得
-				AnalizeMaterial( pMesh );
-
-				//  UV座標の取得
-				AnalizeUV( pMesh );
-
-				//  テクスチャ名の取得
-				AnalizeTextureName( pMesh );
-
-				//  
-				AnalizeCluster( pMesh );
-			}
-		}
-
-		for( int i = 0; i < pNode->GetChildCount( ); i++ )
-		{
-			//  子供のデータも取得
-			p->childlen.push_back( RecursiveNode( pNode->GetChild( i ) ) );
-		}
-
-		return p;
-	}
-
-	return NULL;
-}
-
-//--------------------------------------------------------------------------------------
-//  再帰的に必要なデータを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizePosition( FbxMesh* pMesh ) 
-{
-	if( pMesh != NULL )
-	{
-		//  頂点情報の取得
-		m_nCntV = pMesh->GetControlPointsCount( );
-
-		//  頂点バッファの作成
-		m_pV = new Vector3D[ m_nCntV ];
-
-		//  頂点情報の取得
-		FbxVector4* pFbxV = pMesh->GetControlPoints( );
-
-		for( int i = 0; i < m_nCntV; i++ )
-		{
-			m_pV[ i ].x = static_cast< float >( pFbxV[ i ][ 0 ] );
-			m_pV[ i ].y = static_cast< float >( pFbxV[ i ][ 1 ] );
-			m_pV[ i ].z = static_cast< float >( pFbxV[ i ][ 2 ] );
-		}
-
-		//  頂点インデックス番号の取得
-		m_nCntF = pMesh->GetPolygonVertexCount( );
-		m_pFace = new Face[ m_nCntF ];
-		int* pFbxIndex = pMesh->GetPolygonVertices( );
-
-		for( int i = 0; i < m_nCntF; i++ )
-		{
-			m_pFace[ i ].v = static_cast< unsigned short >( pFbxIndex[ i ] );
-		}
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  法線データを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizeNormalize( FbxMesh* pMesh ) 
-{
-	if( pMesh != NULL )
-	{
-		//  レイヤー数の取得
-		int layerCount = pMesh->GetLayerCount( );
-
-		if( layerCount > 1 )
-		{
-			//MessageBox( NULL , "法線を持たないモデルです( sceneModel.cpp )" , "<注意メッセージ>" , MB_OK );
-		}
-		else if( layerCount == 0 )
-		{
-			MessageBox( NULL , "法線を持たないモデルです( sceneModel.cpp )" , "<注意メッセージ>" , MB_OK );
-		}
-
-		//--- レイヤー数だけ回る ---//
-		for ( int i = 0; i < layerCount; i++ ) 
-		{
-			//--- 法線セットを取得 ---//
-			FbxGeometryElementNormal* pNormal = pMesh->GetElementNormal( i );
-
-			if( pNormal == NULL )
-			{
-				//MessageBox( NULL , "法線のないメッシュレイヤーです( sceneModel.cpp )" , "<注意メッセージ>" , MB_OK );
-			}
-
-			//--- マッピングモードの取得
-			FbxGeometryElement::EMappingMode mapping = pNormal->GetMappingMode( );
-
-			//--- リファレンスモードの取得 ---//
-			FbxGeometryElement::EReferenceMode reference = pNormal->GetReferenceMode( );
-
-			//--- マッピングモードの判別 ---//
-			switch( mapping ) 
-			{
-				case FbxGeometryElement::eByControlPoint:
-				{		  
-					break;
-				}
-				case FbxGeometryElement::eByPolygonVertex:
-				{
-					//  リファレンスモードの判別 
-					switch( reference ) 
-					{
-						case FbxGeometryElement::eDirect:
-						{
-							//--- 法線数を取得 ---//
-							m_nCntVn = pNormal->GetDirectArray( ).GetCount( );
-
-							//  頂点バッファの作成
-							m_pVn = new Vector3D[ m_nCntVn ];
-		          
-							//-----------------------------------------------------------------------
-							// eDirect の場合データは順番に格納されているのでそのまま保持
-							//-----------------------------------------------------------------------
-							for(int i = 0; i < m_nCntVn; i++) 
-							{
-								//--- 法線の取得 ---//
-								m_pVn[ i ].x = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 0 ] );
-								m_pVn[ i ].y = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 1 ] );
-								m_pVn[ i ].z = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 2 ] );
-
-								m_pFace[ i ].vn = i;
-							}
-
-							break;
-						}					
-						case FbxGeometryElement::eIndexToDirect: 
-						{
-							//--- 法線数を取得 ---//
-							m_nCntVn = pNormal->GetDirectArray( ).GetCount( );
-
-							//  頂点バッファの作成
-							m_pVn = new Vector3D[ m_nCntVn ];
-		          
-							//-----------------------------------------------------------------------
-							// eDirect の場合データは順番に格納されているのでそのまま保持
-							//-----------------------------------------------------------------------
-							for(int i = 0; i < m_nCntVn; i++) 
-							{
-								//--- 法線の取得 ---//
-								m_pVn[ i ].x = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 0 ] );
-								m_pVn[ i ].y = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 1 ] );
-								m_pVn[ i ].z = static_cast< float >( pNormal->GetDirectArray().GetAt( i )[ 2 ] );
-							}
-
-							//--- 法線数を取得 ---//
-							int normalIdxCount = pNormal->GetIndexArray( ).GetCount( );
-		          
-							//-----------------------------------------------------------------------
-							// eDirect の場合データは順番に格納されているのでそのまま保持
-							//-----------------------------------------------------------------------
-							for(int i = 0; i < normalIdxCount; i++) 
-							{
-								//--- 法線の取得 ---//
-								m_pFace[ i ].vn = static_cast< unsigned short >( pNormal->GetIndexArray().GetAt( i ) );
-							}
-
-							break;
-						}
-						default:
-						{
-							break;
-						}
-					}
-
-					break;
-				}
-				default:
-				{
-					break;
-				}
-			}
-
-			break;
-		}
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  マテリアルデータを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizeMaterial( FbxMesh* pMesh ) 
-{
-	int nNumLayer = pMesh->GetLayerCount( );
-
-	if( nNumLayer > 0 )
-	{
-
-	}
-	else if( !nNumLayer )
-	{
 		return;
-	}
-
-	//for( int nCntLayer = 0; nCntLayer < nNumLayer; ++nCntLayer )
-	//{
-	//	FbxLayerElementMaterial* pElementMaterial = pMesh->GetLayer( nCntLayer )->GetMaterials( );
-
-	//	int nNumMaterialIndex = pElementMaterial->GetIndexArray( ).GetCount( );
-	//}
-
-	//if( mappinMode == FbxLayerElement::eAllSame )
-	//{
-	//	if( referenceMode == FbxLayerElement::eIndexToDirect )
-	//	{
-
-	//	}
-	//}
-	//else if( mappinMode == FbxLayerElement::eByPolygon )
-	//{
-	//	if( referenceMode == FbxLayerElement::eIndexToDirect )
-	//	{
-	//		//  ポリゴン毎にマテリアルインデックス
-	//	}
-	//}
-
-	FbxNode* pNode = pMesh->GetNode();
-
-	//  マテリアル数の取得
-	const int nNumMaterial = pNode->GetMaterialCount( );
-
-	for( int nCntMaterial = 0; nCntMaterial < nNumMaterial; ++nCntMaterial )
-	{
-		//  マテリアル取得。 
-		FbxSurfaceMaterial* pMat = pNode->GetMaterial( nCntMaterial ); 
-
-		//  ディフューズプロパティ
-		FbxProperty diffuseProperty = pMat->FindProperty( FbxSurfaceMaterial::sDiffuse );
-
-		//  プロパティが持っているレイヤードテクスチャ
-		int nNumLayeredTexture = diffuseProperty.GetSrcObjectCount<FbxLayeredTexture>();
-
-		//if( nNumLayeredTexture == 0 )
-		{
-			//  テクスチャ数の取得
-			int nNumTexture = diffuseProperty.GetSrcObjectCount< FbxFileTexture >( );
-
-			//  テクスチャの数分のテクスチャ情報取得のループ
-			for( int nCntTexture = 0; nCntTexture < nNumTexture; nCntTexture++ )
-			{
-				FbxFileTexture* pTexture = diffuseProperty.GetSrcObject< FbxFileTexture >( nCntTexture );
-
-				if( pTexture != NULL ) 
-				{
-					//std::string textureName = pTexture->GetFileName();
-					std::string textureName = pTexture->GetRelativeFileName( );
-
-					//MessageBox( NULL , textureName.c_str( ) , "test" , MB_OK );
-				}
-			}
-		}
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  クラスターデータを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizeCluster( FbxMesh* pMesh ) 
-{
-	//  スキンの数の取得
-	int nSkinCount = pMesh->GetDeformerCount( FbxDeformer::eSkin );
-
-	//  スキンの数分のループ
-	for( int nCntSkin = 0; nCntSkin < nSkinCount; ++nCntSkin )
-	{
-		//  スキンを取得
-		FbxSkin* pSkin = FbxCast< FbxSkin >( pMesh->GetDeformer( nCntSkin , FbxDeformer::eSkin ) );
-
-		//  クラスターの数を取得
-		int nClusterCount = pSkin->GetClusterCount( );
-
-		//  スキンの数分のループ
-		for( int nCntCluster = 0; nCntCluster < nClusterCount; ++nCntCluster )
-		{
-			//  クラスターを取得
-			FbxCluster* pCluster = pSkin->GetCluster( nCntCluster );
-
-			//  このクラスタが影響を及ぼす頂点インデックスの取得
-			int nPointIndexCount = pCluster->GetControlPointIndicesCount( );
-
-			if( !nPointIndexCount )
-			{
-				continue;
-			}
-
-			//  初期姿勢行列の取得
-			FbxAMatrix initMatrix;
-			pCluster->GetTransformLinkMatrix( initMatrix );
-
-			//  戻すの時の行列
-			FbxAMatrix lReferenceGlobalInitPosition;
-			pCluster->GetTransformMatrix( lReferenceGlobalInitPosition );
-
-			FbxAMatrix mtxGeometry;
-			mtxGeometry.SetT( pMesh->GetNode( )->GetGeometricTranslation( FbxNode::eSourcePivot ) );
-			mtxGeometry.SetR( pMesh->GetNode( )->GetGeometricRotation( FbxNode::eSourcePivot ) );
-			mtxGeometry.SetS( pMesh->GetNode( )->GetGeometricScaling( FbxNode::eSourcePivot ) );
-
-			lReferenceGlobalInitPosition *= mtxGeometry;
-
-			//  姿勢マトリクスを取得してみる
-			FbxAMatrix matrix = pCluster->GetLink( )->GetScene( )->GetAnimationEvaluator( )->GetNodeGlobalTransform( pCluster->GetLink( ) , 0 );
-
-			int	pointNum = pCluster->GetControlPointIndicesCount( );
-
-			//  そのボーンの影響を受ける頂点全ての情報
-			int* nPointIndexArray = pCluster->GetControlPointIndices( );
-
-			//  その頂点毎の影響度合いを代入
-			double* dwWeightArray = pCluster->GetControlPointWeights( ); 
-
-			for ( int i = 0; i < pointNum; ++i ) 
-			{
-			   // 頂点インデックスとウェイトを取得
-			   int   index  = nPointIndexArray[ i ];
-			   float weight = ( float )dwWeightArray[ i ];
-			}
-		}
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  UVデータを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizeUV( FbxMesh* pMesh ) 
-{
-	//  UVセット数を取得
-	int UVLayerCount = pMesh->GetElementUVCount( );
-
-	for ( int i = 0; i < UVLayerCount; i++ ) 
-	{
-		//  UVバッファを取得
-		FbxGeometryElementUV* UV = pMesh->GetElementUV(i);
-
-		//  マッピングモードの取得
-		FbxGeometryElement::EMappingMode mapping = UV->GetMappingMode();
-
-		//  リファレンスモードの取得
-		FbxGeometryElement::EReferenceMode reference = UV->GetReferenceMode();
-
-		//  UV数を取得
-		int uvCount = UV->GetDirectArray().GetCount();
-    
-		//  マッピングモードの判別
-		switch( mapping ) 
-		{
-			case FbxGeometryElement::eByControlPoint:    
-			{
-				break;
-			}
-			case FbxGeometryElement::eByPolygonVertex:
-			{
-				//  リファレンスモードの判別
-				switch( reference ) 
-				{
-					case FbxGeometryElement::eDirect:
-					{
-						break;
-					}
-					case FbxGeometryElement::eIndexToDirect:
-					{
-						FbxLayerElementArray* uvIndex = &UV->GetIndexArray( );
-						int uvIndexCount = uvIndex->GetCount( );
-            
-						//--- UVを保持 ---// 
-						point2 temp;
-
-						for(int i = 0; i < uvIndexCount; i++) 
-						{
-							temp.x = ( float )UV->GetDirectArray( ).GetAt( i )[ 0 ];
-
-							temp.y = 1.0f - ( float )UV->GetDirectArray( ).GetAt( i )[ 1 ];
-
-							m_uvSet.uvBuffer.push_back(temp);
-						}
-            
-						//--- UVSet名を取得 ---//
-						m_uvSet.uvSetName = UV->GetName();
-					
-						break;
-					}
-					default:
-					{
-						break;
-					}
-				}
-
-				break;
-			}
-			case FbxGeometryElement::eByEdge:
-			{
-				break;
-			}
-			case FbxGeometryElement::eByPolygon:
-			{
-				break;
-			}
-			default:
-			{
-				break;
-			}
-		}
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  テクスチャ名データを取得する関数
-//--------------------------------------------------------------------------------------
-void SenceFBX::AnalizeTextureName( FbxMesh* pMesh ) 
-{
-  //--- メッシュからノードを取得 ---//
-  FbxNode* node = pMesh->GetNode();
-
-  //--- マテリアルの数を取得 ---//
-  int materialCount = node->GetMaterialCount();
-
-	//--- マテリアルの数だけ繰り返す ---//
-	for (int i = 0; materialCount > i; i++) 
-	{ 
-		//--- マテリアルを取得 ---//
-		FbxSurfaceMaterial* material = node->GetMaterial(i);
-		FbxProperty prop = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-
-		////--- FbxLayeredTexture の数を取得 ---//
-		//int layeredTextureCount = prop.GetSrcSceneCount();
-
-		////--- アタッチされたテクスチャが FbxLayeredTexture の場合 ---//
-		//if(0 < layeredTextureCount) 
-		//{
-		//	//--- アタッチされたテクスチャの数だけ繰り返す ---//
-		//	for(int j = 0; layeredTextureCount > j; j++) 
-		//	{
-		//		//--- テクスチャを取得 ---//
-		//		FbxLayeredTexture* layeredTexture = prop.GetSrcScene<FbxLayeredTexture>(j);
-
-		//		//--- レイヤー数を取得 ---//
-		//		int textureCount = layeredTexture->GetSrcSceneCount<FbxFileTexture>();
-
-		//		//--- レイヤー数だけ繰り返す ---//
-		//		for(int k = 0; textureCount > k; k++) 
-		//		{
-		//			//--- テクスチャを取得 ---//
-		//			FbxFileTexture* texture = prop.GetSrcScene<FbxFileTexture>(k);
-  //  
-		//			if(texture) 
-		//			{
-		//				//--- テクスチャ名を取得 ---//
-		//				//std::string textureName = texture->GetName();
-		//				std::string textureName = texture->GetRelativeFileName();
-
-		//				//--- UVSet名を取得 ---//
-		//				std::string UVSetName = texture->UVSet.Get().Buffer();
-
-		//				//--- UVSet名を比較し対応しているテクスチャなら保持 ---//
-		//				if(m_uvSet.uvSetName == UVSetName) 
-		//				{
-		//					m_uvSet.textures.push_back(textureName);
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-		//else 
-		{
-			//--- テクスチャ数を取得 ---//
-			int fileTextureCount = prop.GetSrcObjectCount<FbxFileTexture>();
-
-			if(0 < fileTextureCount) 
-			{
-				//--- テクスチャの数だけ繰り返す ---//
-				for(int j = 0; fileTextureCount > j; j++) 
-				{
-					//--- テクスチャを取得 ---//
-					FbxFileTexture* texture = prop.GetSrcObject<FbxFileTexture>(j);
-
-					if(texture) 
-					{
-						//--- テクスチャ名を取得 ---//
-						//std::string textureName = texture->GetName();
-						std::string textureName = texture->GetRelativeFileName();
-
-						//--- UVSet名を取得 ---//
-						std::string UVSetName = texture->UVSet.Get().Buffer();
-
-						//--- UVSet名を比較し対応しているテクスチャなら保持 ---//
-						if(m_uvSet.uvSetName == UVSetName) 
-						{
-							m_uvSet.textures.push_back(textureName);
-						}
-					}
-				}
-			}
-		}
 	}
 }

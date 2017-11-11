@@ -27,6 +27,15 @@
 #include "magicFire.h"
 #include "magicLightning.h"
 #include "magicTornade.h"
+#include "meshTracing.h"
+#include "stencilShadow.h"
+#include "magic.h"
+#include "playerUI.h"
+#include "shadow.h"
+#include "life.h"
+#include "brave.h"
+#include "stateAnimator.h"
+#include "utility.h"
 #include <random>
 #include "Wwise.h"
 
@@ -118,6 +127,10 @@ static const int	PLAYER_GUARD_FRAME			= 5;
 
 static const float	CAMERA_ROTATE_ANGLE			= 0.025f;
 
+static const float	PLAYER_HEIGHT = 10.0f;
+
+static const float	PLAYER_SHADOW_SCALE = 0.55f;
+
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
@@ -125,7 +138,7 @@ static const float	CAMERA_ROTATE_ANGLE			= 0.025f;
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Player::Player( )
+Player::Player( ) : SceneModelAnim( 5 )
 {
 	m_beforePos = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_vecDirect = D3DXVECTOR3( 0.0f , 0.0f , 1.0f );
@@ -134,12 +147,12 @@ Player::Player( )
 	m_fCurrentJumpPower = 0.0f;
 	m_nCntJump = 0;
 	m_bLockOn = true;
+	m_stencilShadow = nullptr;
 	m_attackHitSphere.fLength = PLAYER_HIT_SPHERE_LENGTH;
 	m_attackHitSphere.position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_hitSphere.fLength = PLAYER_HIT_SPHERE_LENGTH * 0.5f;
 	m_hitSphere.position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_pLife = NULL;
-	m_pShadow = NULL;
 	m_pBrave = NULL;
 	m_pStateAnimator = NULL;
 	m_pPlayerUI = NULL;
@@ -170,14 +183,16 @@ Player::~Player( )
 HRESULT Player::Init( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Init( );
+	SceneModelAnim::Init( );
 
 	//  物体の種類の設定
-	Sence::SetObjType( Sence::OBJTYPE_PLAYER );
+	Scene::SetObjType( Scene::OBJTYPE_PLAYER );
 
-	//  影の生成
-	m_pShadow = Shadow::Create( m_position , D3DXVECTOR3( 3.0f , 0.0f , 3.0f ) , D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) ,
-								 D3DXVECTOR3( 0.0f , -D3DXToRadian( 90 ) , 0.0f ) , D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f ) ); 
+	//  ステンシルシャドウの生成
+	m_stencilShadow = StencilShadow::Create( StencilShadow::TYPE::SPHERE ,
+											 m_position , 
+											 D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+											 D3DXVECTOR3( PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE ) );
 
 	if( m_nPlayerNo == 0 )
 	{
@@ -297,6 +312,13 @@ HRESULT Player::Init( void )
 	//  方向ベクトルの代入
 	D3DXVec3Normalize( &m_vecDirect , &( m_posAt - m_position ) );
 
+	//D3DXVECTOR3 positionUp = m_position;
+	//positionUp.y += PLAYER_HEIGHT;
+	//D3DXVECTOR3 positionDown = m_position;
+
+	////  軌跡メッシュの生成
+	//m_pMeshTracing = MeshTracing::Create( D3DXCOLOR( 1.0f , 0.0f , 0.0f , 1.0f ) , positionUp , positionDown );
+
 	return S_OK;
 }
 
@@ -306,29 +328,20 @@ HRESULT Player::Init( void )
 void Player::Uninit( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Uninit( );
-
-	if( m_pShadow != NULL )
-	{
-		m_pShadow->Release( );
-		m_pShadow = NULL;
-	}
+	SceneModelAnim::Uninit( );
 
 	if( m_pLife != NULL )
 	{
-		//m_pLife->Release( );
 		m_pLife = NULL;
 	}
 
 	if( m_pBrave != NULL )
 	{
-		//m_pBrave->Release( );
 		m_pBrave = NULL;
 	}
 
 	if( m_pPlayerUI != NULL )
 	{
-		//m_pPlayerUI->Release( );
 		m_pPlayerUI = NULL;
 	}
 
@@ -336,6 +349,11 @@ void Player::Uninit( void )
 	{
 		delete m_pStateAnimator;
 		m_pStateAnimator = NULL;
+	}
+
+	if( m_stencilShadow != NULL )
+	{
+		m_stencilShadow = NULL;
 	}
 }
 
@@ -359,10 +377,10 @@ void Player::Update( void )
 	Camera* pCamera = Game::GetCamera( m_nPlayerNo );
 
 	//  シーンクラスのポインタ
-	Sence* pScene = NULL;			
+	Scene* pScene = NULL;			
 
 	//  シーンクラスのポインタ
-	Sence *pScene2 =NULL;										
+	Scene *pScene2 =NULL;										
 
 	//  当たり判定用フィールドクラス
 	HitField* pHitField = NULL;
@@ -397,12 +415,12 @@ void Player::Update( void )
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene = Sence::GetScene( nCntPriority );
+			pScene = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene->GetObjType( );
@@ -411,7 +429,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 				{
 					//  種類が敵の場合
-					if( objType == Sence::OBJTYPE_ENEMY )
+					if( objType == Scene::OBJTYPE_ENEMY )
 					{
 						//  ダウンキャスト
 						Enemy* pEnemy = ( Enemy* )pScene;
@@ -428,7 +446,7 @@ void Player::Update( void )
 				//  プレイヤー対戦モードの場合
 				else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 				{
-					if( objType == Sence::OBJTYPE_PLAYER )
+					if( objType == Scene::OBJTYPE_PLAYER )
 					{
 						//  ダウンキャスト
 						Player* pPlayer = ( Player* )pScene;
@@ -1132,18 +1150,18 @@ void Player::Update( void )
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene = Sence::GetScene( nCntPriority );
+			pScene = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene->GetObjType( );
 
 				//  種類がゴールの場合
-				if( objType == Sence::OBJTYPE_HIT_FIELD )
+				if( objType == Scene::OBJTYPE_HIT_FIELD )
 				{
 					//  当たり判定用フィールドクラスにダウンキャスト
 					pHitField = ( HitField* )pScene;
@@ -1180,15 +1198,16 @@ void Player::Update( void )
 						}
 					}
 
-					if( m_pShadow != NULL )
+					//  ステンシルシャドウが存在している場合している場合
+					if( m_stencilShadow != nullptr )
 					{
-						float fScale = 1.0f + ( m_position.y - pHitField->GetHeight( m_position )  ) * 0.01f;
+						float fScale = PLAYER_SHADOW_SCALE + ( m_position.y - pHitField->GetHeight( m_position )  ) * 0.01f;
 
-						//  大きさ比率の設定
-						m_pShadow->SetScale( fScale );
+						D3DXVECTOR3 position = m_position;
+						position.y = pHitField->GetHeight( m_position );
 
-						//  座標の代入
-						m_pShadow->SetPos( D3DXVECTOR3( m_position.x , pHitField->GetHeight( m_position ) + 0.01f , m_position.z ) );
+						m_stencilShadow->SetScale( D3DXVECTOR3( fScale , fScale , fScale ) );
+						m_stencilShadow->SetPosition( position );
 					}
 				}
 
@@ -1196,7 +1215,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 				{
 					//  種類が敵の場合
-					if( objType == Sence::OBJTYPE_ENEMY )
+					if( objType == Scene::OBJTYPE_ENEMY )
 					{
 						//  ダウンキャスト
 						Enemy* pEnemy = ( Enemy* )pScene;
@@ -1213,7 +1232,7 @@ void Player::Update( void )
 				//  プレイヤー対戦モードの場合
 				else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 				{
-					if( objType == Sence::OBJTYPE_PLAYER )
+					if( objType == Scene::OBJTYPE_PLAYER )
 					{
 						//  ダウンキャスト
 						Player* pPlayer = ( Player* )pScene;
@@ -1379,12 +1398,12 @@ void Player::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene = Sence::GetScene( nCntPriority );
+					pScene = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene->GetObjType( );
@@ -1393,7 +1412,7 @@ void Player::Update( void )
 						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  ダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene;
@@ -1407,7 +1426,7 @@ void Player::Update( void )
 						//  プレイヤー対戦モードの場合
 						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 						{
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  ダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -1433,7 +1452,7 @@ void Player::Update( void )
 						}
 
 						//  種類が弾の場合
-						if( objType == Sence::OBJTYPE_BULLET )
+						if( objType == Scene::OBJTYPE_BULLET )
 						{
 							//  ダウンキャスト
 							Bullet* pBullet = ( Bullet* )pScene;
@@ -1446,24 +1465,24 @@ void Player::Update( void )
 									//  ロックオン状態の場合
 									if( m_bLockOn == true )
 									{
-										Sence* pScene2 = NULL;									//  シーンクラスのポインタ
+										Scene* pScene2 = NULL;									//  シーンクラスのポインタ
 
 										//  優先度の最大数分のループ
 										for( int nCntPriority2 = 0; nCntPriority2 < MAX_NUM_PRIORITY; nCntPriority2++ )
 										{
 											//  シーンの先頭アドレスを取得
-											pScene2 = Sence::GetScene( nCntPriority2 );
+											pScene2 = Scene::GetScene( nCntPriority2 );
 
 											//  シーンが空ではない間ループ
 											while( pScene2 != NULL )
 											{
-												Sence::OBJTYPE objType2;						//  物体の種類
+												Scene::OBJTYPE objType2;						//  物体の種類
 
 												//  物体の種類の取得
 												objType2 = pScene2->GetObjType( );
 
 												//  種類が敵の場合
-												if( objType2 == Sence::OBJTYPE_ENEMY )
+												if( objType2 == Scene::OBJTYPE_ENEMY )
 												{
 													D3DXVECTOR3 workVecDirect;
 
@@ -1519,7 +1538,7 @@ void Player::Update( void )
 							}
 						}
 						//  種類が炎魔法の場合
-						if( objType == Sence::OBJTYPE_MAGIC_FIRE )
+						if( objType == Scene::OBJTYPE_MAGIC_FIRE )
 						{
 							//  ダウンキャスト
 							MagicFire* pMagicFire = ( MagicFire* )pScene;
@@ -1572,12 +1591,12 @@ void Player::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene = Sence::GetScene( nCntPriority );
+					pScene = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene->GetObjType( );
@@ -1586,7 +1605,7 @@ void Player::Update( void )
 						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  ダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene;
@@ -1627,7 +1646,7 @@ void Player::Update( void )
 						//  プレイヤー対戦モードの場合
 						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 						{
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  ダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -1731,12 +1750,12 @@ void Player::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene = Sence::GetScene( nCntPriority );
+					pScene = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene->GetObjType( );
@@ -1745,7 +1764,7 @@ void Player::Update( void )
 						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  ダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene;
@@ -1759,7 +1778,7 @@ void Player::Update( void )
 						//  プレイヤー対戦モードの場合
 						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 						{
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  ダウンキャスト
 								Player* pPlayer = ( Player* )pScene;
@@ -1791,7 +1810,7 @@ void Player::Update( void )
 
 				float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
 
-				EffekseerManager::SetPos( m_handle[ EffekseerManager::TYPE_SLASH000 ] ,
+				EffekseerManager::SetPosition( m_handle[ EffekseerManager::TYPE_SLASH000 ] ,
 										   D3DXVECTOR3( m_position.x , m_attackHitSphere.position.y , m_position.z ) );
 				EffekseerManager::SetRot( m_handle[ EffekseerManager::TYPE_SLASH000 ] , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) );
 
@@ -1839,12 +1858,12 @@ void Player::Update( void )
 					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 					{
 						//  シーンの先頭アドレスを取得
-						pScene = Sence::GetScene( nCntPriority );
+						pScene = Scene::GetScene( nCntPriority );
 
 						//  シーンが空ではない間ループ
 						while( pScene != NULL )
 						{
-							Sence::OBJTYPE objType;						//  物体の種類
+							Scene::OBJTYPE objType;						//  物体の種類
 
 							//  物体の種類の取得
 							objType = pScene->GetObjType( );
@@ -1853,7 +1872,7 @@ void Player::Update( void )
 							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 							{
 								//  種類が敵の場合
-								if( objType == Sence::OBJTYPE_ENEMY )
+								if( objType == Scene::OBJTYPE_ENEMY )
 								{
 									//  ダウンキャスト
 									Enemy* pEnemy = ( Enemy* )pScene;
@@ -1880,7 +1899,7 @@ void Player::Update( void )
 							//  プレイヤー対戦モードの場合
 							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 							{
-								if( objType == Sence::OBJTYPE_PLAYER )
+								if( objType == Scene::OBJTYPE_PLAYER )
 								{
 									//  ダウンキャスト
 									Player* pPlayer = ( Player* )pScene;
@@ -1948,12 +1967,12 @@ void Player::Update( void )
 				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 				{
 					//  シーンの先頭アドレスを取得
-					pScene2 = Sence::GetScene( nCntPriority );
+					pScene2 = Scene::GetScene( nCntPriority );
 
 					//  シーンが空ではない間ループ
 					while( pScene2 != NULL )
 					{
-						Sence::OBJTYPE objType;						//  物体の種類
+						Scene::OBJTYPE objType;						//  物体の種類
 
 						//  物体の種類の取得
 						objType = pScene2->GetObjType( );
@@ -1962,7 +1981,7 @@ void Player::Update( void )
 						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_ENEMY )
+							if( objType == Scene::OBJTYPE_ENEMY )
 							{
 								//  ダウンキャスト
 								Enemy* pEnemy = ( Enemy* )pScene2;
@@ -1975,7 +1994,7 @@ void Player::Update( void )
 						if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 						{
 							//  種類が敵の場合
-							if( objType == Sence::OBJTYPE_PLAYER )
+							if( objType == Scene::OBJTYPE_PLAYER )
 							{
 								//  ダウンキャスト
 								Player* pPlayer = ( Player* )pScene2;
@@ -2141,7 +2160,7 @@ void Player::Update( void )
 				D3DXVECTOR3 effekseerPos( m_position.x , m_position.y + PLAYER_HIT_SPHERE_POS_Y , m_position.z );
 				effekseerPos += m_vecDirect * 8.0f;
 
-				EffekseerManager::SetPos( m_handle[ EffekseerManager::TYPE_LANCE ] , effekseerPos );
+				EffekseerManager::SetPosition( m_handle[ EffekseerManager::TYPE_LANCE ] , effekseerPos );
 
 				if( m_nKey >= 11 )
 				{
@@ -2173,12 +2192,12 @@ void Player::Update( void )
 					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 					{
 						//  シーンの先頭アドレスを取得
-						pScene = Sence::GetScene( nCntPriority );
+						pScene = Scene::GetScene( nCntPriority );
 
 						//  シーンが空ではない間ループ
 						while( pScene != NULL )
 						{
-							Sence::OBJTYPE objType;						//  物体の種類
+							Scene::OBJTYPE objType;						//  物体の種類
 
 							//  物体の種類の取得
 							objType = pScene->GetObjType( );
@@ -2187,7 +2206,7 @@ void Player::Update( void )
 							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 							{
 								//  種類が敵の場合
-								if( objType == Sence::OBJTYPE_ENEMY )
+								if( objType == Scene::OBJTYPE_ENEMY )
 								{
 									//  ダウンキャスト
 									Enemy* pEnemy = ( Enemy* )pScene;
@@ -2201,7 +2220,7 @@ void Player::Update( void )
 							//  プレイヤー対戦モードの場合
 							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 							{
-								if( objType == Sence::OBJTYPE_PLAYER )
+								if( objType == Scene::OBJTYPE_PLAYER )
 								{
 									//  ダウンキャスト
 									Player* pPlayer = ( Player* )pScene;
@@ -2650,12 +2669,12 @@ void Player::Update( void )
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene2 = Sence::GetScene( nCntPriority );
+			pScene2 = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene2 != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene2->GetObjType( );
@@ -2664,7 +2683,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 				{
 					//  種類が敵の場合
-					if( objType == Sence::OBJTYPE_ENEMY )
+					if( objType == Scene::OBJTYPE_ENEMY )
 					{
 						//  ダウンキャスト
 						Enemy* pEnemy = ( Enemy* )pScene2;
@@ -2691,7 +2710,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 				{
 					//  種類がプレイヤーの場合
-					if( objType == Sence::OBJTYPE_PLAYER )
+					if( objType == Scene::OBJTYPE_PLAYER )
 					{
 						//  ダウンキャスト
 						Player* pPlayer = ( Player* )pScene2;
@@ -2763,12 +2782,12 @@ void Player::Update( void )
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene = Sence::GetScene( nCntPriority );
+			pScene = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene->GetObjType( );
@@ -2777,7 +2796,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 				{
 					//  種類が敵の場合
-					if( objType == Sence::OBJTYPE_ENEMY )
+					if( objType == Scene::OBJTYPE_ENEMY )
 					{
 						D3DXVECTOR3 posEnemy;						//  敵の座標
 
@@ -2822,7 +2841,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 				{
 					//  種類がプレイヤーの場合
-					if( objType == Sence::OBJTYPE_PLAYER )
+					if( objType == Scene::OBJTYPE_PLAYER )
 					{
 						//  ダウンキャスト
 						Player* pPlayer = ( Player* )pScene;
@@ -2922,12 +2941,12 @@ void Player::Update( void )
 		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
 		{
 			//  シーンの先頭アドレスを取得
-			pScene = Sence::GetScene( nCntPriority );
+			pScene = Scene::GetScene( nCntPriority );
 
 			//  シーンが空ではない間ループ
 			while( pScene != NULL )
 			{
-				Sence::OBJTYPE objType;						//  物体の種類
+				Scene::OBJTYPE objType;						//  物体の種類
 
 				//  物体の種類の取得
 				objType = pScene->GetObjType( );
@@ -2936,7 +2955,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 				{
 					//  種類が敵の場合
-					if( objType == Sence::OBJTYPE_ENEMY )
+					if( objType == Scene::OBJTYPE_ENEMY )
 					{
 						D3DXVECTOR3 posEnemy;						//  敵の座標
 
@@ -2981,7 +3000,7 @@ void Player::Update( void )
 				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
 				{
 					//  種類がプレイヤーの場合
-					if( objType == Sence::OBJTYPE_PLAYER )
+					if( objType == Scene::OBJTYPE_PLAYER )
 					{
 						//  ダウンキャスト
 						Player* pPlayer = ( Player* )pScene;
@@ -3090,8 +3109,18 @@ void Player::Update( void )
 	//  共通項目( 後ろ )終了
 	////////////////////////////////////////////////////////
 
+	//if( m_pMeshTracing != nullptr )
+	//{
+	//	D3DXVECTOR3 positionUp = m_position;
+	//	positionUp.y += PLAYER_HEIGHT;
+	//	D3DXVECTOR3 positionDown = m_position;
+
+	//	m_pMeshTracing->SetNewVertexPositionUp( positionUp );
+	//	m_pMeshTracing->SetNewVertexPositionDown( positionDown );
+	//}
+
 	//  シーンモデル
-	SenceModelAnim::Update( );
+	SceneModelAnim::Update( );
 
 	//  体力が上限を超えた場合
 	if( m_nLife > BASE_LIFE )
@@ -3126,7 +3155,7 @@ void Player::Update( void )
 void Player::Draw( void )
 {
 	//  シーンモデル
-	SenceModelAnim::Draw( );
+	SceneModelAnim::Draw( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -3140,7 +3169,7 @@ Player* Player::Create( D3DXVECTOR3 position , D3DXVECTOR3 rot , D3DXVECTOR3 sca
 	pPlayer = new Player;
 
 	//  モデルの種類の代入
-	pPlayer->m_type = SenceModelAnim::TYPE_PLAYER;
+	pPlayer->m_type = SceneModelAnim::TYPE_PLAYER;
 
 	//  座標の代入
 	pPlayer->m_position = position;
@@ -3274,7 +3303,7 @@ void Player::Damage( D3DXVECTOR3 blowVecDirect , float fBlowPower , int nDamage 
 		if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
 		{
 			//  ゲームオーバー画面へ
-			CResult::SetResult( CResult::GAME_OVER );
+			Result::SetResult( Result::GAME_OVER );
 		}
 		//  プレイヤー対戦の場合
 		else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
@@ -3282,12 +3311,12 @@ void Player::Damage( D3DXVECTOR3 blowVecDirect , float fBlowPower , int nDamage 
 			if( m_nPlayerNo == 0 )
 			{
 				//  プレイヤー2WIN画面へ
-				CResult::SetResult( CResult::GAME_PLAYER2_WIN );
+				Result::SetResult( Result::GAME_PLAYER2_WIN );
 			}
 			else if( m_nPlayerNo == 1 )
 			{
 				//  プレイヤー1WIN画面へ
-				CResult::SetResult( CResult::GAME_PLAYER1_WIN );
+				Result::SetResult( Result::GAME_PLAYER1_WIN );
 			}
 		}		
 
