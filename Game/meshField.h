@@ -35,6 +35,7 @@ public:
 	void					Uninit( void );						//  終了
 	void					Update( void );						//  更新
 	void					Draw( void );						//  描画
+	void					DrawDepth( void );					//  デプス値の書き込み
 
 	static MeshField*		Create( TYPE type ,					//  生成
 									D3DXVECTOR3 position ,			

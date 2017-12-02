@@ -48,7 +48,6 @@ public:
 	static void		SetResult( RESULT result );			//  結果の設定
 
 private:
-	Camera*		m_pCamera;							//  カメラ
 	PlayerResult*	m_pPlayer[ 2 ];						//  プレイヤー
 	static RESULT	m_result;							//  結果
 	static bool		m_bPush;							//  押したかどうか

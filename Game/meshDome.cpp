@@ -12,6 +12,8 @@
 #include "renderer.h"
 #include "texture.h"
 #include "light.h"
+#include "shaderManager.h"
+#include "camera.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -113,7 +115,8 @@ void MeshDome::Draw( void )
 	//  テクスチャ情報の取得
 	Texture* pTexture = SceneManager::GetTexture( );
 
-	D3DMATERIAL9 material;
+	//  シェーダー情報の取得
+	Shader3DNoLight* shader3DNoLight = ( Shader3DNoLight* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_NO_LIGHT );
 
 	//  メインからデバイス情報を取得
 	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
@@ -140,22 +143,6 @@ void MeshDome::Draw( void )
 	//  平行移動行列の掛け算
 	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
 
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
-
-	//  ライトを消す
-	Light* pLight = SceneManager::GetLight( );
-	pLight->LightOff( );
-
-	//  材質クラスの初期化
-	ZeroMemory( &material , sizeof( D3DMATERIAL9 ) );
-
-	material.Diffuse = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-	material.Ambient = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-
-	//  材質の設定
-	pDevice->SetMaterial( &material );
-
 	//  GPUとVRAMの接続
 	pDevice->SetStreamSource( 0 ,										//  パイプライン番号
 							  m_pVtxBuff ,								//  頂点バッファのアドレス
@@ -165,11 +152,18 @@ void MeshDome::Draw( void )
 	//  インデックスバッファの設定
 	pDevice->SetIndices( m_pIndexBuff );
 
-	//  頂点フォーマットの設定
-	pDevice->SetFVF( FVF_VERTEX_3D );
+	Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+	D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+
+	//  シェーダーに必要な情報の設定
+	shader3DNoLight->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix );
 
 	//  テクスチャの設定
-	pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_aTextureName ) ); 
+	pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_aTextureName ) );
+
+	//  シェーダー3Dの描画開始
+	shader3DNoLight->DrawBegin( );
 
 	//  プリミティブの描画
 	pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
@@ -179,8 +173,8 @@ void MeshDome::Draw( void )
 								   0 ,									//  スタートインデックス
 								   m_nNumPolygon );						//  プリミティブ数	
 
-	//  ライトを点ける
-	pLight->LightOn( );
+	//  シェーダー3Dの描画終了
+	ShaderManager::DrawEnd( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -241,7 +235,7 @@ void MeshDome::MakeVertex( void )
 	if( FAILED( pDevice->CreateVertexBuffer( sizeof( VERTEX_3D ) * ( m_nDivideSide + 1 ) *
 																   ( m_nDivideVertical + 1 ) ,			//  作成したい頂点バッファのサイズ
 											 D3DUSAGE_WRITEONLY ,										//  使用方法
-											 FVF_VERTEX_3D ,											//  
+											 0 ,														//  
 											 D3DPOOL_MANAGED ,											//  メモリ管理方法( MANAGED → お任せ )
 											 &m_pVtxBuff ,												//  バッファ
 											 NULL ) ) )
@@ -290,14 +284,11 @@ void MeshDome::MakeVertex( void )
 											 sinf( D3DXToRadian( 360.0f / ( float )m_nDivideSide * ( float )nCntSide ) ) * m_fDistance * sinf( D3DXToRadian( 90.0f / ( float )m_nDivideVertical * ( float )nCntVertical ) ) );
 			}
 
-			//  法線ベクトルの設定
-			pVtx[ 0 ].normal = D3DXVECTOR3( 0.0f , 0.0f , -1.0f );
-
 			//  頂点色の設定( 0 ～ 255 の整数値 )
 			pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 
 			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * ( 0.5f / ( float )m_nDivideSide ) , ( float )nCntVertical * ( 1.0f / ( float )m_nDivideVertical ) );
+			pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * ( 0.5f / ( float )m_nDivideSide ) , ( float )nCntVertical * ( 1.0f / ( float )m_nDivideVertical ) );
 
 			//  アドレスを進める
 			pVtx++;
@@ -358,12 +349,12 @@ void MeshDome::SetTexture( void )
 				if( m_type == MeshDome::TYPE_SKY )
 				{
 					//  UV座標の指定
-					pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * ( 1.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
+					pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * ( 1.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
 				}
 				else if( m_type == MeshDome::TYPE_COSMO )
 				{
 					//  UV座標の指定
-					pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * ( 1.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
+					pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * ( 1.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
 				}
 
 				//  アドレスを進める

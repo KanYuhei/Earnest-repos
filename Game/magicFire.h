@@ -19,15 +19,16 @@
 class MagicFire : public Magic
 {
 public:
-	MagicFire( ){ }										//  コンストラクタ
+	MagicFire( ){ }											//  コンストラクタ
 	~MagicFire( ){ }										//  デストラクタ
 
 	HRESULT					Init( void );					//  初期化
 	void					Uninit( void );					//  終了
 	void					Update( void );					//  更新
 	void					Draw( void );					//  描画
+	void					DrawDepth( void ){ }			//  デプス値の書き込み
 
-	Utility::HIT_SPHERE	GetHitSphere( void );			//  球体の当たり判定の取得
+	Utility::HIT_SPHERE		GetHitSphere( void );			//  球体の当たり判定の取得
 	OWNER					GetOwner( void );				//  所有者の確認
 	void					Hit( void );					//  当たった時の処理
 	void					SetActive( void );				//  アクティブ状態に
@@ -54,7 +55,7 @@ private:
 	bool					m_bHoming;						//  追尾するかどうか
 	int						m_nLife;						//  体力
 	int						m_nPlayerNo;					//  プレイヤー番号
-	Utility::HIT_SPHERE	m_hitSphere;					//  当たり判定
+	Utility::HIT_SPHERE		m_hitSphere;					//  当たり判定
 	::Effekseer::Handle		m_handle;						//  エフェクシアハンドル
 };
 

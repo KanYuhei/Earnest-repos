@@ -24,9 +24,12 @@ public:
 	HRESULT				Init( void );									//  初期化
 	void				Uninit( void );									//  終了
 	void				Update( D3DXMATRIX mtxParent );					//  更新
-	void				Draw( D3DXVECTOR3 position ,							//  描画
+	void				Draw( D3DXVECTOR3 position ,					//  描画
 							  D3DXVECTOR3 posAt ,
-							  D3DXCOLOR color );	
+							  D3DXCOLOR color );
+	void				DrawDepth( D3DXVECTOR3 position ,				//  デプス値の書き込み
+								   D3DXVECTOR3 posAt , 
+								   D3DXCOLOR color );						
 
 	static SceneModelParts* Create( int nIndex ,
 									 int nParent ,
@@ -51,7 +54,7 @@ public:
 
 	void				SetSeekPos( D3DXVECTOR3 seekPos );				//  回転角の設定
 
-	void				SetPositionAt( D3DXVECTOR3 posAt );					//  注視点の設定
+	void				SetPositionAt( D3DXVECTOR3 posAt );				//  注視点の設定
 
 private:
 	LPD3DXMESH			m_pMeshModel;									//  メッシュ情報

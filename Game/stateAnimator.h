@@ -41,7 +41,7 @@ public:
 		MOTION_VANISH ,												//  消える
 		MOTION_WIN ,												//  勝利
 		MOTION_LOSE ,												//  敗北
-		MOTION_FINISHER ,											//  必殺技
+		MOTION_RUSH_ATTACK ,										//  突進攻撃
 		MOTION_MAGIC_READY ,										//  魔法構え
 		MOTION_MAGIC_ACTIVE ,										//  魔法発動
 		MOTION_MAGIC_ACTIVE2 ,										//  魔法発動

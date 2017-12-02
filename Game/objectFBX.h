@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------------
-//  レンダリング処理   ( sceneFBX.h )
+//  ObjectFBX   ( objectFBX.h )
 //
 //  Author : SHUN YAMASHITA
 //--------------------------------------------------------------------------------------
@@ -37,31 +37,43 @@ public:
 
 	struct BornRefarence 
 	{     
-		BornRefarence(unsigned char index, float weight) : index(index), weight(weight) {}     
+		BornRefarence( unsigned char index , float weight ) : index( index ), weight( weight ) { }     
 		unsigned char index;     
 		float weight; 
+		std::string name;
 	}; 
  
 	struct Point 
 	{     
-		Point(const D3DXVECTOR3& positions) : positions(positions) {}     
+		Point( const D3DXVECTOR3& positions ) : positions( positions ) { }     
 		D3DXVECTOR3 positions;     
-		std::vector<BornRefarence> bornRefarences; 
+		std::vector< BornRefarence > bornRefarences; 
 	}; 
  
+	struct Vertex
+	{
+		VERTEX_3D vertex;
+		std::vector< BornRefarence > bornReference;
+	};
+
 	struct Mesh 
 	{     
-		std::vector<Point> points;     
-		std::vector<D3DXVECTOR3> normals;      
-		std::vector<D3DXVECTOR2> texcoords; 
+		std::vector< Point > points;     
+		std::vector< D3DXVECTOR3 > normals;      
+		std::vector< D3DXVECTOR2 > texcoords; 
  
-		std::vector<unsigned short> positionIndices;     
-		std::vector<unsigned short> normalIndices;     
-		std::vector<unsigned short> texcoordIndices;          
+		std::vector< unsigned short > positionIndices;     
+		std::vector< unsigned short > normalIndices;     
+		std::vector< unsigned short > texcoordIndices;          
 		int materialIndex; 
+
+		std::string materialName;
+
+		std::vector< Vertex > vertexList;
+		std::vector< int > indices;
  
 		D3DXMATRIX initInvMatrix;
-		std::vector<std::vector<D3DXMATRIX>> matrixes;
+		std::vector< std::vector< D3DXMATRIX > > matrixes;
 	};
 
 	struct MATERIAL
@@ -73,57 +85,67 @@ public:
 		float		Shininess;
 	};
  
-	ObjectFBX( );																//  コンストラクタ
-	~ObjectFBX( );																//  デストラクタ
+	ObjectFBX( );																	//  コンストラクタ
+	~ObjectFBX( );																	//  デストラクタ
 
-	HRESULT						Init( void );											//  初期化
-	void						Uninit( void );											//  終了
-	void						Update( void );											//  更新
-	void						Draw( void );											//  描画
+	HRESULT									Init( void );							//  初期化
+	void									Uninit( void );							//  終了
+	void									Update( void );							//  更新
+	void									Draw( void );							//  描画
+	void									DrawDepth( void );						//  デプス値の書き込み
 
-	void						SetPosition( D3DXVECTOR3 pos );								//  座標の代入
-	void						SetSize( D3DXVECTOR3 size );								//  大きさの代入
-	void						SetRot( float fRot );									//  回転角の代入
-	void						SetScale( float fScale );								//  大きさ倍率の代入
+	void									SetPosition( D3DXVECTOR3 position );	//  座標の代入
+	void									SetSize( D3DXVECTOR3 size );			//  大きさの代入
+	void									SetRot( float fRot );					//  回転角の代入
+	void									SetScale( float fScale );				//  大きさ倍率の代入
 
-	void						MovePos( D3DXVECTOR3 movePos );							//  座標の移動
-	void						ChangeRot( float fChangeRot );							//  回転角の変化
-	void						ChangeScale( float fChangeScale );						//  大きさ倍率の変化
+	void									MovePos( D3DXVECTOR3 movePos );			//  座標の移動
+	void									ChangeRot( float fChangeRot );			//  回転角の変化
+	void									ChangeScale( float fChangeScale );		//  大きさ倍率の変化
+
+	static ObjectFBX*						Create( D3DXVECTOR3 position ,
+													float scale = 1.0f );
 
 private:
-	void						AnalyzePosition(FbxMesh* pMesh);    
-	void						AnalyzeNormal(FbxMesh* pMesh);     
-	void						AnalyzeTexcoord(FbxMesh* pMesh, bool bRevers = false);     
-	void						AnalyzeMaterial(FbxNode* pNode);     
-	void						AnalyzeMaterial(FbxMesh* pMesh);     
-	void						AnalyzeCluster(FbxMesh* pMesh);    
+	void									AnalyzePosition( FbxMesh* pMesh );    
+	void									AnalyzeNormal( FbxMesh* pMesh );     
+	void									AnalyzeTexcoord( FbxMesh* pMesh , bool bRevers = false );     
+	void									AnalyzeMaterial( FbxMesh* pMesh );     
+	void									AnalyzeCluster( FbxScene* scene , FbxMesh* pMesh );    
+	void									AnalyzeTexture( FbxScene* lScene , int numberMaterial );
 
-	FbxAMatrix					GetGeometry(FbxNode* pNode);
-	void						MakeVertex( int size );
+	void									ConvertVertex( void );    
 
-	static std::string			GetAttributeTypeName(FbxNodeAttribute::EType type);
- 
-/*	myNode*						recursiveNode( FbxManager* pManager, FbxNode* pNode, bool bTexcoordVReverse,
-											   FbxTime startTime, FbxTime endTime );    */ 
-		
+	int										ChangeVertexIndex( Vertex &vertex ,
+															   std::vector< Vertex > &vertexList );
 
-	void						recursiveDraw( void );
+	void									CreateMeshVertex( void );
 
-	std::string					name;     
-	std::vector<std::string>	attributeNames;     
-	D3DXVECTOR3					translation;      
-	D3DXVECTOR3					rotation;      
-	D3DXVECTOR3					scaling;  
+	FbxAMatrix								GetGeometry( FbxNode* pNode );
+	void									MakeVertex( int size );
+
+	static std::string						GetAttributeTypeName( FbxNodeAttribute::EType type );
+
+	void									recursiveDraw( void );
+
+	std::string								name;     
+	std::vector<std::string>				attributeNames;     
+	D3DXVECTOR3								translation;      
+	D3DXVECTOR3								rotation;      
+	D3DXVECTOR3								scaling;  
 
 
-	FbxTime						m_startTime;
-	FbxTime						m_endTime;
-	int							m_currentFrame;
-	int							m_allTime;
-	bool						m_makeVertrx;
-	LPDIRECT3DVERTEXBUFFER9		m_pVtxBuff;								//  頂点バッファへのポインタ
-	std::vector< std::string >	textures;								//  マテリアル     
-	std::vector< Mesh >			meshes; 
+	FbxTime									m_startTime;
+	FbxTime									m_endTime;
+	int										m_currentFrame;
+	int										m_allTime;
+	float									m_scale;
+	bool									m_makeVertrx;
+	std::vector< std::string >				m_textures;						//  マテリアル     
+	std::vector< Mesh >						m_meshes; 	
+	LPDIRECT3DVERTEXBUFFER9					m_pVtxBuff;						//  頂点バッファへのポインタ
+	LPDIRECT3DINDEXBUFFER9					m_pIndexBuff;							//  インデックスバッファインターフェースへのポインタ
+	std::vector< LPDIRECT3DVERTEXBUFFER9 >	m_pVtxBuffers;					//
 };
 
 #endif

@@ -106,22 +106,29 @@ void Tutorial::Uninit( void )
 void Tutorial::Update( void )
 {
 	// キーボード情報の取得
-	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
+	Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 
 	//  Xboxコントローラー情報の取得
 	XboxController*	pXInput = SceneManager::GetXInput( );
 
 	//  PS4コントローラー情報の取得
-	PS4Controller*		pPS4Input = SceneManager::GetPS4Input( );
+	PS4Controller* pPS4Input = SceneManager::GetPS4Input( );
 
 	if( Fade::GetFade( ) == Fade::FADE_NONE )
 	{
 		if( ( pPS4Input->GetTrigger( 0 , PS4Controller::DIJ_CIRCLE ) || pPS4Input->GetTrigger( 0 , PS4Controller::DIJ_OPTIONS ) ) ||
-			 pKeyboard->GetKeyboardTrigger( DIK_RETURN ) )
+			 pKeyboard->GetKeyboardTrigger( DIK_RETURN ) || pKeyboard->GetKeyboardTrigger( DIK_SPACE ) )
 		{
 			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 		}
+	}
+
+	//  カメラクラスポインタが空ではない場合
+	if( m_pCamera != NULL )
+	{
+		//  カメラのビューポート行列の設定
+		m_pCamera->SetCamera( );
 	}
 }
 

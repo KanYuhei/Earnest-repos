@@ -52,13 +52,14 @@ void Result::Init( void )
 {
 	m_bPush = false;
 
+	Camera* camera = SceneManager::GetCamera( 0 );
+
 	//  カメラクラスポインタが空の場合
-	if( m_pCamera == NULL )
+	if( camera != nullptr )
 	{
-		//  カメラクラスの生成
-		m_pCamera = new Camera;
-		m_pCamera->Init( D3DXVECTOR3( 0.0f , 3.0f , -15.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-						 D3DX_PI / 3.0f , 1.0f , 10000.0f );
+		//  カメラクラスの初期化
+		camera->Init( D3DXVECTOR3( 0.0f , 3.0f , -15.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 	}
 
 	//  メッシュドームの生成
@@ -155,15 +156,6 @@ void Result::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
 	Scene::ReleaseAll( );
-
-	//  カメラクラスポインタが空ではない場合
-	if( m_pCamera != NULL )
-	{
-		//  カメラクラスの破棄
-		m_pCamera->Uninit( );
-		delete m_pCamera;
-		m_pCamera = NULL;
-	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -186,7 +178,7 @@ void Result::Update( void )
 			 pKeyboard->GetKeyboardTrigger( DIK_RETURN ) || pKeyboard->GetKeyboardTrigger( DIK_SPACE ) )
 		{
 			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 		}
 	}
 }

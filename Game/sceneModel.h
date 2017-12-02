@@ -39,12 +39,13 @@ public:
 	HRESULT				Init( void );									//  初期化
 	void				Uninit( void );									//  終了
 	void				Update( void );									//  更新
-	void				Draw( void );									//  描画			
+	void				Draw( void );									//  描画
+	void				DrawDepth( void );								//  デプス値の書き込み
 
 	static SceneModel* Create( TYPE type ,								//  生成
-								D3DXVECTOR3 position ,						
-								D3DXVECTOR3 rot ,
-								D3DXVECTOR3 scale );
+							   D3DXVECTOR3 position ,						
+							   D3DXVECTOR3 rot ,
+							   D3DXVECTOR3 scale );
 
 	static D3DXMATRIX*	GetFixedLookAtMatrix( D3DXMATRIX* pMtx ,		//  方向によっての回転行列の取得
 											  D3DXVECTOR3* pPos ,

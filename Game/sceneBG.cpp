@@ -261,7 +261,7 @@ HRESULT SceneBG::MakeVertex( void )
 	//  頂点バッファの作成
 	if( FAILED( pDevice->CreateVertexBuffer( sizeof( VERTEX_2D ) * NUM_VERTEX ,		//  作成したい頂点バッファのサイズ
 											 D3DUSAGE_WRITEONLY ,					//  使用方法
-											 FVF_VERTEX_2D ,						//  
+											 0 ,									//  
 											 D3DPOOL_MANAGED ,						//  メモリ管理方法( MANAGED → お任せ )
 											 &m_pVtxBuff ,							//  バッファ
 											 NULL ) ) )
@@ -320,10 +320,10 @@ HRESULT SceneBG::MakeVertex( void )
 	pVtx[ 3 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 
 	//  UV座標の指定
-	pVtx[ 0 ].tex = D3DXVECTOR2( 0.0f , 0.0f );
-	pVtx[ 1 ].tex = D3DXVECTOR2( 1.0f , 0.0f );
-	pVtx[ 2 ].tex = D3DXVECTOR2( 0.0f , 1.0f );
-	pVtx[ 3 ].tex = D3DXVECTOR2( 1.0f , 1.0f );
+	pVtx[ 0 ].texcoord = D3DXVECTOR2( 0.0f , 0.0f );
+	pVtx[ 1 ].texcoord = D3DXVECTOR2( 1.0f , 0.0f );
+	pVtx[ 2 ].texcoord = D3DXVECTOR2( 0.0f , 1.0f );
+	pVtx[ 3 ].texcoord = D3DXVECTOR2( 1.0f , 1.0f );
 
 	//  頂点バッファのアンロック
 	m_pVtxBuff->Unlock( );
@@ -387,10 +387,10 @@ void SceneBG::SetVertex( void )
 		pVtx[ 3 ].color = m_color;
 
 		//  UV座標の指定
-		pVtx[ 0 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y );
-		pVtx[ 1 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
-		pVtx[ 2 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
-		pVtx[ 3 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 0 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y );
+		pVtx[ 1 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
+		pVtx[ 2 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 3 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
 
 		//  頂点バッファのアンロック
 		m_pVtxBuff->Unlock( );

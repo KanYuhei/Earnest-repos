@@ -246,7 +246,7 @@ bool StateAnimator::SetMotion( StateAnimator::MOTION motion , bool bForce )
 
 			break;
 		}
-		case StateAnimator::MOTION_FINISHER:
+		case StateAnimator::MOTION_RUSH_ATTACK:
 		{
 			if( m_motion == StateAnimator::MOTION_LOCKON_DASH )
 			{

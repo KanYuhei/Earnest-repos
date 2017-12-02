@@ -98,9 +98,9 @@ HRESULT Enemy::Init( void )
 	//  物体の種類の設定
 	Scene::SetObjType( Scene::OBJTYPE_ENEMY );
 
-	//  影の生成
-	m_pShadow = Shadow::Create( m_position , D3DXVECTOR3( 3.0f , 0.0f , 3.0f ) , D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) ,
-								 D3DXVECTOR3( 0.0f , -D3DXToRadian( 90 ) , 0.0f ) , D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f ) ); 
+	////  影の生成
+	//m_pShadow = Shadow::Create( m_position , D3DXVECTOR3( 3.0f , 0.0f , 3.0f ) , D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) ,
+	//							 D3DXVECTOR3( 0.0f , -D3DXToRadian( 90 ) , 0.0f ) , D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f ) ); 
 
 	//  体力の生成
 	m_pLife = Life::Create( Life::TYPE_LIFE001 ,
@@ -166,7 +166,7 @@ void Enemy::Update( void )
 	XboxController*	pXInput = SceneManager::GetXInput( );
 
 	//  カメラの取得
-	Camera* pCamera = Game::GetCamera( 0 );
+	Camera* pCamera = SceneManager::GetCamera( 0 );
 
 	//  シーンクラスのポインタ
 	Scene *pScene = NULL;										
@@ -432,7 +432,7 @@ void Enemy::Damage( int nDamage )
 		Result::SetResult( Result::GAME_CLEAR );
 
 		//  結果画面への移行フラグをたてる
-		Game::SetNextMode( Mode::MODE_RESULT );	
+		Game::SetNextMode( Mode::MODE::RESULT );	
 	}
 }
 

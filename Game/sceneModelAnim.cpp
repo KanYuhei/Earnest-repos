@@ -26,7 +26,7 @@
 
 #define TEXTURE_FILEPATH		"data\\TEXTURE"					//  テクスチャへのファイルパス
 
-#define CHANGE_NEUTRAL_TIME		( 8 )								//  ニュートラル状態への移行フレーム
+#define CHANGE_NEUTRAL_TIME		( 8 )							//  ニュートラル状態への移行フレーム
 
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
@@ -75,7 +75,7 @@ HRESULT SceneModelAnim::Init( void )
 
 	char aTextName[ TYPE_MAX ][ 256 ] = {
 											"data/MODEL/THIEF/motion.txt" ,
-											"data/MODEL/PLAYER/motion.txt" ,
+											"data/MODEL/ROBOT/motion.txt" ,
 										};
 
 	D3DXMATRIX		mtxScale;						//  拡大行列
@@ -269,11 +269,11 @@ HRESULT SceneModelAnim::Init( void )
 			workScale.z = m_scale.z;
 
 			m_pModelParts[ nCntModelChar ] = SceneModelParts::Create( nWorkIndex ,
-																	   nWorkParent ,
-																	   aModelName[ nCntModelChar ] ,
-																	   workPos ,
-																	   workRot ,
-																	   workScale );
+																	  nWorkParent ,
+																	  aModelName[ nCntModelChar ] ,
+																	  workPos ,
+																	  workRot ,
+																	  workScale );
 		}
 
 		for( int nCntAnimation = 0; nCntAnimation < MAX_ANIMATION; nCntAnimation++ )
@@ -639,6 +639,22 @@ void SceneModelAnim::Draw( void )
 }
 
 //--------------------------------------------------------------------------------------
+//  xモデルのデプス値の書き込み処理
+//--------------------------------------------------------------------------------------
+void SceneModelAnim::DrawDepth( void )
+{
+#pragma omp parallel for
+	//  パーツ数分のループ
+	for( int nCntParts = 0; nCntParts < m_nNumParts; nCntParts++ )
+	{
+		if( m_pModelParts[ nCntParts ] != NULL )
+		{
+			m_pModelParts[ nCntParts ]->DrawDepth( m_position , m_posAt , m_color );
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------
 //  xモデルの大きさ設定をする関数
 //--------------------------------------------------------------------------------------
 void SceneModelAnim::SetScale( D3DXVECTOR3 scale )
@@ -751,12 +767,4 @@ D3DXVECTOR3 SceneModelAnim::GetModelPartsPos( int nIndex )
 Utility::HIT_SPHERE	SceneModelAnim::GetHitSphere( void )
 {
 	return m_hitSphere;
-}
-
-//--------------------------------------------------------------------------------------
-//  攻撃側の球体当たり判定を取得する関数
-//--------------------------------------------------------------------------------------
-Utility::HIT_SPHERE	SceneModelAnim::GetAttackHitSphere( void )
-{
-	return m_attackHitSphere;
 }

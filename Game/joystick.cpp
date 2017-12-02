@@ -58,7 +58,7 @@ HRESULT PS4Controller::Init( HINSTANCE hInstance , HWND hWnd )
 		}
 
 		// 入力処理の初期化
-		if( FAILED( CInput::Init( hInstance , hWnd ) ) )
+		if( FAILED( Input::Init( hInstance , hWnd ) ) )
 		{
 			MessageBox( hWnd , "DirectInputオブジェクトが作れねぇ！" , "worning!!" , MB_ICONWARNING );
 			return E_FAIL;

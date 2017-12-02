@@ -31,6 +31,10 @@
 #include "tutorial.h"
 #include "test.h"
 #include "Wwise.h"
+#include "shaderManager.h"
+#include "imgui_impl_dx9.h"
+#include "player.h"
+#include "depthShadow.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -39,20 +43,21 @@
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
-Renderer*				SceneManager::m_pRenderer = NULL;					//  シーンクラスのポインタ
-Keyboard*				SceneManager::m_pKeyboard = NULL;					//  キーボードクラスのポインタ
-XboxController*			SceneManager::m_pXboxInput = NULL;					//  Xboxコントローラークラスのポインタ
-PS4Controller*			SceneManager::m_pPS4Input = NULL;					//  PS4コントローラークラスのポインタ
-Texture*				SceneManager::m_pTexture = NULL;					//  テクスチャクラスのポインタ
-Light*					SceneManager::m_pLight = NULL;						//  ライトクラスのポインタ
-Sound*					SceneManager::m_pSound = NULL;						//  サウンドクラスのポインタ
-Wwise*					SceneManager::m_pWwise = NULL;						//  Wwiseクラスのポインタ
-EffekseerManager*		SceneManager::m_pEffekseer = NULL;					//  エフェクシア管理クラスのポインタ
-Fade*					SceneManager::m_pFade = NULL;						//  フェードクラスのポインタ
-Mode*					SceneManager::m_pMode = NULL;						//  モードクラスのポインタ
-Mode::MODE				SceneManager::m_mode = Mode::MODE_TEAM_LOGO;		//  モード
-SceneManager::STAGE		SceneManager::m_stage = STAGE_MAX;					//  ステージの種類
-int						SceneManager::m_nLoop = 0;							//  ループ数
+Renderer*				SceneManager::m_pRenderer = NULL;							//  シーンクラスのポインタ
+Keyboard*				SceneManager::m_pKeyboard = NULL;							//  キーボードクラスのポインタ
+XboxController*			SceneManager::m_pXboxInput = NULL;							//  Xboxコントローラークラスのポインタ
+PS4Controller*			SceneManager::m_pPS4Input = NULL;							//  PS4コントローラークラスのポインタ
+Texture*				SceneManager::m_pTexture = NULL;							//  テクスチャクラスのポインタ
+Camera*					SceneManager::m_pCamera[ MAX_CAMERA_NUMBER ] = { NULL };	//  カメラクラスのポインタ
+Light*					SceneManager::m_pLight = NULL;								//  ライトクラスのポインタ
+Sound*					SceneManager::m_pSound = NULL;								//  サウンドクラスのポインタ
+Wwise*					SceneManager::m_pWwise = NULL;								//  Wwiseクラスのポインタ
+WWISE_GAMEOBJ*			SceneManager::m_wwiseObject = NULL;							//  Wwiseオブジェクト  
+Fade*					SceneManager::m_pFade = NULL;								//  フェードクラスのポインタ
+Mode*					SceneManager::m_pMode = NULL;								//  モードクラスのポインタ
+Mode::MODE				SceneManager::m_mode = Mode::MODE::STAGE_SELECT;			//  モード
+SceneManager::STAGE		SceneManager::m_stage = STAGE_MAX;							//  ステージの種類
+int						SceneManager::m_nLoop = 0;									//  ループ数
 
 //--------------------------------------------------------------------------------------
 //  管理クラスのコンストラクタ
@@ -83,9 +88,13 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 	m_pLight = NULL;
 	m_pSound = NULL;
 	m_pWwise = NULL;
-	m_pEffekseer = NULL;
 	m_pFade = NULL;
 	m_nLoop = 0;
+
+	for( int countCamera = 0; countCamera < MAX_CAMERA_NUMBER; ++countCamera )
+	{
+		m_pCamera[ countCamera ] = NULL;
+	}
 
 	//  テクスチャクラスポインタが空の場合
 	if( m_pTexture == NULL )
@@ -116,6 +125,15 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 			return E_FAIL;
 		}
 	}
+
+	//  エフェクシア管理クラスの初期化
+	EffekseerManager::Init( );
+
+	//  シェーダー管理クラスの初期化
+	ShaderManager::Init( );
+
+	//  デプスシャドウの初期化
+	DepthShadow::Init( );
 
 	//  キーボードクラスポインタが空の場合
 	if( m_pKeyboard == NULL )
@@ -156,6 +174,15 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 		}
 	}
 
+	//  カメラクラスの生成
+	for( int countCamera = 0; countCamera < MAX_CAMERA_NUMBER; ++countCamera )
+	{
+		if( m_pCamera[ countCamera ] == NULL )
+		{
+			m_pCamera[ countCamera ] = new Camera;
+		}
+	}
+
 	//  ライトクラスポインタが空の場合
 	if( m_pLight == NULL )
 	{
@@ -164,28 +191,18 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 		m_pLight->Init( );
 	}
 
-	////  サウンドクラスポインタが空の場合
-	//if( m_pSound == NULL )
-	//{
-	//	//  サウンドクラスの生成
-	//	m_pSound = new Sound;
+	//  Wwiseクラスポインタが空の場合
+	if( m_pWwise == NULL )
+	{
+		//  Wwiseクラスの生成
+		m_pWwise = new Wwise;
 
-	//	//  サウンドの初期化
-	//	if( FAILED( m_pSound->Init( hWnd ) ) )
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+		//  Wwiseの初期化
+		m_pWwise->Init( );
+	}
 
-	////  Wwiseクラスポインタが空の場合
-	//if( m_pWwise == NULL )
-	//{
-	//	//  Wwiseクラスの生成
-	//	m_pWwise = new Wwise;
-
-	//	//  Wwiseの初期化
-	//	m_pWwise->Init( );
-	//}
+	//m_wwiseObject = m_pWwise->CreateNoListenerGameObj( D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+	//												   "BGM_Yurumu" );
 
 	//  フェードクラスポインタが空の場合
 	if( m_pFade == NULL )
@@ -194,11 +211,117 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 		m_pFade = Fade::Create( );
 	}
 
-	//  エフェクシアの初期化
-	EffekseerManager::Init( );
-
 	//  モードの設定
 	SetMode( m_mode );
+
+	m_vertexBuffer = nullptr;
+
+	LPDIRECT3DDEVICE9 device = m_pRenderer->GetDevice( );
+
+	//  頂点バッファの作成
+	if( FAILED( device->CreateVertexBuffer( sizeof( VERTEX_2D ) * NUM_VERTEX ,		//  作成したい頂点バッファのサイズ
+										    D3DUSAGE_WRITEONLY ,					//  使用方法
+										    0 ,										//  
+										    D3DPOOL_MANAGED ,						//  メモリ管理方法( MANAGED → お任せ )
+										    &m_vertexBuffer ,						//  バッファ
+										    NULL ) ) )
+	{
+		MessageBox( NULL , "頂点バッファインターフェースを正しく取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
+
+		return E_FAIL;
+	}
+
+	VERTEX_2D* pVtx = NULL;				//  頂点バッファのポインタ
+
+	if( m_vertexBuffer != NULL )
+	{
+		//  頂点バッファをロックして、仮想アドレスを取得する
+		m_vertexBuffer->Lock( 0 , 0 ,									//  取る先頭と、サイズ( 0 , 0 で全部 )
+							  ( void** )&pVtx ,							//  アドレスが書かれたメモ帳のアドレス
+							  0 );										//  ロックの種類
+
+		//  頂点座標の設定( 3D座標 ・ 右回り )
+		pVtx[ 0 ].position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
+		pVtx[ 1 ].position = D3DXVECTOR3( SCREEN_WIDTH , 0.0f , 0.0f );
+		pVtx[ 2 ].position = D3DXVECTOR3( 0.0f , SCREEN_HEIGHT , 0.0f );
+		pVtx[ 3 ].position = D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f );
+
+		//  法線の指定
+		pVtx[ 0 ].rhw = 1.0f;
+		pVtx[ 1 ].rhw = 1.0f;
+		pVtx[ 2 ].rhw = 1.0f;
+		pVtx[ 3 ].rhw = 1.0f;
+
+		//  頂点色の設定( 0 ～ 255 の整数値 )
+		pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 1 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 2 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 3 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+		//  UV座標の指定
+		pVtx[ 0 ].texcoord = D3DXVECTOR2( 0.0f , 0.0f );
+		pVtx[ 1 ].texcoord = D3DXVECTOR2( 1.0f , 0.0f );
+		pVtx[ 2 ].texcoord = D3DXVECTOR2( 0.0f , 1.0f );
+		pVtx[ 3 ].texcoord = D3DXVECTOR2( 1.0f , 1.0f );
+
+		//  頂点バッファのアンロック
+		m_vertexBuffer->Unlock( );
+	}
+
+	m_shadowMap = nullptr;
+
+	//  頂点バッファの作成
+	if( FAILED( device->CreateVertexBuffer( sizeof( VERTEX_2D ) * NUM_VERTEX ,		//  作成したい頂点バッファのサイズ
+										    D3DUSAGE_WRITEONLY ,					//  使用方法
+										    0 ,										//  
+										    D3DPOOL_MANAGED ,						//  メモリ管理方法( MANAGED → お任せ )
+										    &m_shadowMap ,							//  バッファ
+										    NULL ) ) )
+	{
+		MessageBox( NULL , "頂点バッファインターフェースを正しく取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
+
+		return E_FAIL;
+	}
+
+	pVtx = NULL;				//  頂点バッファのポインタ
+
+	if( m_shadowMap != NULL )
+	{
+		//  頂点バッファをロックして、仮想アドレスを取得する
+		m_shadowMap->Lock( 0 , 0 ,									//  取る先頭と、サイズ( 0 , 0 で全部 )
+						   ( void** )&pVtx ,						//  アドレスが書かれたメモ帳のアドレス
+						   0 );										//  ロックの種類
+
+		//  頂点座標の設定( 3D座標 ・ 右回り )
+		pVtx[ 0 ].position = D3DXVECTOR3( SCREEN_WIDTH * 0.84f , SCREEN_HEIGHT * 0.01f , 0.0f );
+		pVtx[ 1 ].position = D3DXVECTOR3( SCREEN_WIDTH * 0.99f , SCREEN_HEIGHT * 0.01f , 0.0f );
+		pVtx[ 2 ].position = D3DXVECTOR3( SCREEN_WIDTH * 0.84f , SCREEN_HEIGHT * 0.16f , 0.0f );
+		pVtx[ 3 ].position = D3DXVECTOR3( SCREEN_WIDTH * 0.99f , SCREEN_HEIGHT * 0.16f , 0.0f );
+
+		//  法線の指定
+		pVtx[ 0 ].rhw = 1.0f;
+		pVtx[ 1 ].rhw = 1.0f;
+		pVtx[ 2 ].rhw = 1.0f;
+		pVtx[ 3 ].rhw = 1.0f;
+
+		//  頂点色の設定( 0 ～ 255 の整数値 )
+		pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 1 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 2 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		pVtx[ 3 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+		//  UV座標の指定
+		pVtx[ 0 ].texcoord = D3DXVECTOR2( 0.0f , 0.0f );
+		pVtx[ 1 ].texcoord = D3DXVECTOR2( 1.0f , 0.0f );
+		pVtx[ 2 ].texcoord = D3DXVECTOR2( 0.0f , 1.0f );
+		pVtx[ 3 ].texcoord = D3DXVECTOR2( 1.0f , 1.0f );
+
+		//  頂点バッファのアンロック
+		m_shadowMap->Unlock( );
+	}
+
+    // Setup ImGui binding
+    ImGui_ImplDX9_Init( GetWindow( ) , m_pRenderer->GetDevice( ) );
 
 	return S_OK;
 }
@@ -208,8 +331,23 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 //--------------------------------------------------------------------------------------
 void SceneManager::Uninit( void )
 {
-	//  エフェクシアの終了
+	//  ImGuiの終了
+	ImGui_ImplDX9_Shutdown( );
+
+	//  デプスシャドウの終了
+	DepthShadow::Uninit( );
+
+	//  エフェクシア管理クラスの終了
 	EffekseerManager::Uninit( );
+
+	//  シェーダー管理クラスの終了
+	ShaderManager::Uninit( );
+
+	if( m_vertexBuffer != NULL )
+	{
+		m_vertexBuffer->Release( );
+		m_vertexBuffer = nullptr;
+	}
 
 	//  フェードクラスポインタが空ではない場合
 	if( m_pFade != NULL )
@@ -271,6 +409,15 @@ void SceneManager::Uninit( void )
 		delete m_pPS4Input;
 		m_pPS4Input = NULL;
 	}
+
+	//  Wwiseクラスポインタが空ではない場合
+	if( m_pWwise != NULL )
+	{
+		//  Wwiseの破棄
+		m_pWwise->Uninit( );
+		delete m_pWwise;
+		m_pWwise = nullptr;
+	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -317,6 +464,130 @@ void SceneManager::Update( void )
 		//  フェードの更新
 		m_pFade->Update( );
 	}
+
+	//  Wwiseクラスポインタが空ではない場合
+	if( m_pWwise != NULL )
+	{
+		//  Wwiseの更新
+		m_pWwise->Update( );
+	}
+
+	//  描画形式の変更
+	if( m_pKeyboard->GetKeyboardTrigger( DIK_F4 ) )
+	{
+		m_pRenderer->ChangeFillMode( );
+	}
+
+	ImGui_ImplDX9_NewFrame( );
+
+    bool show_test_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_col = ImColor(114, 144, 154);
+
+    // 1. Show a simple window
+    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+    {
+		ImGui::Begin( "Test Window", &show_test_window );
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		D3DXVECTOR3 posPlayer( 0.0f , 0.0f , 0.0f );			//  プレイヤーの座標
+		D3DXVECTOR3 positionAtPlayer( 0.0f , 0.0f , 0.0f );		//  プレイヤーの注視点
+		D3DXVECTOR3 vecDirectPlayer( 0.0f , 0.0f , 0.0f );		//  プレイヤーの方向ベクトル
+		Scene* pScene = NULL;
+
+		//  優先度の最大数分のループ
+		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
+		{
+			//  シーンの先頭アドレスを取得
+			pScene = Scene::GetScene( nCntPriority );
+
+			//  シーンが空ではない間ループ
+			while( pScene != NULL )
+			{
+				Scene::OBJTYPE objType;						//  物体の種類
+
+				//  物体の種類の取得
+				objType = pScene->GetObjType( );
+
+				//  種類がプレイヤーの場合
+				if( objType == Scene::OBJTYPE_PLAYER )
+				{
+					//  プレイヤー情報の取得
+					posPlayer = pScene->GetPos( );
+
+					Player* player = ( Player* )pScene;
+
+					//  プレイヤー情報の取得
+					positionAtPlayer = player->GetPositionAt( );
+
+					vecDirectPlayer = player->GetVecDirect( );
+				}
+
+				//  次のポインタを代入
+				pScene = pScene->GetNextScene( pScene );
+			}
+		}
+
+		ImGui::Text( "PLAYER : Position( %.2f , %.2f , %.2f )" , posPlayer.x , posPlayer.y , posPlayer.z );
+		ImGui::Text( "PLAYER : PositionAt( %.2f , %.2f , %.2f )" , positionAtPlayer.x , positionAtPlayer.y , positionAtPlayer.z );
+		ImGui::Text( "PLAYER : VecDirect( %.2f , %.2f , %.2f )" , vecDirectPlayer.x , vecDirectPlayer.y , vecDirectPlayer.z );
+
+		D3DXVECTOR3 lightPosition;
+		D3DXVECTOR3 lightPositionAt;
+		ImGui::Text( "LIGHT : Position( %.2f , %.2f , %.2f )" , m_pLight->GetPosition( ).x , m_pLight->GetPosition( ).y , m_pLight->GetPosition( ).z );
+		lightPosition.x = m_pLight->GetPosition( ).x;
+		lightPosition.y = m_pLight->GetPosition( ).y;
+		lightPosition.z = m_pLight->GetPosition( ).z;
+		ImGui::SliderFloat( "Position.x" , &lightPosition.x , -10000.0f , 10000.0f );
+		ImGui::SliderFloat( "Position.y" , &lightPosition.y , -10000.0f , 10000.0f );
+		ImGui::SliderFloat( "Position.z" , &lightPosition.z , -10000.0f , 10000.0f );
+		ImGui::Text( "LIGHT : PositionAt( %.2f , %.2f , %.2f )" , m_pLight->GetPositionAt( ).x , m_pLight->GetPositionAt( ).y , m_pLight->GetPositionAt( ).z );
+		//float distance = m_pLight->GetDistance( );
+		//ImGui::SliderFloat( "Distance" , &distance , 0.0f , 1000.0f );
+		//m_pLight->SetDistance( distance );
+		lightPositionAt.x = m_pLight->GetPositionAt( ).x;
+		lightPositionAt.y = m_pLight->GetPositionAt( ).y;
+		lightPositionAt.z = m_pLight->GetPositionAt( ).z;
+		ImGui::SliderFloat( "PositionAt.x" , &lightPositionAt.x , -1000.0f , 1000.0f );
+		ImGui::SliderFloat( "PositionAt.y" , &lightPositionAt.y , -1000.0f , 1000.0f );
+		ImGui::SliderFloat( "PositionAt.z" , &lightPositionAt.z , -1000.0f , 1000.0f );
+		m_pLight->SetViewMatrix( lightPosition , lightPositionAt );
+
+		float fov = m_pLight->GetFov( );
+		float fNear = m_pLight->GetNear( );
+		float fFar = m_pLight->GetFar( );
+		ImGui::SliderFloat( "Fov" , &fov , 0.0f , 3.0f );
+		ImGui::SliderFloat( "Near" , &fNear , 0.1f , 50000.0f );
+		ImGui::SliderFloat( "Far" , &fFar , 100.0f , 50000.0f );
+		m_pLight->SetProjectionMatrix( fov , fNear , fFar );
+
+		//D3DXVECTOR3 lightDirection = m_pLight->GetDirection( );
+		//ImGui::SliderFloat( "LightDirection.x" , &lightDirection.x , -1.0f , 1.0f );
+		//ImGui::SliderFloat( "LightDirection.y" , &lightDirection.y , -1.0f , 1.0f );
+		//ImGui::SliderFloat( "LightDirection.z" , &lightDirection.z , -1.0f , 1.0f );
+		//m_pLight->SetVectorDirection( lightDirection );
+
+		ImGui::End( );
+    }
+
+	if( Fade::GetFade( ) == Fade::FADE_NONE )
+	{
+		if( m_pKeyboard->GetKeyboardTrigger( DIK_F1 ) )
+		{
+			//  フェードの設定
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+		}
+		else if( m_pKeyboard->GetKeyboardTrigger( DIK_F2 ) )
+		{
+			//  フェードの設定
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+		}
+		else if( m_pKeyboard->GetKeyboardTrigger( DIK_F3 ) )
+		{
+			//  フェードの設定
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TEST , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -331,30 +602,134 @@ void SceneManager::Draw( void )
 		m_nLoop = 0;
 
 		//  モードゲーム以外または、CPU対戦の場合
-		if( Game::GetModeVS( ) == Game::MODE_VS_CPU || m_mode != Mode::MODE_GAME )
+		if( ( Game::GetModeVS( ) == Game::MODE_VS_CPU && m_mode == Mode::MODE::GAME ) ||
+			m_mode != Mode::MODE::GAME )
 		{
-			Camera* pCamera = Game::GetCamera( 0 );
+			//  レンダーターゲットの変更
+			DepthShadow::SetRendererTarget( );
+
+			////  深度バッファの設定
+			//DepthShadow::SetDepthSerface( );
+
+			//  シャドウマップの深度バッファ値の初期化
+			DepthShadow::DrawClearBuffer( );
+
+			D3DVIEWPORT9 vp;
+
+			vp.X = 0;
+			vp.Y = 0;
+			vp.Width = SCREEN_WIDTH * 3.0f;
+			vp.Height = SCREEN_HEIGHT * 3.0f;
+			vp.MinZ = 0.0f;
+			vp.MaxZ = 1.0f;
+
+			//  ビューポート変換の設定
+			m_pRenderer->GetDevice( )->SetViewport( &vp );
 
 			//  描画開始
 			m_pRenderer->DrawBegin( );
 
-			if( pCamera != NULL )
-			{
-				//  カメラ行列の設定
-				pCamera->SetCamera( );
+			//  深度バッファの書き込み
+			Scene::DrawDepthAll( );
+
+			//  描画終了
+			m_pRenderer->DrawEnd( );
+
+			//  カメラのビューポート行列の設定
+			if( m_pCamera[ 0 ] != nullptr )
+			{	
+				m_pCamera[ 0 ]->SetCamera( );
 			}
 
 			//  エフェクシアの行列を設定する関数
 			EffekseerManager::SetMatrix( 0 );
 
-			// バックバッファ＆Ｚバッファのクリア
+			//  サーフェイスにレンダーターゲットを設定
+			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
+
+			////  バックバッファ用の深度バッファ設定
+			//m_pRenderer->SetBackBufferDepth( );
+
+			//  バックバッファ＆Ｚバッファのクリア
 			m_pRenderer->DrawClearBuffer( );
+
+			//  描画開始
+			m_pRenderer->DrawBegin( );
 
 			//  モードクラスポインタが空ではない場合
 			if( m_pMode != NULL )
 			{
 				m_pMode->Draw( );
 			}
+
+			////  描画終了
+			//m_pRenderer->DrawEnd( );
+
+			////  バックバッファにレンダーターゲットを設定
+			//m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
+
+			//// バックバッファ＆Ｚバッファのクリア
+			//m_pRenderer->DrawClearBuffer( );
+
+			//  デバイス情報の取得
+			LPDIRECT3DDEVICE9 pDevice = m_pRenderer->GetDevice( );
+
+			////  描画開始
+			//m_pRenderer->DrawBegin( );
+
+			//// 頂点バッファをデータストリームに設定
+			//pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+			//						  m_vertexBuffer ,					//  頂点バッファのアドレス
+			//						  0 ,								//  オフセット( byte )
+			//						  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+			//// 頂点フォーマットの設定
+			//pDevice->SetFVF( FVF_VERTEX_2D );
+
+			//if( m_pRenderer != nullptr )
+			//{
+			//	// テクスチャの設定
+			//	pDevice->SetTexture( 0 , m_pRenderer->GetRendereTargetTexture( ) ); 
+			//}
+			//else
+			//{
+			//	// テクスチャの設定
+			//	pDevice->SetTexture( 0 , NULL ); 
+			//}
+
+			//// ポリゴンの描画
+			//pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+			//						0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+			//						NUM_POLYGON );						//  プリミティブ数
+
+//#ifdef _DEBUG
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+									  m_shadowMap ,						//  頂点バッファのアドレス
+									  0 ,								//  オフセット( byte )
+									  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+			// 頂点フォーマットの設定
+			pDevice->SetFVF( FVF_VERTEX_2D );
+
+			if( DepthShadow::GetRendereTargetTexture( ) != nullptr )
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , DepthShadow::GetRendereTargetTexture( ) ); 
+			}
+			else
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , NULL ); 
+			}
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+									NUM_POLYGON );						//  プリミティブ数
+
+//#endif
 
 			//  フェードクラスポインタが空ではない場合
 			if( m_pFade != NULL )
@@ -363,42 +738,70 @@ void SceneManager::Draw( void )
 				m_pFade->Draw( );
 			}
 
+#ifdef _DEBUG
+
+			//  GUIの描画
+			ImGui::Render( );
+
+#else
+
+			//  GUIの描画
+			ImGui::Render( );
+
+#endif
+
 			//  描画終了
-			m_pRenderer->DrawEnd( );
+			m_pRenderer->DrawEndPresent( );
 		}
 		//  プレイヤー対戦の場合
-		else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+		else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER &&
+				 m_mode == Mode::MODE::GAME )
 		{
+			//  レンダーターゲットの変更
+			DepthShadow::SetRendererTarget( );
+
+			//  シャドウマップの深度バッファ値の初期化
+			DepthShadow::DrawClearBuffer( );
+
+			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
+			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
+
+			//  描画開始
+			m_pRenderer->DrawBegin( );
+
+			//  深度バッファの書き込み
+			Scene::DrawDepthAll( );
+
+			//  描画終了
+			m_pRenderer->DrawEnd( );
+
+			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
+			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
+
+			//  サーフェイスにレンダーターゲットを設定
+			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::SURFACE );
+
+			//  バックバッファ＆Ｚバッファのクリア
+			m_pRenderer->DrawClearBuffer( );
+
 			//  描画開始
 			m_pRenderer->DrawBegin( );
 
 			for( int i = 0; i < 2; i++ )
 			{
-				Camera* pCamera = Game::GetCamera( i );
-
-				if( pCamera != NULL )
+				//  カメラのビューポート行列の設定
+				if( m_pCamera[ i ] != nullptr )
 				{
-					//  カメラ行列の設定
-					pCamera->SetCamera( );
+					m_pCamera[ i ]->SetCamera( );
 				}
 
 				//  エフェクシアの行列を設定する関数
 				EffekseerManager::SetMatrix( i );
 
-				// バックバッファ＆Ｚバッファのクリア
-				m_pRenderer->DrawClearBuffer( );
-
 				//  モードクラスポインタが空ではない場合
 				if( m_pMode != NULL )
 				{
 					m_pMode->Draw( );
-				}
-
-				//  フェードクラスポインタが空ではない場合
-				if( m_pFade != NULL )
-				{
-					//  フェードの描画
-					m_pFade->Draw( );
 				}
 
 				//  ループ数のカウント
@@ -407,6 +810,94 @@ void SceneManager::Draw( void )
 
 			//  描画終了
 			m_pRenderer->DrawEnd( );
+
+			//  バックバッファにレンダーターゲットを設定
+			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
+
+			// バックバッファ＆Ｚバッファのクリア
+			m_pRenderer->DrawClearBuffer( );
+
+			//  描画開始
+			m_pRenderer->DrawBegin( );
+
+			//  デバイス情報の取得
+			LPDIRECT3DDEVICE9 pDevice = m_pRenderer->GetDevice( );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+									  m_vertexBuffer ,					//  頂点バッファのアドレス
+									  0 ,								//  オフセット( byte )
+									  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+			// 頂点フォーマットの設定
+			pDevice->SetFVF( FVF_VERTEX_2D );
+
+			if( m_pRenderer != nullptr )
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , m_pRenderer->GetRendereTargetTexture( ) ); 
+			}
+			else
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , NULL ); 
+			}
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+									NUM_POLYGON );						//  プリミティブ数
+
+//#ifdef _DEBUG
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+									  m_shadowMap ,						//  頂点バッファのアドレス
+									  0 ,								//  オフセット( byte )
+									  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+			// 頂点フォーマットの設定
+			pDevice->SetFVF( FVF_VERTEX_2D );
+
+			if( DepthShadow::GetRendereTargetTexture( ) != nullptr )
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , DepthShadow::GetRendereTargetTexture( ) ); 
+			}
+			else
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , NULL ); 
+			}
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+									NUM_POLYGON );						//  プリミティブ数
+
+//#endif
+
+			//  フェードクラスポインタが空ではない場合
+			if( m_pFade != NULL )
+			{
+				//  フェードの描画
+				m_pFade->Draw( );
+			}
+
+#ifdef _DEBUG
+
+			//  GUIの描画
+			ImGui::Render( );
+
+#else
+
+			//  GUIの描画
+			ImGui::Render( );
+
+#endif
+
+			//  描画終了
+			m_pRenderer->DrawEndPresent( );
 		}
 	}
 }
@@ -433,7 +924,7 @@ void SceneManager::SetMode( Mode::MODE mode )
 	//  次のモードによっての場合分け
 	switch( mode )
 	{
-		case Mode::MODE_TEAM_LOGO:
+		case Mode::MODE::TEAM_LOGO:
 		{
 			//  タイトルの初期化
 			if( NULL == m_pMode )
@@ -444,7 +935,7 @@ void SceneManager::SetMode( Mode::MODE mode )
 
 			break;
 		}
-		case Mode::MODE_TITLE:
+		case Mode::MODE::TITLE:
 		{
 			//  タイトルの初期化
 			if( NULL == m_pMode )
@@ -455,7 +946,7 @@ void SceneManager::SetMode( Mode::MODE mode )
 
 			break;
 		}
-		case Mode::MODE_TUTORIAL:
+		case Mode::MODE::TUTORIAL:
 		{
 			//  チュートリアルの初期化
 			m_pMode = new Tutorial;
@@ -463,15 +954,15 @@ void SceneManager::SetMode( Mode::MODE mode )
 
 			break;
 		}
-		case Mode::MODE_STAGE_SELECT:
+		case Mode::MODE::STAGE_SELECT:
 		{
 			//  ステージセレクトの初期化
-			m_pMode = new CStageSelect;
+			m_pMode = new StageSelect;
 			m_pMode->Init( );
 
 			break;
 		}
-		case Mode::MODE_GAME:
+		case Mode::MODE::GAME:
 		{
 			//  ゲームの初期化
 			m_pMode = new Game( );
@@ -479,7 +970,7 @@ void SceneManager::SetMode( Mode::MODE mode )
 
 			break;
 		}
-		case Mode::MODE_RESULT:
+		case Mode::MODE::RESULT:
 		{
 			//  結果の初期化
 			m_pMode = new Result;
@@ -487,7 +978,7 @@ void SceneManager::SetMode( Mode::MODE mode )
 
 			break;
 		}
-		case Mode::MODE_TEST:
+		case Mode::MODE::TEST:
 		{
 			//  結果の初期化
 			m_pMode = new Test;
@@ -573,6 +1064,19 @@ PS4Controller* SceneManager::GetPS4Input( void )
 }
 
 //--------------------------------------------------------------------------------------
+//  指定番号のカメラクラスの取得をする関数
+//--------------------------------------------------------------------------------------
+Camera*	SceneManager::GetCamera( int cameraNo )
+{
+	if( m_pCamera[ cameraNo ] == NULL || cameraNo >= MAX_CAMERA_NUMBER )
+	{
+		return NULL;
+	}
+
+	return m_pCamera[ cameraNo ];
+}
+
+//--------------------------------------------------------------------------------------
 //  ライトクラスを取得をする関数
 //--------------------------------------------------------------------------------------
 Light* SceneManager::GetLight( void )
@@ -634,11 +1138,11 @@ Wwise* SceneManager::GetWwise( void )
 }
 
 //--------------------------------------------------------------------------------------
-//  エフェクシア管理クラスの取得をする関数
+//  Wwiseオブジェクト情報の取得をする関数
 //--------------------------------------------------------------------------------------
-EffekseerManager* SceneManager::GetEffekseer( void )
+WWISE_GAMEOBJ* SceneManager::GetWwiseObject( void )
 {
-	return m_pEffekseer;
+	return m_wwiseObject;
 }
 
 //--------------------------------------------------------------------------------------

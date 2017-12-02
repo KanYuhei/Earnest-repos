@@ -1,0 +1,9 @@
+*.exe
+*.cache
+*.dll
+*.log
+*.pdb
+*.iobj
+*.ipdb
+*.filters
+*.obj

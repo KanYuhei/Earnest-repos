@@ -11,10 +11,12 @@
 //--------------------------------------------------------------------------------------
 #include "main.h"
 #include "mode.h"
+#include "Wwise.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
 //--------------------------------------------------------------------------------------
+#define MAX_CAMERA_NUMBER ( 2 )
 
 //--------------------------------------------------------------------------------------
 //  前方宣言
@@ -28,7 +30,6 @@ class PS4Controller;
 class Light;
 class Sound;
 class Xact;
-class EffekseerManager;
 class Fade;
 class Wwise;
 
@@ -63,11 +64,11 @@ public:
 	static  Keyboard*			GetKeyboard( void );				//  キーボードクラスの取得
 	static  XboxController*		GetXInput( void );					//  Xboxコントローラークラスの取得
 	static  PS4Controller*		GetPS4Input( void );				//  PS4コントローラークラスの取得
+	static	Camera*				GetCamera( int cameraNo = 0 );		//  指定番号のカメラクラスの取得
 	static	Light*				GetLight( void );					//  ライトクラスの取得
 	static	Sound*				GetSound( void );					//  サウンドクラスの取得
-	static	Xact*				GetXact( void );					//  Xactクラスの取得
 	static	Wwise*				GetWwise( void );					//  Wwiseクラスの取得
-	static	EffekseerManager*	GetEffekseer( void );				//  エフェクシア管理クラスの取得
+	static	WWISE_GAMEOBJ*		GetWwiseObject( void );				//  Wwise用のオブジェクト取得
 	static	Mode*				GetModeClass( void );				//  モード情報の取得
 	static	Mode::MODE			GetMode( void );					//  モード情報の取得
 	static	SceneManager::STAGE	GetStage( void );					//  ステージ情報の取得
@@ -82,17 +83,20 @@ private:
 	static	Keyboard*			m_pKeyboard;						//  キーボードクラスのポインタ
 	static	XboxController*		m_pXboxInput;						//  Xboxコントローラークラスのポインタ
 	static	PS4Controller*		m_pPS4Input;						//  PS4コントローラークラスのポインタ
+	static	Camera*				m_pCamera[ MAX_CAMERA_NUMBER ];		//  カメラクラスのポインタ
 	static	Light*				m_pLight;							//  ライトクラスのポインタ
 	static	Sound*				m_pSound;							//  サウンドクラスのポインタ
 	static	Wwise*				m_pWwise;							//  Wwiseクラスのポインタ
-	static	EffekseerManager*	m_pEffekseer;						//  エフェクシア管理クラスのポインタ
 	static	Fade*				m_pFade;							//  フェードクラスのポインタ
+	static	WWISE_GAMEOBJ*		m_wwiseObject;						//  Wwise用のオブジェクト
 
 	static	Mode*				m_pMode;							//  モードクラスのポインタ
 	static	Mode::MODE			m_mode;								//  モード列挙型の宣言
 
 	static	int					m_nLoop;							//  ループ数
+
+	LPDIRECT3DVERTEXBUFFER9		m_vertexBuffer;						//  頂点バッファ
+	LPDIRECT3DVERTEXBUFFER9		m_shadowMap;						//  頂点バッファ
 };
 
 #endif
-#pragma once

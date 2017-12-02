@@ -16,6 +16,7 @@
 #include "game.h"
 #include "camera.h"
 #include "light.h"
+#include "shaderManager.h"
 
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
@@ -132,7 +133,7 @@ void Scene3D::Draw( void )
 	Texture* pTexture = SceneManager::GetTexture( );
 
 	//  カメラクラスの取得
-	Camera* pCamera = Game::GetCamera( SceneManager::GetLoop( ) );
+	Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
 
 	//  行列を単位行列に変換
 	D3DXMatrixIdentity( &mtxWorld );
@@ -161,8 +162,8 @@ void Scene3D::Draw( void )
 	//  平行移動行列の掛け算
 	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
 
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
+	//  シェーダー情報の取得
+	Shader3DNoLight* shader3DNoLight = ( Shader3DNoLight* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_NO_LIGHT );
 
 	// 頂点バッファをデータストリームに設定
 	pDevice->SetStreamSource( 0 ,								//  パイプライン番号
@@ -170,16 +171,101 @@ void Scene3D::Draw( void )
 							  0 ,								//  オフセット( byte )
 							  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
 
-	// 頂点フォーマットの設定
-	pDevice->SetFVF( FVF_VERTEX_3D );
-
 	// テクスチャの設定
 	pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_aFileName ) ); 
+
+	Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+	D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+
+	//  シェーダーに必要な情報の設定
+	shader3DNoLight->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix );
+
+	shader3DNoLight->DrawBegin( );
 
 	// ポリゴンの描画
 	pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
 							0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
 							NUM_POLYGON );						//  プリミティブ数
+
+	ShaderManager::DrawEnd( );
+}
+
+//--------------------------------------------------------------------------------------
+//  3Dポリゴンのデプス値の書き込み処理
+//--------------------------------------------------------------------------------------
+void Scene3D::DrawDepth( void )
+{
+	LPDIRECT3DDEVICE9 pDevice;
+
+	D3DXMATRIX mtxWorld;							//  ワールド行列
+	D3DXMATRIX mtxTrans;							//  平行移動行列
+	D3DXMATRIX mtxScale;							//  拡大行列
+	D3DXMATRIX mtxRot;								//  ビュー座標変換行列
+
+	//  デバイス情報の取得
+	pDevice = SceneManager::GetRenderer( )->GetDevice( );
+
+	//  テクスチャクラスの取得
+	Texture* pTexture = SceneManager::GetTexture( );
+
+	//  カメラクラスの取得
+	Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+
+	//  行列を単位行列に変換
+	D3DXMatrixIdentity( &mtxWorld );
+
+	if( m_bInverse == false )
+	{
+		D3DXMatrixRotationYawPitchRoll( &mtxRot , m_rot.x , m_rot.y , m_rot.z );
+
+		D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+	}
+	else
+	{
+		//  ビルボード用の回転行列の掛け算
+		D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &pCamera->GetInvRotateMat( m_position ) );
+	}
+
+	//  拡大行列の作成
+	D3DXMatrixScaling( &mtxScale , 1.0f , 1.0f , 1.0f );
+
+	//  拡大行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+	//  平行移動行列の作成
+	D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
+
+	//  平行移動行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+	//  シェーダー情報の取得
+	Shader3DShadowMap* shader3DShadowMap = ( Shader3DShadowMap* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_SHADOW_MAP );
+
+	D3DXMATRIX viewMatrix = SceneManager::GetLight( )->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	shader3DShadowMap->SetShaderInfo( mtxWorld , viewMatrix * projectionMatrix );
+
+	// 頂点バッファをデータストリームに設定
+	pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+							  m_pVtxBuff ,						//  頂点バッファのアドレス
+							  0 ,								//  オフセット( byte )
+							  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
+
+	// テクスチャの設定
+	pDevice->SetTexture( 0 , nullptr ); 
+
+	//  シェーダー描画開始
+	shader3DShadowMap->DrawBegin( );
+
+	// ポリゴンの描画
+	pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+							0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+							NUM_POLYGON );						//  プリミティブ数
+
+	//  描画終了
+	ShaderManager::DrawEnd( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -343,10 +429,10 @@ HRESULT Scene3D::MakeVertex( void )
 		pVtx[ 3 ].color = m_color;
 
 		//  UV座標の指定
-		pVtx[ 0 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y );
-		pVtx[ 1 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
-		pVtx[ 2 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
-		pVtx[ 3 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 0 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y );
+		pVtx[ 1 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
+		pVtx[ 2 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 3 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
 
 		//  頂点バッファのアンロック
 		m_pVtxBuff->Unlock( );
@@ -409,10 +495,10 @@ void Scene3D::SetVertex( void )
 		pVtx[ 3 ].color = m_color;
 
 		//  UV座標の指定
-		pVtx[ 0 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y );
-		pVtx[ 1 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
-		pVtx[ 2 ].tex = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
-		pVtx[ 3 ].tex = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 0 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y );
+		pVtx[ 1 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y );
+		pVtx[ 2 ].texcoord = D3DXVECTOR2( m_posUV.x , m_posUV.y + 1.0f / m_divideUV.y );
+		pVtx[ 3 ].texcoord = D3DXVECTOR2( m_posUV.x + 1.0f / m_divideUV.x , m_posUV.y + 1.0f / m_divideUV.y );
 
 		//  頂点バッファのアンロック
 		m_pVtxBuff->Unlock( );

@@ -49,7 +49,7 @@ Keyboard::~Keyboard( )
 HRESULT Keyboard::Init( HINSTANCE hInstance , HWND hWnd )
 {
 	// 入力処理の初期化
-	if( FAILED( CInput::Init( hInstance , hWnd ) ) )
+	if( FAILED( Input::Init( hInstance , hWnd ) ) )
 	{
 		MessageBox(hWnd, "DirectInputオブジェクトが作れねぇ！", "警告！", MB_ICONWARNING);
 		return E_FAIL;
@@ -98,7 +98,7 @@ void Keyboard::Uninit( void )
 		m_pDevKeyboard = NULL;
 	}
 
-	CInput::Uninit( );
+	Input::Uninit( );
 }
 
 //--------------------------------------------------------------------------------------

@@ -18,20 +18,22 @@
 class Scene2D : public Scene
 {
 public:
-	Scene2D( );														//  デフォルトコンストラクタ
+	Scene2D( );															//  デフォルトコンストラクタ
 	Scene2D( D3DXVECTOR3 position ,
-			  D3DXVECTOR3 size ,
-			  D3DXVECTOR2 divideUV ,
-			  D3DXVECTOR2 posUV ,
-			  D3DXCOLOR color );										//  コンストラクタ
+			 D3DXVECTOR3 size ,
+			 D3DXVECTOR2 divideUV ,
+			 D3DXVECTOR2 posUV ,
+			 D3DXCOLOR color );											//  コンストラクタ
 	~Scene2D( );														//  デストラクタ
 
 	HRESULT					Init( void );								//  初期化
 	void					Uninit( void );								//  終了
 	void					Update( void );								//  更新
 	void					Draw( void );								//  描画
+	void					DrawDepth( void ){ }						//  デプス値の書き込み
 
-	static Scene2D*		Create( D3DXVECTOR3 position,					//  生成
+
+	static Scene2D*			Create( D3DXVECTOR3 position,				//  生成
 									D3DXVECTOR3 size , 
 									D3DXVECTOR2 posUV ,
 									D3DXVECTOR2 divideUV );

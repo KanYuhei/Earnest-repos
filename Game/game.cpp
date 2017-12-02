@@ -23,11 +23,12 @@
 #include "sceneFBX.h"
 #include "field.h"
 #include "effekseerManager.h"
-#include "imgui_impl_dx9.h"
 #include "light.h"
 #include <stdio.h>
 #include <random>
 #include "Wwise.h"
+#include "unityFBX.h"
+#include "block.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -51,7 +52,6 @@ static const float	STAGE1_DISTACE= 300.0f;
 //--------------------------------------------------------------------------------------
 Game::MODE_VS	Game::m_modeVS = Game::MODE_VS_CPU;				//  対戦モード
 Game::CRYSTAL	Game::m_crystal[ 2 ] = { Game::CRYSTAL_FIRE };	//  魔法クリスタル
-Camera*			Game::m_pCamera[ 2 ] = { NULL };				//  カメラクラスのポインタ
 int				Game::m_nNumDivide = MESH_FIELD_DIVIDE;			//  フィールド分割数
 int				Game::m_nNumField = 0;							//  フィールド数
 int				Game::m_nFocusField = 0;						//  フォーカスがあっているフィールド数
@@ -60,7 +60,7 @@ bool			Game::m_bClear = false;							//  クリアしたかどうか
 D3DXVECTOR3		Game::m_fieldPos( 0.0f , 0.0f , 0.0f );			//  フォーカスがあっているフィールド数
 D3DXVECTOR3		Game::m_fieldMin( 0.0f , 0.0f , 0.0f );			//  フィールド最小座標
 D3DXVECTOR3		Game::m_fieldMax( 0.0f , 0.0f , 0.0f );			//  フィールド最大座標
-Mode::MODE		Game::m_nextMode = Mode::MODE_RESULT;			//  次の場面
+Mode::MODE		Game::m_nextMode = Mode::MODE::RESULT;			//  次の場面
 
 //--------------------------------------------------------------------------------------
 //  ゲームクラスのコンストラクタ
@@ -85,19 +85,17 @@ void Game::Init( void )
 {
 	m_bClear = false;
 
-	for( int i = 0; i < 2; i++ )
-	{
-		m_pCamera[ i ] = NULL;
-	}
+	//  FBXの生成
+	//UnityFBX::Create( D3DXVECTOR3( 0.0f , 0.0f , -200.0f ) , 0.1f );
 
 	//  ステージの生成
 	SetStage( );
 
+	Block::Create( D3DXVECTOR3( -200.0f , 0.0f , -30.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+				   D3DXVECTOR3( 0.1f , 0.1f , 0.1f ) ); 
+
 	//  デバイス情報の取得
 	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
-	
-    // Setup ImGui binding
-    ImGui_ImplDX9_Init( GetWindow( ) , pDevice );
 }
 
 //--------------------------------------------------------------------------------------
@@ -105,23 +103,8 @@ void Game::Init( void )
 //--------------------------------------------------------------------------------------
 void Game::Uninit( void )
 {
-	//  ImGuiの終了
-	ImGui_ImplDX9_Shutdown( );
-
 	//  オブジェクトクラスの全解放
 	Scene::ReleaseAll( );
-
-	for( int i = 0; i < 2; i++ )
-	{
-		//  カメラクラスポインタが空ではない場合
-		if( m_pCamera[ i ] != NULL )
-		{
-			//  カメラクラスの破棄
-			m_pCamera[ i ]->Uninit( );
-			delete m_pCamera[ i ];
-			m_pCamera[ i ] = NULL;
-		}
-	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -130,69 +113,16 @@ void Game::Uninit( void )
 void Game::Update( void )
 {
 	// キーボード情報の取得
-	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
+	Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 
 	for( int i = 0; i < 2; i++ )
 	{
+		Camera* camera = SceneManager::GetCamera( i );
+
 		//  カメラクラスポインタが空ではない場合
-		if( m_pCamera[ i ] != NULL )
+		if( camera != NULL )
 		{
-			if( pKeyboard->GetKeyboardTrigger( DIK_1 ) )
-			{
-				//  モードの切り替え
-				//m_pCamera[ i ]->ChangeMode( );
-			}
-
-			m_pCamera[ i ]->Update( );
-		}
-	}
-
-	ImGui_ImplDX9_NewFrame( );
-
-    bool show_test_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_col = ImColor(114, 144, 154);
-
-    // 1. Show a simple window
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-    {
-		ImGui::Begin( "Test Window", &show_test_window );
-        static float f = 0.0f;
-        ImGui::Text("Hello, world!");
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-        ImGui::ColorEdit3("clear color", (float*)&clear_col);
-        if (ImGui::Button("Test Window")) show_test_window ^= 1;
-        if (ImGui::Button("Another Window")) show_another_window ^= 1;
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End( );
-    }
-
-    // 2. Show another simple window, this time using an explicit Begin/End pair
-    if (show_another_window)
-    {
-        ImGui::Begin("Another Window", &show_another_window);
-        ImGui::Text("Hello from another window!");
-        ImGui::End();
-    }
-
-    // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-    if (show_test_window)
-    {
-        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-        ImGui::ShowTestWindow(&show_test_window);
-    }
-
-	if( Fade::GetFade( ) == Fade::FADE_NONE )
-	{
-		if(  pKeyboard->GetKeyboardTrigger( DIK_F1 ) )
-		{
-			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
-		}
-		else if(  pKeyboard->GetKeyboardTrigger( DIK_F2 ) )
-		{
-			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			camera->Update( );
 		}
 	}
 
@@ -210,22 +140,6 @@ void Game::Draw( void )
 {
 	//  シーン全ての描画
 	Scene::DrawAll( );
-
-	//  GUIの描画
-	//ImGui::Render( );
-}
-
-//--------------------------------------------------------------------------------------
-//  カメラクラスを取得をする関数
-//--------------------------------------------------------------------------------------
-Camera* Game::GetCamera( int nCameraNo )
-{
-	if( nCameraNo >= 2 )
-	{
-		return NULL;
-	}
-
-	return m_pCamera[ nCameraNo ];
 }
 
 //--------------------------------------------------------------------------------------
@@ -258,10 +172,10 @@ int Game::GetFocusField( void )
 void Game::SetStage( void )
 {
 	char		aFileName[ SceneManager::STAGE_MAX ][ 128 ] = {
-																STAGE1_FILENAME ,
-																STAGE2_FILENAME ,
-																STAGE3_FILENAME ,
-														  };
+																	STAGE1_FILENAME ,
+																	STAGE2_FILENAME ,
+																	STAGE3_FILENAME ,
+															  };
 
 	int			nNumBlock = 0;						//  ブロック数の格納
 	int			nType = -1;							//  ブロックの種類
@@ -283,9 +197,9 @@ void Game::SetStage( void )
 
 		//  メッシュドームの生成
 		MeshDome::Create( MeshDome::TYPE_SKY,
-						   D3DXVECTOR3( 0.0f , -15.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-						   D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.00001f , 0.0f ) ,
-						   32 , 4 );
+						  D3DXVECTOR3( 0.0f , -15.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+						  D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.00001f , 0.0f ) ,
+						  32 , 4 );
 
 		//  CPU対戦の場合
 		if( m_modeVS == Game::MODE_VS_CPU )
@@ -295,13 +209,14 @@ void Game::SetStage( void )
 							  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 							  D3DXVECTOR2( 1.0f , 1.0f ) );
 
+			Camera* camera = SceneManager::GetCamera( 0 );
+
 			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 0 ] == NULL )
+			if( camera != nullptr )
 			{
 				//  カメラクラスの生成
-				m_pCamera[ 0 ] = new Camera;
-				m_pCamera[ 0 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f );
+				camera->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 			}
 
 			Player::MAGIC magic;
@@ -310,19 +225,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic = Player::MAGIC_FIRE;
+					magic = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic = Player::MAGIC_TORNADE;
+					magic = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic = Player::MAGIC_LIGHTNING;
+					magic = Player::MAGIC::LIGHTNING;
 
 					break;
 				}
@@ -339,22 +254,22 @@ void Game::SetStage( void )
 		//  プレイヤー対戦の場合
 		else if( m_modeVS == Game::MODE_VS_PLAYER )
 		{
-			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 0 ] == NULL )
+			Camera* camera = SceneManager::GetCamera( 0 );
+
+			//  カメラクラスの初期化
+			if( camera != nullptr )
 			{
-				//  カメラクラスの生成
-				m_pCamera[ 0 ] = new Camera;
-				m_pCamera[ 0 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f , 0 , true );
+				camera->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							  D3DX_PI / 3.0f , 1.0f , 10000.0f , 0 , true );
 			}
 
-			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 1 ] == NULL )
+			Camera* camera2 = SceneManager::GetCamera( 1 );
+
+			//  カメラクラスの初期化
+			if( camera2 != nullptr )
 			{
-				//  カメラクラスの生成
-				m_pCamera[ 1 ] = new Camera;
-				m_pCamera[ 1 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , ( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f , 1 , true );
+				camera2->Init( D3DXVECTOR3( 0.0f , 10.0f , ( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							   D3DX_PI / 3.0f , 1.0f , 10000.0f , 1 , true );
 			}
 
 			Player::MAGIC magic;
@@ -363,19 +278,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic = Player::MAGIC_FIRE;
+					magic = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic = Player::MAGIC_TORNADE;
+					magic = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic = Player::MAGIC_LIGHTNING;
+					magic = Player::MAGIC::LIGHTNING;
 
 					break;
 				}
@@ -387,19 +302,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic2 = Player::MAGIC_FIRE;
+					magic2 = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic2 = Player::MAGIC_TORNADE;
+					magic2 = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic2 = Player::MAGIC_LIGHTNING;
+					magic2 = Player::MAGIC::LIGHTNING;
 
 					break;
 				}
@@ -448,13 +363,14 @@ void Game::SetStage( void )
 							  D3DXVECTOR3( SCREEN_WIDTH , SCREEN_HEIGHT , 0.0f ) , D3DXVECTOR2( 0.0f , 0.0f ) , 
 							  D3DXVECTOR2( 1.0f , 1.0f ) );
 
+			Camera* camera = SceneManager::GetCamera( 0 );
+
 			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 0 ] == NULL )
+			if( camera != nullptr )
 			{
 				//  カメラクラスの生成
-				m_pCamera[ 0 ] = new Camera;
-				m_pCamera[ 0 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f );
+				camera->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 			}
 
 			Player::MAGIC magic;
@@ -463,19 +379,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic = Player::MAGIC_FIRE;
+					magic = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic = Player::MAGIC_TORNADE;
+					magic = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic = Player::MAGIC_LIGHTNING;
+					magic = Player::MAGIC::LIGHTNING;
 
 					break;
 				}
@@ -492,22 +408,22 @@ void Game::SetStage( void )
 		//  プレイヤー対戦の場合
 		else if( m_modeVS == Game::MODE_VS_PLAYER )
 		{
-			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 0 ] == NULL )
+			Camera* camera = SceneManager::GetCamera( 0 );
+
+			//  カメラクラスの初期化
+			if( camera != nullptr )
 			{
-				//  カメラクラスの生成
-				m_pCamera[ 0 ] = new Camera;
-				m_pCamera[ 0 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f , 0 , true );
+				camera->Init( D3DXVECTOR3( 0.0f , 10.0f , -( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							  D3DX_PI / 3.0f , 1.0f , 10000.0f , 0 , true );
 			}
 
-			//  カメラクラスポインタが空の場合
-			if( m_pCamera[ 1 ] == NULL )
+			Camera* camera2 = SceneManager::GetCamera( 1 );
+
+			//  カメラクラスの初期化
+			if( camera2 != nullptr )
 			{
-				//  カメラクラスの生成
-				m_pCamera[ 1 ] = new Camera;
-				m_pCamera[ 1 ]->Init( D3DXVECTOR3( 0.0f , 10.0f , ( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-									  D3DX_PI / 3.0f , 1.0f , 10000.0f , 1 , true );
+				camera2->Init( D3DXVECTOR3( 0.0f , 10.0f , ( STAGE1_DISTACE + 20.0f ) ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+							   D3DX_PI / 3.0f , 1.0f , 10000.0f , 1 , true );
 			}
 
 			Player::MAGIC magic;
@@ -516,19 +432,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic = Player::MAGIC_FIRE;
+					magic = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic = Player::MAGIC_TORNADE;
+					magic = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic = Player::MAGIC_LIGHTNING;
+					magic = Player::MAGIC::LIGHTNING;
 
 					break;
 				}
@@ -540,19 +456,19 @@ void Game::SetStage( void )
 			{
 				case Game::CRYSTAL_FIRE:
 				{
-					magic2 = Player::MAGIC_FIRE;
+					magic2 = Player::MAGIC::FIRE;
 
 					break;
 				}
 				case Game::CRYSTAL_TORNADE:
 				{
-					magic2 = Player::MAGIC_TORNADE;
+					magic2 = Player::MAGIC::TORNADE;
 
 					break;
 				}
 				case Game::CRYSTAL_LIGHTNING:
 				{
-					magic2 = Player::MAGIC_LIGHTNING;
+					magic2 = Player::MAGIC::LIGHTNING;
 
 					break;
 				}

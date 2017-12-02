@@ -38,6 +38,30 @@
 #include "utility.h"
 #include <random>
 #include "Wwise.h"
+#include "imgui_impl_dx9.h"
+
+//--------------------------------------------------------------------------------------
+//  ヘッダーファイル( ステート系 )
+//--------------------------------------------------------------------------------------
+#include "playerState.h"
+#include "playerBend.h"
+#include "playerBlow.h"
+#include "playerHPAttack000.h"
+#include "playerEscape.h"
+#include "playerGuard.h"
+#include "playerBraveAttack000After.h"
+#include "playerBraveAttack000Before.h"
+#include "playerJump.h"
+#include "playerLanding.h"
+#include "playerLockonDash.h"
+#include "playerMagicActive.h"
+#include "playerMagicReady.h"
+#include "playerMove.h"
+#include "playerNeutral.h"
+#include "playerPassive.h"
+#include "playerResultLose.h"
+#include "playerResultWin.h"
+#include "playerRushAttack.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -112,14 +136,12 @@
 #define PLAYER_ENABLE_HP_ATTACK_DIST			( 150.0f )
 #define PLAYER_HP_ATTACK_SPEED					( 1.0f )
 
-static const int	PLAYER_BRAVE_DAMAGE			= 400;
 static const int	PLAYER_HP_DAMAGE			= 150;
 static const int	PLAYER_FINISHER_DAMAGE		= 250;
 
 static const float	PLAYER_HP_RANGE				= 30.0f;
 static const float	PLAYER_HP_RANGE_HEIGHT		= 12.0f;
 
-static const float	PLAYER_BRAVE_BLOW_POWER		= 8.0f;
 static const float	PLAYER_HP_BLOW_POWER		= 3.0f;
 static const float	PLAYER_FINISHER_BLOW_POWER	= 7.0f;
 
@@ -138,7 +160,7 @@ static const float	PLAYER_SHADOW_SCALE = 0.55f;
 //--------------------------------------------------------------------------------------
 //  プレイヤークラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-Player::Player( ) : SceneModelAnim( 5 )
+Player::Player( ) : SceneModelAnim( 3 )
 {
 	m_beforePos = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_vecDirect = D3DXVECTOR3( 0.0f , 0.0f , 1.0f );
@@ -148,8 +170,6 @@ Player::Player( ) : SceneModelAnim( 5 )
 	m_nCntJump = 0;
 	m_bLockOn = true;
 	m_stencilShadow = nullptr;
-	m_attackHitSphere.fLength = PLAYER_HIT_SPHERE_LENGTH;
-	m_attackHitSphere.position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_hitSphere.fLength = PLAYER_HIT_SPHERE_LENGTH * 0.5f;
 	m_hitSphere.position = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
 	m_pLife = NULL;
@@ -182,17 +202,19 @@ Player::~Player( )
 //--------------------------------------------------------------------------------------
 HRESULT Player::Init( void )
 {
+	m_drawDepth = true;
+
 	//  シーンモデル
 	SceneModelAnim::Init( );
 
 	//  物体の種類の設定
 	Scene::SetObjType( Scene::OBJTYPE_PLAYER );
 
-	//  ステンシルシャドウの生成
-	m_stencilShadow = StencilShadow::Create( StencilShadow::TYPE::SPHERE ,
-											 m_position , 
-											 D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-											 D3DXVECTOR3( PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE ) );
+	////  ステンシルシャドウの生成
+	//m_stencilShadow = StencilShadow::Create( StencilShadow::TYPE::SPHERE ,
+	//										 m_position , 
+	//										 D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+	//										 D3DXVECTOR3( PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE , PLAYER_SHADOW_SCALE ) );
 
 	if( m_nPlayerNo == 0 )
 	{
@@ -278,7 +300,7 @@ HRESULT Player::Init( void )
 	m_pStateAnimator = StateAnimator::Create( StateAnimator::MOTION_NEUTRAL );
 
 	//  カメラの取得
-	Camera* pCamera = Game::GetCamera( m_nPlayerNo );
+	Camera* pCamera = SceneManager::GetCamera( m_nPlayerNo );
 
 	D3DXVECTOR3 cameraVecDirect = pCamera->GetCameraVecDirect( );
 
@@ -312,12 +334,29 @@ HRESULT Player::Init( void )
 	//  方向ベクトルの代入
 	D3DXVec3Normalize( &m_vecDirect , &( m_posAt - m_position ) );
 
-	//D3DXVECTOR3 positionUp = m_position;
-	//positionUp.y += PLAYER_HEIGHT;
-	//D3DXVECTOR3 positionDown = m_position;
+	//  プレイヤーステートの生成
+	m_allState[ static_cast< int >( Player::STATE::ATTACK_HP_ATTACK000 ) ] = new PlayerHPAttack000( this );
+	m_allState[ static_cast< int >( Player::STATE::ATTACK_BRAVE_ATTACK000_BEFORE ) ] = new PlayerBraveAttack000Before( this );
+	m_allState[ static_cast< int >( Player::STATE::ATTACK_BRAVE_ATTACK000_AFTER ) ] = new PlayerBraveAttack000After( this );
+	m_allState[ static_cast< int >( Player::STATE::BEND ) ] = new PlayerBend( this );
+	m_allState[ static_cast< int >( Player::STATE::BLOW ) ] = new PlayerBlow( this );
+	m_allState[ static_cast< int >( Player::STATE::ESCAPE ) ] = new PlayerEscape( this );
+	m_allState[ static_cast< int >( Player::STATE::GUARD ) ] = new PlayerGuard( this );
+	m_allState[ static_cast< int >( Player::STATE::JUMP ) ] = new PlayerJump( this );
+	m_allState[ static_cast< int >( Player::STATE::LANDING ) ] = new PlayerLanding( this );
+	m_allState[ static_cast< int >( Player::STATE::LOCKON_DASH ) ] = new PlayerLockonDash( this );
+	m_allState[ static_cast< int >( Player::STATE::MAGIC_ACTIVE ) ] = new PlayerMagicActive( this );
+	m_allState[ static_cast< int >( Player::STATE::MAGIC_READY ) ] = new PlayerMagicReady( this );
+	m_allState[ static_cast< int >( Player::STATE::MOVE ) ] = new PlayerMove( this );
+	m_allState[ static_cast< int >( Player::STATE::NEUTRAL ) ] = new PlayerNeutral( this );
+	m_allState[ static_cast< int >( Player::STATE::PASSIVE ) ] = new PlayerPassive( this );
+	m_allState[ static_cast< int >( Player::STATE::RESULT_LOSE ) ] = new PlayerResultLose( this );
+	m_allState[ static_cast< int >( Player::STATE::RESULT_WIN ) ] = new PlayerResultWin( this );
+	m_allState[ static_cast< int >( Player::STATE::RUSH_ATTACK ) ] = new PlayerRushAttack( this );
 
-	////  軌跡メッシュの生成
-	//m_pMeshTracing = MeshTracing::Create( D3DXCOLOR( 1.0f , 0.0f , 0.0f , 1.0f ) , positionUp , positionDown );
+	//  ニュートラル状態で初期化
+	m_playerState = m_allState[ static_cast< int >( Player::STATE::NEUTRAL ) ];
+	SetAnimation( StateAnimator::MOTION_NEUTRAL );
 
 	return S_OK;
 }
@@ -355,6 +394,14 @@ void Player::Uninit( void )
 	{
 		m_stencilShadow = NULL;
 	}
+
+	//  プレイヤーステートの数分のループ
+	for( int countState = 0; countState < static_cast< int >( Player::STATE::MAX ); ++countState )
+	{
+		m_allState[ countState ]->Uninit( );
+		delete m_allState[ countState ];
+		m_allState[ countState ] = nullptr;
+	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -362,2762 +409,30 @@ void Player::Uninit( void )
 //--------------------------------------------------------------------------------------
 void Player::Update( void )
 {
-	// キーボード情報の取得
-	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
-
-	//  Xboxコントローラー情報の取得
-	XboxController*	pXInput = NULL;
-
-	//  PS4コントローラー情報の取得
-	PS4Controller*		pPS4Input = NULL;
-
-	pPS4Input = SceneManager::GetPS4Input( );
-
-	//  カメラの取得
-	Camera* pCamera = Game::GetCamera( m_nPlayerNo );
-
-	//  シーンクラスのポインタ
-	Scene* pScene = NULL;			
-
-	//  シーンクラスのポインタ
-	Scene *pScene2 =NULL;										
-
-	//  当たり判定用フィールドクラス
-	HitField* pHitField = NULL;
-
-	//  移動方向
-	D3DXVECTOR3 move( 0.0f , 0.0f , 0.0f );
-
-	D3DXVECTOR3 cameraVecDirect;
-
-	//  押したかのフラグ
-	bool bPush = false;
-
-	//  ステートマシン( アニメーター )クラスのポインタがある場合
-	if( m_pStateAnimator != NULL )
+	//  開始ボイスをまだ再生していない場合
+	if( m_bVoiceStart == false )
 	{
-		//  開始ボイスをまだ再生していない場合
-		if( m_bVoiceStart == false )
-		{
-			m_bVoiceStart = true;
-		}
-
-		//  基本は当たり判定をする状態に
-		m_bJudgeHit = true;
-
-		//  ガード中ではない状態に
-		m_bGuard = false;
-
-		float fTargetDistance = 0.0f;
-
-#pragma omp parallel for
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene->GetObjType( );
-
-				//  CPU対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-				{
-					//  種類が敵の場合
-					if( objType == Scene::OBJTYPE_ENEMY )
-					{
-						//  ダウンキャスト
-						Enemy* pEnemy = ( Enemy* )pScene;
-
-						//  敵の座標の代入
-						D3DXVECTOR3 posEnemy = pEnemy->GetPos( );
-
-						//  距離の算出
-						fTargetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-												 ( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
-												 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-					}
-				}
-				//  プレイヤー対戦モードの場合
-				else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-				{
-					if( objType == Scene::OBJTYPE_PLAYER )
-					{
-						//  ダウンキャスト
-						Player* pPlayer = ( Player* )pScene;
-
-						//  自分以外のプレイヤー番号の場合
-						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-						{
-							//  敵の座標の代入
-							D3DXVECTOR3 posEnemy = pPlayer->GetPos( );
-
-							//  距離の算出
-							fTargetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													 ( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
-													 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-						}
-					}
-				}
-
-				//  次のポインタを代入
-				pScene = pScene->GetNextScene( pScene );
-			}
-		}
-
-		////////////////////////////////////////////////////////
-		//  状態毎の操作
-		////////////////////////////////////////////////////////
-
-		/*----------------------------------------------------------
-		    左スティックやWASDでの移動入力情報の取得
-		----------------------------------------------------------*/
-#ifdef KEYBOARD_ENABLE
-
-		//  移動量の初期化
-		move = D3DXVECTOR3( 0.0f , 0.0f , 0.0f );
-
-		if( m_nPlayerNo == 0 )
-		{
-			if( pKeyboard->GetKeyboardPress( DIK_W ) )
-			{
-				move.z += 1.0f;
-			}
-			else if( pKeyboard->GetKeyboardPress( DIK_S ) )
-			{
-				move.z -= 1.0f;
-			}
-
-			if( pKeyboard->GetKeyboardPress( DIK_A ) )
-			{
-				move.x -= 1.0f;
-			}
-			else if( pKeyboard->GetKeyboardPress( DIK_D ) )
-			{
-				move.x += 1.0f;
-			}
-		}
-		else if( m_nPlayerNo == 1 )
-		{
-			if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
-			{
-				move.z += 1.0f;
-			}
-			else if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
-			{
-				move.z -= 1.0f;
-			}
-
-			if( pKeyboard->GetKeyboardPress( DIK_LEFTARROW ) )
-			{
-				move.x -= 1.0f;
-			}
-			else if( pKeyboard->GetKeyboardPress( DIK_RIGHTARROW ) )
-			{
-				move.x += 1.0f;
-			}
-		}
-
-#else
-
-		//  左スティック情報の取得
-		move.x = ( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).x;
-		move.z = -( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).y;
-
-#endif 
-
-		/*----------------------------------------------------------
-		    移動操作
-		----------------------------------------------------------*/
-		if( move.x != 0 ||
-			move.z != 0 )
-		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MOVE ) )
-			{
-				SetAnimation( StateAnimator::MOTION_MOVE );
-			}
-		}
-
-		int nKey = 0;
-
-		/*----------------------------------------------------------
-		    ジャンプ操作
-		----------------------------------------------------------*/
-		if( m_nCntJump < PLAYER_ENABLE_NUM_JUMP )
-		{
-			int nKey = 0;
-
-			if( m_nPlayerNo == 0 )
-			{
-				nKey = DIK_SPACE;
-			}
-			else if( m_nPlayerNo == 1 )
-			{
-				nKey = DIK_RCONTROL;
-			}
-
-#ifdef KEYBOARD_ENABLE
-
-			if( pKeyboard->GetKeyboardTrigger( nKey ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_JUMP ) )
-				{
-					//  ジャンプアニメーションに
-					SetAnimation( StateAnimator::MOTION_JUMP );
-
-					//  ジャンプ力の代入
-					m_fCurrentJumpPower = m_fJumpPower;
-
-					//  ジャンプのカウント
-					m_nCntJump++;
-				}
-			}
-
-#else
-
-			if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_CROSS ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_JUMP ) )
-				{
-					//  ジャンプアニメーションに
-					SetAnimation( StateAnimator::MOTION_JUMP );
-
-					//  ジャンプ力の代入
-					m_fCurrentJumpPower = m_fJumpPower;
-
-					//  ジャンプのカウント
-					m_nCntJump++;
-				}
-			}
-
-#endif
-
-		}
-
-		/*----------------------------------------------------------
-		    ブレイブ攻撃000操作
-		----------------------------------------------------------*/
-		if( m_nPlayerNo == 0 )
-		{
-			nKey = DIK_B;
-		}
-		else if( m_nPlayerNo == 1 )
-		{
-			nKey = DIK_SEMICOLON;
-		}
-
-#ifdef KEYBOARD_ENABLE
-
-		if( pKeyboard->GetKeyboardTrigger( nKey ) )
-		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP001 ) )
-			{
-				SetAnimation( StateAnimator::MOTION_ATTACK_HP001 );
-
-				//  まだ攻撃エフェクトを出していない状態に
-				m_bSlashEffekseer = false;
-			}
-		}
-
-#else
-
-		if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_SQUARE ) )
-		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP001 ) )
-			{
-				SetAnimation( StateAnimator::MOTION_ATTACK_HP001 );
-
-				//  まだ攻撃エフェクトを出していない状態に
-				m_bSlashEffekseer = false;
-			}
-		}
-
-#endif
-
-		/*----------------------------------------------------------
-		    魔法攻撃操作
-		----------------------------------------------------------*/
-		if( m_pMagic == NULL )
-		{
-			if( m_nPlayerNo == 0 )
-			{
-				nKey = DIK_H;
-			}
-			else if( m_nPlayerNo == 1 )
-			{
-				nKey = DIK_AT;
-			}
-
-#ifdef KEYBOARD_ENABLE
-
-			if( pKeyboard->GetKeyboardTrigger( nKey ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_READY ) )
-				{
-					SetAnimation( StateAnimator::MOTION_MAGIC_READY );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_AURA ] = EffekseerManager::Create( EffekseerManager::TYPE_AURA , D3DXVECTOR3( m_position.x , m_position.y + 3.0f , m_position.z ) ,
-																							D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 4.0f , 4.0f , 4.0f ) , 1.0f );
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] = EffekseerManager::Create( EffekseerManager::TYPE_MAGIC_CIRCLE , D3DXVECTOR3( m_position.x , m_position.y , m_position.z ) ,
-																									D3DXVECTOR3( -D3DX_PI * 0.5f , fAngle , 0.0f ) , D3DXVECTOR3( 5.0f , 5.0f , 5.0f ) , 1.0f );
-
-					D3DXVECTOR3 magicPos = m_position;
-					magicPos.y += 3.0f;
-
-
-					if( m_magic == MAGIC_FIRE )
-					{
-						m_pMagic = MagicFire::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-														D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) , m_vecDirect , m_nPlayerNo );
-					}
-					else if( m_magic == MAGIC_LIGHTNING )
-					{
-						m_pMagic = MagicLightning::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) ,
-															D3DXVECTOR3( 0.6f , 0.6f , 0.6f ) , m_vecDirect , m_nPlayerNo );
-					}
-					else if( m_magic == MAGIC_TORNADE )
-					{
-						m_pMagic = MagicTornade::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) ,
-														  D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) , m_vecDirect , m_nPlayerNo );
-					}
-				}
-			}
-
-#else
-
-			if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_R2 ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_READY ) )
-				{
-					SetAnimation( StateAnimator::MOTION_MAGIC_READY );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_AURA ] = EffekseerManager::Create( EffekseerManager::TYPE_AURA , D3DXVECTOR3( m_position.x , m_position.y + 3.0f , m_position.z ) ,
-																							D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 4.0f , 4.0f , 4.0f ) , 1.0f );
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] = EffekseerManager::Create( EffekseerManager::TYPE_MAGIC_CIRCLE , D3DXVECTOR3( m_position.x , m_position.y , m_position.z ) ,
-																									D3DXVECTOR3( -D3DX_PI * 0.5f , fAngle , 0.0f ) , D3DXVECTOR3( 5.0f , 5.0f , 5.0f ) , 1.0f );
-
-					D3DXVECTOR3 magicPos = m_position;
-					magicPos.y += 3.0f;
-
-
-					if( m_magic == MAGIC_FIRE )
-					{
-						m_pMagic = MagicFire::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-														D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) , m_vecDirect , m_nPlayerNo );
-					}
-					else if( m_magic == MAGIC_LIGHTNING )
-					{
-						m_pMagic = MagicLightning::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) ,
-															D3DXVECTOR3( 0.6f , 0.6f , 0.6f ) , m_vecDirect , m_nPlayerNo );
-					}
-					else if( m_magic == MAGIC_TORNADE )
-					{
-						m_pMagic = MagicTornade::Create( Magic::OWNER_PLAYER , magicPos , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) ,
-														  D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) , m_vecDirect , m_nPlayerNo );
-					}
-				}
-			}
-
-#endif
-
-		}
-
-		/*----------------------------------------------------------
-			攻撃000操作
-		----------------------------------------------------------*/
-		if( m_nPlayerNo == 0 )
-		{
-			nKey = DIK_C;
-		}
-		else if( m_nPlayerNo == 1 )
-		{
-			nKey = DIK_K;
-		}
-
-#ifdef KEYBOARD_ENABLE
-
-		if( fTargetDistance <= PLAYER_ENABLE_HP_ATTACK_DIST )
-		{
-			if( pKeyboard->GetKeyboardTrigger( nKey ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP000_BEFORE ) )
-				{
-					SetAnimation( StateAnimator::MOTION_ATTACK_HP000_BEFORE );
-
-					//  追尾時間の初期化
-					m_fHomingTime = 0;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					if( move.x >= 0.0f )
-					{
-						//  右回り追尾状態に
-						m_bHomingLeft = false;
-					}
-					else
-					{
-						//  左回り追尾状態に
-						m_bHomingLeft = true;
-					}
-				}
-			}
-		}
-		else
-		{
-			if( pKeyboard->GetKeyboardTrigger( nKey ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP000_AFTER ) )
-				{
-					SetAnimation( StateAnimator::MOTION_ATTACK_HP000_AFTER );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  攻撃側の当たり判定の代入
-					m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_SLASH000 ] = EffekseerManager::Create( EffekseerManager::TYPE_SLASH000 ,
-																							  D3DXVECTOR3( m_position.x , m_attackHitSphere.position.y , m_position.z ) ,
-																							  D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 1.8f , 1.8f , 1.8f ) , 1.5f );
-				}
-			}
-		}
-
-#else
-
-		if( fTargetDistance <= PLAYER_ENABLE_HP_ATTACK_DIST )
-		{
-			if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_CIRCLE ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP000_BEFORE ) )
-				{
-					SetAnimation( StateAnimator::MOTION_ATTACK_HP000_BEFORE );
-
-					//  追尾時間の初期化
-					m_fHomingTime = 0;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					if( move.x >= 0.0f )
-					{
-						//  右回り追尾状態に
-						m_bHomingLeft = false;
-					}
-					else
-					{
-						//  左回り追尾状態に
-						m_bHomingLeft = true;
-					}
-				}
-			}
-		}
-		else
-		{
-			if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_CIRCLE ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP000_AFTER ) )
-				{
-					SetAnimation( StateAnimator::MOTION_ATTACK_HP000_AFTER );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  攻撃側の当たり判定の代入
-					m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_SLASH000 ] = EffekseerManager::Create( EffekseerManager::TYPE_SLASH000 ,
-																								D3DXVECTOR3( m_position.x , m_attackHitSphere.position.y , m_position.z ) ,
-																								D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 1.8f , 1.8f , 1.8f ) , 1.5f );
-				}
-			}
-		}
-
-#endif
-
-
-
-		/*----------------------------------------------------------
-		    回避操作
-		----------------------------------------------------------*/
-		if( m_nPlayerNo == 0 )
-		{
-			nKey = DIK_G;
-		}
-		else if( m_nPlayerNo == 1 )
-		{
-			nKey = DIK_P;
-		}
-
-#ifdef KEYBOARD_ENABLE
-
-		if( pKeyboard->GetKeyboardTrigger( nKey ) && ( move.x != 0.0f || move.z != 0.0f ) )
-		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ESCAPE ) )
-			{
-				SetAnimation( StateAnimator::MOTION_ESCAPE );
-
-				//  エフェクトの停止
-				EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-				//  エフェクトの停止
-				EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-				//  魔法を所持している場合
-				if( m_pMagic != NULL )
-				{
-					//  魔法の削除
-					m_pMagic->Delete( );
-					m_pMagic = NULL;
-				}
-
-				D3DXVECTOR3 cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-				//  速度の代入
-				m_fSpeed = m_fBaseSpeed;
-
-				if( pCamera != NULL )
-				{
-					float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-					D3DXMATRIX mtxRot;
-					D3DXMatrixIdentity( &mtxRot );
-					D3DXMatrixRotationY( &mtxRot , fAngle );
-
-					D3DXVec3TransformNormal( &m_vecDirect , &move , &mtxRot );
-					D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-				}
-				else
-				{
-					D3DXVec3Normalize( &m_vecDirect , &move );
-				}
-
-				//  ジャンプ力の代入
-				m_fCurrentJumpPower = m_fJumpPower;
-
-				//  移動力の計算
-				m_fMovePower = 1.0f;
-
-				//  回避時移動量の代入
-				m_fSpeed = PLAYER_AVOID_SPEED;
-			}
-		}
-#else
-
-		if( pPS4Input->GetPress( m_nPlayerNo , PS4Controller::DIJ_CROSS ) && pPS4Input->GetPress( m_nPlayerNo , PS4Controller::DIJ_R1 ) &&
-			( ( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).x != 0.0f || ( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).y != 0.0f ) ||
-			pKeyboard->GetKeyboardTrigger( nKey ) && ( move.x != 0.0f || move.y != 0.0f ) )
-		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ESCAPE ) )
-			{
-				SetAnimation( StateAnimator::MOTION_ESCAPE );
-
-				//  エフェクトの停止
-				EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-				//  エフェクトの停止
-				EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-				//  魔法を所持している場合
-				if( m_pMagic != NULL )
-				{
-					//  魔法の削除
-					m_pMagic->Delete( );
-					m_pMagic = NULL;
-				}
-
-				D3DXVECTOR3 cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-				//  速度の代入
-				m_fSpeed = m_fBaseSpeed;
-
-				if( pCamera != NULL )
-				{
-					float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-					D3DXMATRIX mtxRot;
-					D3DXMatrixIdentity( &mtxRot );
-					D3DXMatrixRotationY( &mtxRot , fAngle );
-
-					D3DXVec3TransformNormal( &m_vecDirect , &move , &mtxRot );
-					D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-				}
-				else
-				{
-					D3DXVec3Normalize( &m_vecDirect , &move );
-				}
-
-				//  ジャンプ力の代入
-				m_fCurrentJumpPower = m_fJumpPower;
-
-				float fStickX = fabsf( ( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).x );
-				float fStickY = fabsf( ( float )pPS4Input->GetLeftStickDisposition( m_nPlayerNo ).y );
-
-				if( fStickX >= fStickY )
-				{
-					//  移動力の計算
-					m_fMovePower = fStickX / 1000.0f;
-				}
-				else
-				{
-					//  移動力の計算
-					m_fMovePower = fStickY / 1000.0f;
-				}
-
-				//  回避時移動量の代入
-				m_fSpeed = PLAYER_AVOID_SPEED;
-			}
-		}
-
-#endif
-
-		/*----------------------------------------------------------
-		    ロックオンダッシュ操作
-		----------------------------------------------------------*/
-		//  ロックオン状態の場合
-		if( m_bLockOn == true )
-		{
-			if( m_nPlayerNo == 0 )
-			{
-				nKey = DIK_V;
-			}
-			else if( m_nPlayerNo == 1 )
-			{
-				nKey = DIK_L;
-			}
-
-#ifdef KEYBOARD_ENABLE
-
-			//  YとRBを長押ししている間
-			if( pKeyboard->GetKeyboardTrigger( nKey ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_LOCKON_DASH ) )
-				{
-					SetAnimation( StateAnimator::MOTION_LOCKON_DASH );
-
-					//  ロックオンダッシュの速度の代入
-					m_fSpeed = PLAYER_LOCKON_DASH_SPEED;
-				}
-			}
-
-#else
-
-			//  YとRBを長押ししている間
-			if( ( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_TRIANGLE ) ) )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_LOCKON_DASH ) )
-				{
-					SetAnimation( StateAnimator::MOTION_LOCKON_DASH );
-
-					//  ロックオンダッシュの速度の代入
-					m_fSpeed = PLAYER_LOCKON_DASH_SPEED;
-				}
-			}
-
-#endif
-		}
-
-		/*----------------------------------------------------------
-		    防御操作
-		----------------------------------------------------------*/
-		if( m_nPlayerNo == 0 )
-		{
-			nKey = DIK_F;
-		}
-		else if( m_nPlayerNo == 1 )
-		{
-			nKey = DIK_O;
-		}
-
-#ifdef KEYBOARD_ENABLE
-
-		//  R1を押した場合間
-		if( pKeyboard->GetKeyboardPress( nKey ) )
-		{
-			//  一定フレーム以上になった場合
-			if( m_nPressTime >= PLAYER_GUARD_FRAME )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_GUARD ) )
-				{
-					SetAnimation( StateAnimator::MOTION_GUARD );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  攻撃側の当たり判定の代入
-					D3DXVECTOR3 effekseerPos = m_position + m_vecDirect * 3.0f;
-					effekseerPos.y += 3.0f;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_SHIELD ] = EffekseerManager::Create( EffekseerManager::TYPE_SHIELD ,
-																							D3DXVECTOR3( effekseerPos.x , effekseerPos.y , effekseerPos.z ) ,
-																							D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 3.0f , 3.0f , 3.0f ) , 1.0f );
-				}
-			}
-
-			//  押す時間のカウント
-			m_nPressTime++;
-		}
-		else
-		{
-			//  押す時間の初期化
-			m_nPressTime = 0;
-		}
-
-#else
-
-		//  R1を押した場合間
-		if( ( pPS4Input->GetPress( m_nPlayerNo , PS4Controller::DIJ_R1 ) ) )
-		{
-			//  一定フレーム以上になった場合
-			if( m_nPressTime >= PLAYER_GUARD_FRAME )
-			{
-				if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_GUARD ) )
-				{
-					SetAnimation( StateAnimator::MOTION_GUARD );
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  攻撃側の当たり判定の代入
-					D3DXVECTOR3 effekseerPos = m_position + m_vecDirect * 3.0f;
-					effekseerPos.y += 3.0f;
-
-					//  速度の代入
-					m_fSpeed = PLAYER_HP_ATTACK_SPEED;
-
-					//  エフェクトの生成
-					m_handle[ EffekseerManager::TYPE_SHIELD ] = EffekseerManager::Create( EffekseerManager::TYPE_SHIELD ,
-																							D3DXVECTOR3( effekseerPos.x , effekseerPos.y , effekseerPos.z ) ,
-																							D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 3.0f , 3.0f , 3.0f ) , 1.0f );
-				}
-			}
-
-			//  押す時間のカウント
-			m_nPressTime++;
-		}
-		else
-		{
-			//  押す時間の初期化
-			m_nPressTime = 0;
-		}
-
-#endif
-
-		////////////////////////////////////////////////////////
-		//  共通操作
-		////////////////////////////////////////////////////////
-
-		//  待ち時間がある場合
-		if( m_nWaitTime > 0 )
-		{
-			//  待ち時間のカウント
-			m_nWaitTime--;
-		}
-		else
-		{
-			m_nWaitTime = 0;
-		}
-
-		//  モーション情報の取得
-		StateAnimator::MOTION motion = m_pStateAnimator->GetMotion( );
-
-#pragma omp parallel for
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene->GetObjType( );
-
-				//  種類がゴールの場合
-				if( objType == Scene::OBJTYPE_HIT_FIELD )
-				{
-					//  当たり判定用フィールドクラスにダウンキャスト
-					pHitField = ( HitField* )pScene;
-
-					if( motion != StateAnimator::MOTION_LOCKON_DASH && motion != StateAnimator::MOTION_GUARD &&
-						motion != StateAnimator::MOTION_BEND && motion != StateAnimator::MOTION_JUMP &&
-						motion != StateAnimator::MOTION_ESCAPE && motion != StateAnimator::MOTION_ATTACK_HP000_BEFORE )
-					{
-						//  重力処理( フィールドより上にいるかどうかで変化 )
-						if( m_position.y >= pHitField->GetHeight( m_position ) )
-						{
-							m_fMoveY -= PLAYER_GRAVITY2;
-
-							m_position.y += m_fMoveY;
-						}
-					}
-					else
-					{
-						m_fMoveY = 0.0f;
-					}
-
-					float fHeight = pHitField->GetHeight( m_position );
-
-					if( fHeight == -100000.0f )
-					{	
-
-					}
-					else
-					{
-						if( m_position.y <= fHeight )
-						{
-							//  Y座標フィールドに合わせる
-							m_position.y = pHitField->GetHeight( m_position );
-						}
-					}
-
-					//  ステンシルシャドウが存在している場合している場合
-					if( m_stencilShadow != nullptr )
-					{
-						float fScale = PLAYER_SHADOW_SCALE + ( m_position.y - pHitField->GetHeight( m_position )  ) * 0.01f;
-
-						D3DXVECTOR3 position = m_position;
-						position.y = pHitField->GetHeight( m_position );
-
-						m_stencilShadow->SetScale( D3DXVECTOR3( fScale , fScale , fScale ) );
-						m_stencilShadow->SetPosition( position );
-					}
-				}
-
-				//  CPU対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-				{
-					//  種類が敵の場合
-					if( objType == Scene::OBJTYPE_ENEMY )
-					{
-						//  ダウンキャスト
-						Enemy* pEnemy = ( Enemy* )pScene;
-
-						//  敵の座標の代入
-						D3DXVECTOR3 posEnemy = pEnemy->GetPos( );
-
-						//  距離の算出
-						fTargetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-												 ( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
-												 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-					}
-				}
-				//  プレイヤー対戦モードの場合
-				else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-				{
-					if( objType == Scene::OBJTYPE_PLAYER )
-					{
-						//  ダウンキャスト
-						Player* pPlayer = ( Player* )pScene;
-
-						//  自分以外のプレイヤー番号の場合
-						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-						{
-							//  敵の座標の代入
-							D3DXVECTOR3 posEnemy = pPlayer->GetPos( );
-
-							//  距離の算出
-							fTargetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													 ( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
-													 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-						}
-					}
-				}
-
-				//  次のポインタを代入
-				pScene = pScene->GetNextScene( pScene );
-			}
-		}
-
-		////////////////////////////////////////////////////////
-		//  共通操作終了
-		////////////////////////////////////////////////////////
-
-		//  アニメーションの種類によっての場合分け
-		switch( motion )
-		{
-			case StateAnimator::MOTION_NEUTRAL:
-			{
-				break;
-			}
-			case StateAnimator::MOTION_MOVE:
-			{
-				cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-				if( move.x != 0 ||
-					move.z != 0 )
-				{
-					//  速度の代入
-					m_fSpeed = m_fBaseSpeed;
-
-					if( pCamera != NULL )
-					{
-						float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-						D3DXMATRIX mtxRot;
-						D3DXMatrixIdentity( &mtxRot );
-						D3DXMatrixRotationY( &mtxRot , fAngle );
-
-						D3DXVec3TransformNormal( &m_vecDirect , &move , &mtxRot );
-						D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-					}
-					else
-					{
-						D3DXVec3Normalize( &m_vecDirect , &move );
-					}
-
-					//  座標の更新( 進行方向 × 速度 分の移動 )
-					m_position += m_vecDirect * m_fSpeed;
-				}
-				else
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				//  注視点を向いている方向に
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				break;
-			}
-			case StateAnimator::MOTION_JUMP:
-			{
-				cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-				if( move.x != 0 ||
-					move.z != 0 )
-				{
-					//  速度の代入
-					m_fSpeed = m_fBaseSpeed;
-
-					if( pCamera != NULL )
-					{
-						float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-						D3DXMATRIX mtxRot;
-						D3DXMatrixIdentity( &mtxRot );
-						D3DXMatrixRotationY( &mtxRot , fAngle );
-
-						D3DXVec3TransformNormal( &m_vecDirect , &move , &mtxRot );
-						D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-					}
-					else
-					{
-						D3DXVec3Normalize( &m_vecDirect , &move );
-					}
-
-					//  座標の更新( 進行方向 × 速度 分の移動 )
-					m_position += m_vecDirect * m_fSpeed * PLAYER_JUMP_;
-				}
-
-				//  注視点を向いている方向に
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  ジャンプ力分上に上がるのとジャンプ力を重力分下げる
-				m_position.y += m_fCurrentJumpPower;
-				m_fCurrentJumpPower -= PLAYER_GRAVITY;
-
-				//  地面についた場合
-				if( m_position.y <= pHitField->GetHeight( m_position ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_LANDING_SHORT ) )
-					{
-						//  着地アニメーションに
-						SetAnimation( StateAnimator::MOTION_LANDING_SHORT );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_BACKJUMP:
-			{
-				break;
-			}
-			case StateAnimator::MOTION_LANDING_SHORT:
-			{
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_LANDING_LONG:
-			{
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_ATTACK_BRAVE000:
-			{
-				//  攻撃側の当たり判定の代入
-				m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-				m_attackHitSphere.position.y += 5.0f;
-
-				//  優先度の最大数分のループ
-				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-				{
-					//  シーンの先頭アドレスを取得
-					pScene = Scene::GetScene( nCntPriority );
-
-					//  シーンが空ではない間ループ
-					while( pScene != NULL )
-					{
-						Scene::OBJTYPE objType;						//  物体の種類
-
-						//  物体の種類の取得
-						objType = pScene->GetObjType( );
-
-						//  CPU対戦モードの場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							//  種類が敵の場合
-							if( objType == Scene::OBJTYPE_ENEMY )
-							{
-								//  ダウンキャスト
-								Enemy* pEnemy = ( Enemy* )pScene;
-
-								if( Utility::HitSphere( m_attackHitSphere , pEnemy->GetHitSphere( ) ) )
-								{
-									pEnemy->Damage( PLAYER_BRAVE_DAMAGE );
-								}
-							}
-						}
-						//  プレイヤー対戦モードの場合
-						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							if( objType == Scene::OBJTYPE_PLAYER )
-							{
-								//  ダウンキャスト
-								Player* pPlayer = ( Player* )pScene;
-
-								//  自分以外のプレイヤー番号の場合
-								if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-								{
-									if( Utility::HitSphere( m_attackHitSphere , pPlayer->GetHitSphere( ) ) )
-									{
-										//  相手が防御状態である場合
-										if( pPlayer->GetGuard( ) )
-										{
-											//  のけぞり状態に
-											Bend( );
-										}
-										else
-										{
-											pPlayer->Damage( m_vecDirect , PLAYER_BRAVE_BLOW_POWER , PLAYER_BRAVE_DAMAGE );
-										}
-									}
-								}
-							}
-						}
-
-						//  種類が弾の場合
-						if( objType == Scene::OBJTYPE_BULLET )
-						{
-							//  ダウンキャスト
-							Bullet* pBullet = ( Bullet* )pScene;
-
-							//  所有者が敵の場合
-							if( pBullet->GetOwner( ) ==  Bullet::OWNER_ENEMY )
-							{
-								if( Utility::HitSphere( m_attackHitSphere , pBullet->GetHitSphere( ) ) )
-								{
-									//  ロックオン状態の場合
-									if( m_bLockOn == true )
-									{
-										Scene* pScene2 = NULL;									//  シーンクラスのポインタ
-
-										//  優先度の最大数分のループ
-										for( int nCntPriority2 = 0; nCntPriority2 < MAX_NUM_PRIORITY; nCntPriority2++ )
-										{
-											//  シーンの先頭アドレスを取得
-											pScene2 = Scene::GetScene( nCntPriority2 );
-
-											//  シーンが空ではない間ループ
-											while( pScene2 != NULL )
-											{
-												Scene::OBJTYPE objType2;						//  物体の種類
-
-												//  物体の種類の取得
-												objType2 = pScene2->GetObjType( );
-
-												//  種類が敵の場合
-												if( objType2 == Scene::OBJTYPE_ENEMY )
-												{
-													D3DXVECTOR3 workVecDirect;
-
-													//  CPU対戦モードの場合
-													if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-													{
-														//  ダウンキャスト
-														Enemy* pEnemy = ( Enemy* )pScene2;
-														D3DXVECTOR3 enemyPos = pEnemy->GetPos( );
-
-														D3DXVECTOR3	playerPos = m_position;
-
-														D3DXVec3Normalize( &workVecDirect , &( enemyPos - m_position ) );
-
-														pBullet->Hit( workVecDirect );
-													}
-													//  プレイヤー対戦モードの場合
-													if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-													{
-														//  ダウンキャスト
-														Player* pPlayer = ( Player* )pScene2;
-
-														if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-														{
-															D3DXVECTOR3 enemyPos = pPlayer->GetPos( );
-
-															D3DXVECTOR3	playerPos = m_position;
-
-															D3DXVec3Normalize( &workVecDirect , &( enemyPos - m_position ) );
-
-															pBullet->Hit( workVecDirect );
-														}
-													}
-												}
-
-												//  次のポインタを代入
-												pScene2 = pScene2->GetNextScene( pScene2 );
-											}
-										}
-									}
-									else
-									{
-										pBullet->Hit( m_vecDirect );
-									}
-
-									//  弾の種類がワイドの場合
-									if( pBullet->GetType( ) == Bullet::TYPE_WIDE )
-									{
-										//  体力の回復
-										m_nLife += PLAYER_HEAL_LIFE;
-									}
-								}
-							}
-						}
-						//  種類が炎魔法の場合
-						if( objType == Scene::OBJTYPE_MAGIC_FIRE )
-						{
-							//  ダウンキャスト
-							MagicFire* pMagicFire = ( MagicFire* )pScene;
-
-							//  所有者が敵の場合
-							if( pMagicFire->GetOwner( ) ==  Bullet::OWNER_ENEMY )
-							{
-								if( Utility::HitSphere( m_attackHitSphere , pMagicFire->GetHitSphere( ) ) )
-								{
-									//  体力の回復
-									m_nLife += PLAYER_HEAL_LIFE;
-								}
-							}
-						}
-
-						//  次のポインタを代入
-						pScene = pScene->GetNextScene( pScene );
-					}
-				}
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_ATTACK_HP000_BEFORE:
-			{
-				//  相手に当たらない様に
-				m_bJudgeHit = false;
-
-				//  前回の座標を代入
-				m_beforePos = m_position;
-
-				//  結果座標
-				D3DXVECTOR2 resultPos;
-				resultPos.x = m_position.x;
-				resultPos.y = m_position.z;
-
-				D3DXVECTOR3 targetPos;
-
-				float fDistance = 0.0f;
-
-				//  優先度の最大数分のループ
-				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-				{
-					//  シーンの先頭アドレスを取得
-					pScene = Scene::GetScene( nCntPriority );
-
-					//  シーンが空ではない間ループ
-					while( pScene != NULL )
-					{
-						Scene::OBJTYPE objType;						//  物体の種類
-
-						//  物体の種類の取得
-						objType = pScene->GetObjType( );
-
-						//  CPU対戦モードの場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							//  種類が敵の場合
-							if( objType == Scene::OBJTYPE_ENEMY )
-							{
-								//  ダウンキャスト
-								Enemy* pEnemy = ( Enemy* )pScene;
-
-								//  目標の3D座標の取得
-								targetPos = pEnemy->GetPos( );
-
-								//  敵の座標の代入
-								D3DXVECTOR2 posEnemy;
-								posEnemy.x = pEnemy->GetPos( ).x;
-								posEnemy.y = pEnemy->GetPos( ).z;
-
-								//  距離の算出
-								fDistance = sqrtf( ( posEnemy.x - resultPos.x ) * ( posEnemy.x - resultPos.x ) +
-												   ( posEnemy.y - resultPos.y ) * ( posEnemy.y - resultPos.y ) );
-
-								D3DXVECTOR2 vecDirect;
-								D3DXVec2Normalize( &vecDirect , &( posEnemy - resultPos ) );
-
-								D3DXVECTOR2 controllPoint;
-								controllPoint = resultPos + vecDirect * fDistance * 0.2f;
-
-								if( m_bHomingLeft == false )
-								{					
-									controllPoint.x += vecDirect.y * fDistance * 0.12f;
-									controllPoint.y -= vecDirect.x * fDistance * 0.12f;
-								}
-								else
-								{
-									controllPoint.x -= vecDirect.y * fDistance * 0.12f;
-									controllPoint.y += vecDirect.x * fDistance * 0.12f;
-								}
-
-								//  ベジェ曲線から結果座標の算出
-								resultPos = Utility::BezierCurve2D( resultPos , posEnemy , controllPoint , m_fHomingTime );
-							}
-						}
-						//  プレイヤー対戦モードの場合
-						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							if( objType == Scene::OBJTYPE_PLAYER )
-							{
-								//  ダウンキャスト
-								Player* pPlayer = ( Player* )pScene;
-
-								//  自分以外のプレイヤー番号の場合
-								if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-								{
-									//  目標の3D座標の取得
-									targetPos = pPlayer->GetPos( );
-
-									//  敵の座標の代入
-									D3DXVECTOR2 posEnemy;
-									posEnemy.x = pPlayer->GetPos( ).x;
-									posEnemy.y = pPlayer->GetPos( ).z;
-
-									//  距離の算出
-									fDistance = sqrtf( ( posEnemy.x - resultPos.x ) * ( posEnemy.x - resultPos.x ) +
-													   ( posEnemy.y - resultPos.y ) * ( posEnemy.y - resultPos.y ) );
-
-									D3DXVECTOR2 vecDirect;
-									D3DXVec2Normalize( &vecDirect , &( posEnemy - resultPos ) );
-
-									D3DXVECTOR2 controllPoint;
-									controllPoint = resultPos + vecDirect * fDistance * 0.2f;
-
-									if( m_bHomingLeft == false )
-									{					
-										controllPoint.x += vecDirect.y * fDistance * 0.12f;
-										controllPoint.y -= vecDirect.x * fDistance * 0.12f;
-									}
-									else
-									{
-										controllPoint.x -= vecDirect.y * fDistance * 0.12f;
-										controllPoint.y += vecDirect.x * fDistance * 0.12f;
-									}
-
-									//  ベジェ曲線から結果座標の算出
-									resultPos = Utility::BezierCurve2D( resultPos , posEnemy , controllPoint , m_fHomingTime );
-								}
-							}
-						}
-
-						//  次のポインタを代入
-						pScene = pScene->GetNextScene( pScene );
-					}
-				}
-
-				m_position.x = resultPos.x;
-				m_position.y += ( targetPos.y - m_position.y ) * 0.1f;
-				m_position.z = resultPos.y;
-
-				D3DXVec3Normalize( &m_vecDirect , &( m_position - m_beforePos ) );
-
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  総フレーム数から算出して足す
-				m_fHomingTime += 1.0f / ( PLAYER_HOMIMG_TIME + fDistance * 0.8f );
-
-				if( m_fHomingTime >= 0.8f || fDistance < 10.0f )
-				{
-					m_vecDirect = targetPos - m_position;
-					m_vecDirect.y = 0.0f;
-
-					//  目標に向かったベクトルの代入
-					D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-
-					m_fHomingTime = 0.8f;
-
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_ATTACK_HP000_AFTER ) )
-					{
-						SetAnimation( StateAnimator::MOTION_ATTACK_HP000_AFTER );
-
-						float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-						//  攻撃側の当たり判定の代入
-						m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-						m_attackHitSphere.position.y += 2.0f;
-
-						//  エフェクトの生成
-						m_handle[ EffekseerManager::TYPE_SLASH000 ] = EffekseerManager::Create( EffekseerManager::TYPE_SLASH000 , D3DXVECTOR3( m_position.x , m_attackHitSphere.position.y , m_position.z ) ,
-																								  D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 1.8f , 1.8f , 1.8f ) , 1.5f );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_ATTACK_HP000_AFTER:
-			{
-				//  当たり判定をしない状態に
-				m_bJudgeHit = false;
-
-				m_position += m_vecDirect * m_fSpeed;
-
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  攻撃側の当たり判定の代入
-				m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-				m_attackHitSphere.position.y += 2.0f;
-
-				//  優先度の最大数分のループ
-				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-				{
-					//  シーンの先頭アドレスを取得
-					pScene = Scene::GetScene( nCntPriority );
-
-					//  シーンが空ではない間ループ
-					while( pScene != NULL )
-					{
-						Scene::OBJTYPE objType;						//  物体の種類
-
-						//  物体の種類の取得
-						objType = pScene->GetObjType( );
-
-						//  CPU対戦モードの場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							//  種類が敵の場合
-							if( objType == Scene::OBJTYPE_ENEMY )
-							{
-								//  ダウンキャスト
-								Enemy* pEnemy = ( Enemy* )pScene;
-
-								if( Utility::HitSphere( m_attackHitSphere , pEnemy->GetHitSphere( ) ) )
-								{
-									pEnemy->Damage( PLAYER_HP_DAMAGE );
-								}
-							}
-						}
-						//  プレイヤー対戦モードの場合
-						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							if( objType == Scene::OBJTYPE_PLAYER )
-							{
-								//  ダウンキャスト
-								Player* pPlayer = ( Player* )pScene;
-
-								//  自分以外のプレイヤー番号の場合
-								if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-								{
-									if( Utility::HitSphere( m_attackHitSphere , pPlayer->GetHitSphere( ) ) )
-									{
-										//  相手が防御状態である場合
-										if( pPlayer->GetGuard( ) )
-										{
-											//  のけぞり状態に
-											Bend( );
-										}
-										else
-										{
-											pPlayer->Damage( m_vecDirect , PLAYER_HP_BLOW_POWER , PLAYER_HP_DAMAGE );
-										}
-									}
-								}
-							}
-						}
-
-						//  次のポインタを代入
-						pScene = pScene->GetNextScene( pScene );
-					}
-				}
-
-				float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-				EffekseerManager::SetPosition( m_handle[ EffekseerManager::TYPE_SLASH000 ] ,
-										   D3DXVECTOR3( m_position.x , m_attackHitSphere.position.y , m_position.z ) );
-				EffekseerManager::SetRot( m_handle[ EffekseerManager::TYPE_SLASH000 ] , D3DXVECTOR3( 0.0f , fAngle , 0.0f ) );
-
-				if( m_bAnimationFinish == true )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_ATTACK_HP001:
-			{
-
-				if( m_nKey == 2 && m_bSlashEffekseer == false )
-				{
-					//  攻撃側の当たり判定の代入
-					m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-
-					float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-					//  エフェクトの生成
-					EffekseerManager::Create( EffekseerManager::TYPE_SMASH , D3DXVECTOR3( m_attackHitSphere.position.x , m_position.y , m_attackHitSphere.position.z ) ,
-											   D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 2.5f , 2.5f , 2.5f ) , 1.0f );
-
-					//  エフェクトの生成
-					EffekseerManager::Create( EffekseerManager::TYPE_SMASH , D3DXVECTOR3( m_attackHitSphere.position.x , m_position.y , m_attackHitSphere.position.z ) ,
-											   D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 2.5f , 2.5f , 2.5f ) , 1.0f );
-
-					//  エフェクトの生成
-					EffekseerManager::Create( EffekseerManager::TYPE_FLAME , D3DXVECTOR3( m_attackHitSphere.position.x , m_position.y , m_attackHitSphere.position.z ) ,
-											   D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 2.0f , 2.0f , 2.0f ) , 1.0f );
-
-					m_bSlashEffekseer = true;
-				}
-
-				//  攻撃側の当たり判定の代入
-				m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-
-				if( m_nKey >= 3 && m_nKey <= 5 )
-				{
-					//  優先度の最大数分のループ
-					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-					{
-						//  シーンの先頭アドレスを取得
-						pScene = Scene::GetScene( nCntPriority );
-
-						//  シーンが空ではない間ループ
-						while( pScene != NULL )
-						{
-							Scene::OBJTYPE objType;						//  物体の種類
-
-							//  物体の種類の取得
-							objType = pScene->GetObjType( );
-
-							//  CPU対戦モードの場合
-							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-							{
-								//  種類が敵の場合
-								if( objType == Scene::OBJTYPE_ENEMY )
-								{
-									//  ダウンキャスト
-									Enemy* pEnemy = ( Enemy* )pScene;
-
-									//  プレイヤーの座標の代入
-									D3DXVECTOR2 enemyPos;
-									enemyPos.x  = pEnemy->GetPos( ).x;
-									enemyPos.y  = pEnemy->GetPos( ).z;
-
-									Utility::HIT_CIRCLE hitCircle;
-									hitCircle.position.x = m_position.x;
-									hitCircle.position.y = m_position.z;
-									hitCircle.fLength = PLAYER_HP_RANGE;
-
-									if( Utility::HitCirclePoint( hitCircle , enemyPos ) )
-									{
-										if( m_position.y + PLAYER_HP_RANGE_HEIGHT >= pEnemy->GetPos( ).y )
-										{
-											pEnemy->Damage( PLAYER_HP_DAMAGE );
-										}
-									}
-								}
-							}
-							//  プレイヤー対戦モードの場合
-							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-							{
-								if( objType == Scene::OBJTYPE_PLAYER )
-								{
-									//  ダウンキャスト
-									Player* pPlayer = ( Player* )pScene;
-
-									//  自分以外のプレイヤー番号の場合
-									if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-									{
-										//  プレイヤーの座標の代入
-										D3DXVECTOR2 enemyPos;
-										enemyPos.x  = pPlayer->GetPos( ).x;
-										enemyPos.y  = pPlayer->GetPos( ).z;
-
-										Utility::HIT_CIRCLE hitCircle;
-										hitCircle.position.x = m_position.x;
-										hitCircle.position.y = m_position.z;
-										hitCircle.fLength = PLAYER_HP_RANGE;
-
-										if( Utility::HitCirclePoint( hitCircle , enemyPos ) )
-										{
-											if( m_position.y + PLAYER_HP_RANGE_HEIGHT >= pPlayer->GetPos( ).y )
-											{
-												//  相手が防御状態である場合
-												if( pPlayer->GetGuard( ) )
-												{
-													//  のけぞり状態に
-													Bend( );
-												}
-												else
-												{
-													pPlayer->Damage( m_vecDirect , PLAYER_BRAVE_BLOW_POWER , PLAYER_BRAVE_DAMAGE , false );
-												}
-											}
-										}
-									}
-								}
-							}
-
-							//  次のポインタを代入
-							pScene = pScene->GetNextScene( pScene );
-						}
-					}
-				}
-
-				if( m_bAnimationFinish == true )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_JUMP_ATTACK000:
-			{
-
-				break;
-			}
-			case StateAnimator::MOTION_LOCKON_DASH:
-			{
-				D3DXVECTOR3 posEnemy( 0.0f , 0.0f , 0.0f );
-
-#pragma omp parallel for
-				//  優先度の最大数分のループ
-				for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-				{
-					//  シーンの先頭アドレスを取得
-					pScene2 = Scene::GetScene( nCntPriority );
-
-					//  シーンが空ではない間ループ
-					while( pScene2 != NULL )
-					{
-						Scene::OBJTYPE objType;						//  物体の種類
-
-						//  物体の種類の取得
-						objType = pScene2->GetObjType( );
-
-						//  CPU対戦モードの場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							//  種類が敵の場合
-							if( objType == Scene::OBJTYPE_ENEMY )
-							{
-								//  ダウンキャスト
-								Enemy* pEnemy = ( Enemy* )pScene2;
-							
-								//  敵の座標代入
-								posEnemy = pEnemy->GetPos( );
-							}
-						}
-						//  プレイヤー対戦モードの場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							//  種類が敵の場合
-							if( objType == Scene::OBJTYPE_PLAYER )
-							{
-								//  ダウンキャスト
-								Player* pPlayer = ( Player* )pScene2;
-							
-								//  自分以外のプレイヤー番号の場合
-								if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-								{
-									//  敵の座標代入
-									posEnemy = pPlayer->GetPos( );
-								}
-							}
-						}
-
-						//  次のポインタを代入
-						pScene2 = pScene2->GetNextScene( pScene2 );
-					}
-				}
-
-				//  敵からプレイヤーまでの方向ベクトルを求める
-				m_vecDirect = posEnemy - m_position;
-				D3DXVec3Normalize( &m_vecDirect , &m_vecDirect );
-
-				//  座標の更新( 進行方向 × 速度 分の移動 )
-				m_position += m_vecDirect * m_fSpeed;
-
-				//  注視点をプレイヤーが向いている方向に変更
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  速度を徐々に減衰させていく
-				m_fSpeed += ( 0.0f - m_fSpeed ) * 0.03f;
-
-				//  速度がある一定を下回った場合
-				if( m_fSpeed <= 0.9f )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-
-						//  速度をなくす
-						m_fSpeed = 0.0f;	
-					}
-				}
-
-				//  注視点座標の代入
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  パーティクルの生成
-				Particle::Create( Particle::TYPE_NORMAL , m_position , D3DXVECTOR3( 1.0f , 0.0f , 1.0f ) ,
-								   D3DXCOLOR( 0.2f , 0.5f , 0.8f , 1.0f ) , 4.0f , 0.1f , 0.01f , 0.0f , 0.0f , 20 );
-
-				/*----------------------------------------------------------
-					ダッシュ攻撃000操作
-				----------------------------------------------------------*/
-				if( m_nPlayerNo == 0 )
-				{
-					nKey = DIK_B;
-				}
-				else if( m_nPlayerNo == 1 )
-				{
-					nKey = DIK_SEMICOLON;
-				}
-
-#ifdef KEYBOARD_ENABLE
-
-				if( pKeyboard->GetKeyboardTrigger( nKey ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_FINISHER ) )
-					{
-						SetAnimation( StateAnimator::MOTION_FINISHER );
-
-						//  速度の代入
-						m_fSpeed = PLAYER_FINISH_SPEED;
-
-						float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-						//  エフェクトの生成
-						m_handle[ EffekseerManager::TYPE_LANCE ] = EffekseerManager::Create( EffekseerManager::TYPE_LANCE , D3DXVECTOR3( m_position.x , m_position.y + PLAYER_HIT_SPHERE_POS_Y , m_position.z ) ,
-																							   D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 1.5f , 1.5f , 1.5f ) );
-					}
-				}
-
-#else
-
-				if( pKeyboard->GetKeyboardTrigger( nKey ) || pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_SQUARE ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_FINISHER ) )
-					{
-						SetAnimation( StateAnimator::MOTION_FINISHER );
-
-						//  速度の代入
-						m_fSpeed = PLAYER_FINISH_SPEED;
-
-						float fAngle = atan2f( m_vecDirect.x , m_vecDirect.z );
-
-						//  エフェクトの生成
-						m_handle[ EffekseerManager::TYPE_LANCE ] = EffekseerManager::Create( EffekseerManager::TYPE_LANCE , D3DXVECTOR3( m_position.x , m_position.y + PLAYER_HIT_SPHERE_POS_Y , m_position.z ) ,
-																							   D3DXVECTOR3( 0.0f , fAngle , 0.0f ) , D3DXVECTOR3( 1.5f , 1.5f , 1.5f ) );
-					}
-				}
-
-#endif
-
-				break;
-			}
-			case StateAnimator::MOTION_ESCAPE:
-			{
-				//  座標の更新( 進行方向 × 速度 分の移動 )
-				m_position += m_vecDirect * m_fSpeed * m_fMovePower;
-
-				//  移動量を下げていく
-				m_fSpeed += ( 0.0f - m_fSpeed ) * 0.01f;
-
-				//  ジャンプ力分上に上がるのとジャンプ力を重力分下げる
-				m_position.y += m_fCurrentJumpPower;
-				m_fCurrentJumpPower -= PLAYER_GRAVITY;
-
-				//  注視点を向いている方向に
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				//  無敵時間の代入
-				m_nInvisibleTime = 2;
-
-				//  地面についた場合
-				if( m_position.y <= pHitField->GetHeight( m_position ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_LANDING_LONG ) )
-					{
-						//  着地アニメーションに
-						SetAnimation( StateAnimator::MOTION_LANDING_LONG );
-
-						//  ジャンプ数の初期化
-						m_nCntJump = 0;
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_VANISH:
-			{
-
-				break;
-			}
-			case StateAnimator::MOTION_WIN:
-			{
-
-				break;
-			}
-			case StateAnimator::MOTION_LOSE:
-			{
-
-				break;
-			}
-			case StateAnimator::MOTION_FINISHER:
-			{
-				//  当たり判定をしない状態に
-				//m_bJudgeHit = false;
-
-				m_position += m_vecDirect * m_fSpeed;
-
-				//  注視点を向いている方向に
-				m_posAt = m_position + m_vecDirect * 5.0f;
-
-				D3DXVECTOR3 effekseerPos( m_position.x , m_position.y + PLAYER_HIT_SPHERE_POS_Y , m_position.z );
-				effekseerPos += m_vecDirect * 8.0f;
-
-				EffekseerManager::SetPosition( m_handle[ EffekseerManager::TYPE_LANCE ] , effekseerPos );
-
-				if( m_nKey >= 11 )
-				{
-					//  速度の減衰
-					m_fSpeed += ( 0.0f - m_fSpeed ) * 0.06f;
-
-					//  エフェクトの停止
-					EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_LANCE ] );
-				}
-
-				if( m_bAnimationFinish == true )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-
-						//  速度をなくす
-						m_fSpeed = 0.0f;
-					}
-				}
-
-				//  攻撃側の当たり判定の代入
-				m_attackHitSphere.position = m_position + m_vecDirect * 3.0f;
-				m_attackHitSphere.position.y += 2.0f;
-
-				if( m_nKey >= 1 && m_nKey <= 10 )
-				{
-					//  優先度の最大数分のループ
-					for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-					{
-						//  シーンの先頭アドレスを取得
-						pScene = Scene::GetScene( nCntPriority );
-
-						//  シーンが空ではない間ループ
-						while( pScene != NULL )
-						{
-							Scene::OBJTYPE objType;						//  物体の種類
-
-							//  物体の種類の取得
-							objType = pScene->GetObjType( );
-
-							//  CPU対戦モードの場合
-							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-							{
-								//  種類が敵の場合
-								if( objType == Scene::OBJTYPE_ENEMY )
-								{
-									//  ダウンキャスト
-									Enemy* pEnemy = ( Enemy* )pScene;
-
-									if( Utility::HitSphere( m_attackHitSphere , pEnemy->GetHitSphere( ) ) )
-									{
-										pEnemy->Damage( PLAYER_FINISHER_DAMAGE );
-									}
-								}
-							}
-							//  プレイヤー対戦モードの場合
-							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-							{
-								if( objType == Scene::OBJTYPE_PLAYER )
-								{
-									//  ダウンキャスト
-									Player* pPlayer = ( Player* )pScene;
-
-									//  自分以外のプレイヤー番号の場合
-									if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-									{
-										if( Utility::HitSphere( m_attackHitSphere , pPlayer->GetHitSphere( ) ) )
-										{
-											D3DXVECTOR3 blowVecDirect = m_vecDirect;
-
-											D3DXMATRIX mtxRot;
-											D3DXMatrixIdentity( &mtxRot );
-											D3DXMatrixRotationY( &mtxRot , D3DX_PI * 0.1f );
-
-											D3DXVec3TransformNormal( &blowVecDirect , &blowVecDirect , &mtxRot );
-											D3DXVec3Normalize( &blowVecDirect , &blowVecDirect );
-
-											pPlayer->Damage( blowVecDirect , PLAYER_FINISHER_BLOW_POWER , PLAYER_FINISHER_DAMAGE );
-										}
-									}
-								}
-							}
-
-							//  次のポインタを代入
-							pScene = pScene->GetNextScene( pScene );
-						}
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_MAGIC_READY:
-			{
-				if( m_pMagic != NULL )
-				{
-					//  雷魔法を持っている場合
-					if( m_magic == MAGIC_LIGHTNING )
-					{
-						D3DXVECTOR3 vecDirect( move.x , 0.0f , move.z );
-
-						cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-						if( pCamera != NULL )
-						{
-							float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-							D3DXMATRIX mtxRot;
-							D3DXMatrixIdentity( &mtxRot );
-							D3DXMatrixRotationY( &mtxRot , fAngle );
-
-							D3DXVec3TransformNormal( &vecDirect , &move , &mtxRot );
-							D3DXVec3Normalize( &vecDirect , &vecDirect );
-						}
-						else
-						{
-							D3DXVec3Normalize( &vecDirect , &move );
-						}
-
-						//  魔法陣を動かす
-						MagicLightning* pMagicLightning = ( MagicLightning* )m_pMagic;
-						pMagicLightning->MoveMagicPos( vecDirect );
-					}	
-
-					//  竜巻魔法を持っている倍
-					if( m_magic == MAGIC_TORNADE )
-					{
-						D3DXVECTOR3 vecDirect( move.x , 0.0f , move.z );
-
-						cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-						if( pCamera != NULL )
-						{
-							float fAngle = atan2f( cameraVecDirect.x , cameraVecDirect.z );
-
-							D3DXMATRIX mtxRot;
-							D3DXMatrixIdentity( &mtxRot );
-							D3DXMatrixRotationY( &mtxRot , fAngle );
-
-							D3DXVec3TransformNormal( &vecDirect , &move , &mtxRot );
-							D3DXVec3Normalize( &vecDirect , &vecDirect );
-						}
-						else
-						{
-							D3DXVec3Normalize( &vecDirect , &move );
-						}
-
-						//  移動方向ベクトルの設定
-						MagicTornade* pMagicToranade = ( MagicTornade* )m_pMagic;
-
-						if( move.x == 0.0f && move.z == 0.0f )
-						{
-							vecDirect = m_vecDirect;
-						}
-
-						pMagicToranade->SetMoveVecDirect( vecDirect );
-					}
-				
-					/*----------------------------------------------------------
-						魔法攻撃発動操作
-					----------------------------------------------------------*/
-					if( m_nPlayerNo == 0 )
-					{
-						nKey = DIK_H;
-					}
-					else if( m_nPlayerNo == 1 )
-					{
-						nKey = DIK_AT;
-					}
-
-#ifdef KEYBOARD_ENABLE
-
-					if( pKeyboard->GetKeyboardRelease( nKey ) )
-					{
-						if( m_magic == Player::MAGIC_FIRE )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-						else if( m_magic == Player::MAGIC_LIGHTNING )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE2 ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE2 );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-						else if( m_magic == Player::MAGIC_TORNADE )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE3 ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE3 );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-					}
-
-#else
-
-					if( pPS4Input->GetRelease( m_nPlayerNo , PS4Controller::DIJ_R2 ) )
-					{
-						if( m_magic == Player::MAGIC_FIRE )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-						else if( m_magic == Player::MAGIC_LIGHTNING )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE2 ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE2 );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-						else if( m_magic == Player::MAGIC_TORNADE )
-						{
-							if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_MAGIC_ACTIVE3 ) )
-							{
-								SetAnimation( StateAnimator::MOTION_MAGIC_ACTIVE3 );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
-
-								//  エフェクトの停止
-								EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_MAGIC_CIRCLE ] );
-
-								//  実行状態に
-								m_pMagic->SetActive( );
-							}
-						}
-					}
-
-#endif
-
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_MAGIC_ACTIVE:
-			{
-				//  魔法を所持している場合
-				if( m_pMagic != NULL )
-				{
-					//  魔法を所持していない状態に
-					m_pMagic = NULL;
-				}
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_MAGIC_ACTIVE2:
-			{
-				//  魔法を所持している場合
-				if( m_pMagic != NULL )
-				{
-					//  魔法を所持していない状態に
-					m_pMagic = NULL;
-				}
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_MAGIC_ACTIVE3:
-			{
-				//  魔法を所持している場合
-				if( m_pMagic != NULL )
-				{
-					//  魔法を所持していない状態に
-					m_pMagic = NULL;
-				}
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_GUARD:
-			{
-				//  キーが1か2の場合
-				if( m_nKey <= 2 )
-				{
-					//  防御状態に
-					m_bGuard = true;
-				}
-
-				//  押す時間の初期化
-				m_nPressTime = 0;
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-
-						//  エフェクシアの再生ストップ
-						EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_SHIELD ] );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_BEND:
-			{
-				//  エフェクトの再生ストップ
-				StopAllEffekseer( );
-
-				//  アニメーションが終了している場合
-				if( GetAnimationFinish( ) )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-					}
-				}				
-
-				break;
-			}
-			case StateAnimator::MOTION_BLOW:
-			{
-				//  エフェクトの再生ストップ
-				StopAllEffekseer( );
-
-				m_nInvisibleTime = 2;
-
-				//  速度の減衰
-				m_fBlowPower += ( 0.0f - m_fBlowPower ) * 0.04f;
-
-				//  吹っ飛び力分の移動
-				m_position += m_blowVecDirect * m_fBlowPower;
-				m_posAt = m_position - m_blowVecDirect * 2.0f;
-
-				D3DXVec3Normalize( &m_vecDirect , &( m_posAt - m_position ) );
-
-				if( m_bAnimationFinish == true || m_fBlowPower < 1.0f )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_PASSIVE ) )
-					{
-						SetAnimation( StateAnimator::MOTION_PASSIVE );
-					}
-				}
-
-				break;
-			}
-			case StateAnimator::MOTION_PASSIVE:
-			{
-				m_nInvisibleTime = 21;
-
-				//  速度の減衰
-				m_fBlowPower += ( 0.0f - m_fBlowPower ) * 0.04f;
-
-				//  吹っ飛び力分の移動
-				m_position += m_blowVecDirect * m_fBlowPower;
-				m_posAt = m_position - m_blowVecDirect * 2.0f;
-
-				D3DXVec3Normalize( &m_vecDirect , &( m_posAt - m_position ) );
-
-				if( m_bAnimationFinish == true )
-				{
-					if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_NEUTRAL ) )
-					{
-						SetAnimation( StateAnimator::MOTION_NEUTRAL );
-
-						//  速度をなくす
-						m_fBlowPower = 0.0f;
-					}
-				}
-
-				break;
-			}
-		}
+		m_bVoiceStart = true;
 	}
-
-	if( m_pStateAnimator != NULL )
-	{
-		if( m_pStateAnimator->GetMotion( ) != StateAnimator::MOTION_LOCKON_DASH )
-		{
-			int nKey = 0;
-
-			if( m_nPlayerNo == 0 )
-			{
-				nKey = DIK_R;
-			}
-			else if( m_nPlayerNo == 1 )
-			{
-				nKey = DIK_RETURN;
-			}
-
-#ifdef KEYBOARD_ENABLE
-
-			//  ENTERキーまたは、L1ボタンを押した場合
-			if( ( pKeyboard->GetKeyboardTrigger( nKey ) ) )
-			{
-				//  ロックオンの切り替え
-				m_bLockOn = !m_bLockOn;
-			}
-
-#else
-
-			//  ENTERキーまたは、L1ボタンを押した場合
-			if( pPS4Input->GetTrigger( m_nPlayerNo , PS4Controller::DIJ_L1 ) )
-			{
-				//  ロックオンの切り替え
-				m_bLockOn = !m_bLockOn;
-			}
-
-#endif
-
-		}
-	}
-
-	////////////////////////////////////////////////////////
-	//  状態毎の操作終了
-	////////////////////////////////////////////////////////
 
 	//  受ける側の当たり判定の代入
 	m_hitSphere.position = m_position;
 	m_hitSphere.position.y += PLAYER_HIT_SPHERE_POS_Y;
 
-	//  地面についた場合
-	if( m_position.y <= pHitField->GetHeight( m_position ) )
+	//  プレイヤーステートクラスの更新
+	if( m_playerState != nullptr )
 	{
-		//  ジャンプ数の初期化
-		m_nCntJump = 0;
+		m_playerState->Update( );
 	}
 
-	////////////////////////////////////////////////////////
 	//  敵との当たり判定
-	////////////////////////////////////////////////////////
-
-	//  モーション情報の取得
-	StateAnimator::MOTION motion = m_pStateAnimator->GetMotion( );
-
-	if( m_bJudgeHit )
-	{
-#pragma omp parallel for
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene2 = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene2 != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene2->GetObjType( );
-
-				//  CPU対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-				{
-					//  種類が敵の場合
-					if( objType == Scene::OBJTYPE_ENEMY )
-					{
-						//  ダウンキャスト
-						Enemy* pEnemy = ( Enemy* )pScene2;
-
-						float fDist = 0.0f;
-
-						if( Utility::HitSphere( m_hitSphere , pEnemy->GetHitSphere( ) , &fDist ) )
-						{
-							//  速度をなくす
-							m_fSpeed = 0.0f;
-
-							//  反射するベクトルを求める
-							D3DXVECTOR3 reflectVec = m_hitSphere.position - pEnemy->GetHitSphere( ).position;
-							reflectVec.y = 0.0f;
-
-							D3DXVec3Normalize( &reflectVec , &reflectVec );
-
-							//  めり込んだ分座標を戻す
-							m_position += reflectVec * fDist;
-						}
-					}
-				}
-				//  プレイヤー対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-				{
-					//  種類がプレイヤーの場合
-					if( objType == Scene::OBJTYPE_PLAYER )
-					{
-						//  ダウンキャスト
-						Player* pPlayer = ( Player* )pScene2;
-
-						//  自分以外のプレイヤーでかつ、当たり判定をする場合
-						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) && pPlayer->GetJudgeHit( ) )
-						{
-							float fDist = 0.0f;
-
-							if( Utility::HitSphere( m_hitSphere , pPlayer->GetHitSphere( ) , &fDist ) )
-							{
-								//  速度をなくす
-								m_fSpeed = 0.0f;
-
-								//  反射するベクトルを求める
-								D3DXVECTOR3 reflectVec = m_hitSphere.position - pPlayer->GetHitSphere( ).position;
-								reflectVec.y = 0.0f;
-
-								D3DXVec3Normalize( &reflectVec , &reflectVec );
-
-								//  めり込んだ分座標を戻す
-								m_position += reflectVec * fDist;
-							}
-						}
-					}
-				}
-
-				//  次のポインタを代入
-				pScene2 = pScene2->GetNextScene( pScene2 );
-			}
-		}
-	}
+	JudgeHitEnemy( );
 
 	//  壁との当たり判定
-	if( m_position.x > Game::GetFieldMax( ).x * 0.999f )
-	{
-		m_position.x = Game::GetFieldMax( ).x * 0.999f;
+	JudgeHitWall( );
 
-		m_fSpeed = 0.0f;
-	}
-	if( m_position.x < Game::GetFieldMin( ).x * 0.999f )
-	{
-		m_position.x = Game::GetFieldMin( ).x * 0.999f;
-
-		m_fSpeed = 0.0f;
-	}
-	if( m_position.z > Game::GetFieldMax( ).z * 0.999f )
-	{
-		m_position.z = Game::GetFieldMax( ).z * 0.999f;
-
-		m_fSpeed = 0.0f;
-	}
-	if( m_position.z < Game::GetFieldMin( ).z * 0.999f )
-	{
-		m_position.z = Game::GetFieldMin( ).z * 0.999f;
-
-		m_fSpeed = 0.0f;
-	}
-
-	////////////////////////////////////////////////////////
-	//  カメラの処理
-	////////////////////////////////////////////////////////
-
-	cameraVecDirect = pCamera->GetCameraVecDirect( );
-
-	if( m_pStateAnimator->GetMotion( ) == StateAnimator::MOTION_FINISHER )
-	{
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene->GetObjType( );
-				
-				//  CPU対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-				{
-					//  種類が敵の場合
-					if( objType == Scene::OBJTYPE_ENEMY )
-					{
-						D3DXVECTOR3 posEnemy;						//  敵の座標
-
-						//  敵情報の取得
-						posEnemy = pScene->GetPos( );
-
-						float fDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-
-						//if( fDistance > 10.0f )
-						{
-							//  カメラの注視点設定
-							pCamera->SetCameraPosAt( posEnemy , 0.1f );
-						}
-
-						D3DXVECTOR3 workPos;
-						D3DXVECTOR3 workVec = posEnemy - m_position;
-						workVec.y = 0.0f;
-
-						D3DXVec3Normalize( &workVec , &workVec );
-
-						//  CPU対戦の場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z;
-							workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y;
-						}
-						//  プレイヤー対戦の場合
-						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z2;
-							workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y2;
-						}
-
-						//  カメラの視点設定
-						pCamera->SetCameraPosEye( workPos , 0.1f );
-
-						break;
-					}
-				}
-				//  プレイヤー対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-				{
-					//  種類がプレイヤーの場合
-					if( objType == Scene::OBJTYPE_PLAYER )
-					{
-						//  ダウンキャスト
-						Player* pPlayer = ( Player* )pScene;
-
-						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-						{
-							D3DXVECTOR3 posEnemy;						//  敵の座標
-
-							//  敵情報の取得
-							posEnemy = pScene->GetPos( );
-
-							float fDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-
-							//if( fDistance > 8.0f )
-							{
-								//  カメラの注視点設定
-								pCamera->SetCameraPosAt( posEnemy , 0.8f );
-							}
-
-							D3DXVECTOR3 workPos;
-							D3DXVECTOR3 workVec = posEnemy - m_position;
-							workVec.y = 0.0f;
-
-							D3DXVec3Normalize( &workVec , &workVec );
-
-							//  CPU対戦の場合
-							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-							{
-								workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z;
-								workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y;
-							}
-							//  プレイヤー対戦の場合
-							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-							{
-								workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z2;
-								workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y2;
-							}
-
-							//  カメラの視点設定
-							pCamera->SetCameraPosEye( workPos , 0.3f );
-
-							break;
-						}
-					}
-				}
-
-				//  次のポインタを代入
-				pScene = pScene->GetNextScene( pScene );
-			}
-		}
-	}
-	else if( m_bLockOn == false )
-	{
-		D3DXVECTOR3 workPosEye = m_position;
-
-		//  CPU対戦の場合
-		if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-		{
-			workPosEye.y += PLAYER_TO_CAMERA_DISTANCE_Y;
-			workPosEye -= cameraVecDirect * PLAYER_TO_CAMERA_DISTANCE_Z;
-		}
-		//  プレイヤー対戦の場合
-		else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-		{
-			workPosEye.y += PLAYER_TO_CAMERA_DISTANCE_Y2;
-			workPosEye -= cameraVecDirect * PLAYER_TO_CAMERA_DISTANCE_Z2;
-		}
-
-		//  カメラの視点設定
-		pCamera->SetCameraPosEye( workPosEye , 1.0f );
-
-		//  注視点座標の代入
-		m_posAt = m_position + m_vecDirect * 5.0f;
-
-		D3DXVECTOR3 workPosAt = m_position;
-
-		//  CPU対戦の場合
-		if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-		{
-			workPosAt.y += PLAYER_TO_CAMERA_DISTANCE_Y * 0.7f;
-			workPosAt += cameraVecDirect * PLAYER_TO_CAMERA_DISTANCE_Z;
-		}
-		//  プレイヤー対戦の場合
-		else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-		{
-			workPosAt.y += PLAYER_TO_CAMERA_DISTANCE_Y2 * 0.7f;
-			workPosAt += cameraVecDirect * PLAYER_TO_CAMERA_DISTANCE_Z2;
-		}
-
-		//  カメラの注視点設定
-		pCamera->SetCameraPosAt( workPosAt , 1.0f );
-	}
-	else
-	{
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene->GetObjType( );
-				
-				//  CPU対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-				{
-					//  種類が敵の場合
-					if( objType == Scene::OBJTYPE_ENEMY )
-					{
-						D3DXVECTOR3 posEnemy;						//  敵の座標
-
-						//  敵情報の取得
-						posEnemy = pScene->GetPos( );
-
-						float fDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-
-						//if( fDistance > 10.0f )
-						{
-							//  カメラの注視点設定
-							pCamera->SetCameraPosAt( posEnemy , 0.1f );
-						}
-
-						D3DXVECTOR3 workPos;
-						D3DXVECTOR3 workVec = posEnemy - m_position;
-						workVec.y = 0.0f;
-
-						D3DXVec3Normalize( &workVec , &workVec );
-
-						//  CPU対戦の場合
-						if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-						{
-							workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z;
-							workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y;
-						}
-						//  プレイヤー対戦の場合
-						else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-						{
-							workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z2;
-							workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y2;
-						}
-
-						//  カメラの視点設定
-						pCamera->SetCameraPosEye( workPos , 0.1f );
-
-						break;
-					}
-				}
-				//  プレイヤー対戦モードの場合
-				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-				{
-					//  種類がプレイヤーの場合
-					if( objType == Scene::OBJTYPE_PLAYER )
-					{
-						//  ダウンキャスト
-						Player* pPlayer = ( Player* )pScene;
-
-						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
-						{
-							D3DXVECTOR3 posEnemy;						//  敵の座標
-
-							//  敵情報の取得
-							posEnemy = pScene->GetPos( );
-
-							float fDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
-													 ( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
-
-							//if( fDistance > 8.0f )
-							{
-								//  カメラの注視点設定
-								pCamera->SetCameraPosAt( posEnemy , 0.05f );
-							}
-
-							D3DXVECTOR3 workPos;
-							D3DXVECTOR3 workVec = posEnemy - m_position;
-							workVec.y = 0.0f;
-
-							D3DXVec3Normalize( &workVec , &workVec );
-
-							//  CPU対戦の場合
-							if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
-							{
-								workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z;
-								workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y;
-							}
-							//  プレイヤー対戦の場合
-							else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
-							{
-								workPos = m_position - workVec * PLAYER_TO_CAMERA_DISTANCE_Z2;
-								workPos.y += PLAYER_TO_CAMERA_DISTANCE_Y2;
-							}
-
-							//  カメラの視点設定
-							pCamera->SetCameraPosEye( workPos , 0.1f );
-
-							break;
-						}
-					}
-				}
-
-				//  次のポインタを代入
-				pScene = pScene->GetNextScene( pScene );
-			}
-		}
-	}
-
-	////////////////////////////////////////////////////////
-	//  共通項目( 後ろ )開始
-	////////////////////////////////////////////////////////
-
-	//  ロックオン状態ではない場合
-	if( m_bLockOn == false )
-	{
-		//  カメラ注視点切り替え処理
-		if( pPS4Input->GetRightStickDisposition( m_nPlayerNo ).x > 300 ||
-			pPS4Input->GetRightStickDisposition( m_nPlayerNo ).x < -300 ||
-			pKeyboard->GetKeyboardPress( DIK_LEFTARROW ) || pKeyboard->GetKeyboardPress( DIK_RIGHTARROW ) )
-		{
-			if( pPS4Input->GetRightStickDisposition( m_nPlayerNo ).x < 0 ||
-				pKeyboard->GetKeyboardPress( DIK_LEFTARROW ) )
-			{
-				D3DXVECTOR3 cameraPosAt = pCamera->GetCameraBasePosAt( );
-				D3DXVECTOR3 cameraPosEye = pCamera->GetCameraBasePosEye( );
-				D3DXMATRIX mtxRot;
-				float fAngle = atan2f( cameraPosAt.z - cameraPosEye.z , cameraPosAt.x - cameraPosEye.x );
-				float fLength = sqrtf( ( cameraPosAt.z - cameraPosEye.z ) * ( cameraPosAt.z - cameraPosEye.z ) +
-										( cameraPosAt.x - cameraPosEye.x ) * ( cameraPosAt.x - cameraPosEye.x ) );
-
-				fAngle += CAMERA_ROTATE_ANGLE;
-
-				cameraPosAt.x = cosf( fAngle ) * fLength + cameraPosEye.x;
-				cameraPosAt.z = sinf( fAngle ) * fLength + cameraPosEye.z;
-
-				//  カメラの注視点設定
-				pCamera->SetCameraPosAt( cameraPosAt , 1.0f );
-			}
-			else if( pPS4Input->GetRightStickDisposition( m_nPlayerNo ).x > 0 ||
-						pKeyboard->GetKeyboardPress( DIK_RIGHTARROW ) )
-			{
-				D3DXVECTOR3 cameraPosAt = pCamera->GetCameraBasePosAt( );
-				D3DXVECTOR3 cameraPosEye = pCamera->GetCameraBasePosEye( );
-				D3DXMATRIX mtxRot;
-				float fAngle = atan2f( cameraPosAt.z - cameraPosEye.z , cameraPosAt.x - cameraPosEye.x );
-				float fLength = sqrtf( ( cameraPosAt.z - cameraPosEye.z ) * ( cameraPosAt.z - cameraPosEye.z ) +
-										( cameraPosAt.x - cameraPosEye.x ) * ( cameraPosAt.x - cameraPosEye.x ) );
-
-				fAngle -= CAMERA_ROTATE_ANGLE;
-
-				cameraPosAt.x = cosf( fAngle ) * fLength + cameraPosEye.x;
-				cameraPosAt.z = sinf( fAngle ) * fLength + cameraPosEye.z;
-
-				//  カメラの注視点設定
-				pCamera->SetCameraPosAt( cameraPosAt , 1.0f );
-			}
-		}
-	}
-
-	////////////////////////////////////////////////////////
-	//  共通項目( 後ろ )終了
-	////////////////////////////////////////////////////////
-
-	//if( m_pMeshTracing != nullptr )
-	//{
-	//	D3DXVECTOR3 positionUp = m_position;
-	//	positionUp.y += PLAYER_HEIGHT;
-	//	D3DXVECTOR3 positionDown = m_position;
-
-	//	m_pMeshTracing->SetNewVertexPositionUp( positionUp );
-	//	m_pMeshTracing->SetNewVertexPositionDown( positionDown );
-	//}
+	//  地面との当たり判定
+	JudgeHitGround( );
 
 	//  シーンモデル
 	SceneModelAnim::Update( );
@@ -3154,8 +469,237 @@ void Player::Update( void )
 //--------------------------------------------------------------------------------------
 void Player::Draw( void )
 {
-	//  シーンモデル
-	SceneModelAnim::Draw( );
+	Camera* camera = SceneManager::GetCamera( );
+
+	D3DXVECTOR3 cameraVectorDirect;
+	D3DXVECTOR3 cameraToPlayer;
+
+	if( camera != nullptr )
+	{
+		D3DXVECTOR3 cameraPosition = camera->GetCameraPosEye( );
+		D3DXVECTOR3 playerPosition = m_position;
+		cameraPosition.y = 0.0f;
+		playerPosition.y = 0.0f;
+
+		cameraToPlayer = playerPosition - cameraPosition;
+		D3DXVec3Normalize( &cameraToPlayer , &cameraToPlayer );
+		cameraVectorDirect = camera->GetCameraVecDirect( );
+		cameraVectorDirect.y = 0.0f;
+		D3DXVec3Normalize( &cameraVectorDirect , &cameraVectorDirect );
+	}
+
+	if( Utility::IntoView( cameraVectorDirect , cameraToPlayer , D3DX_PI * 0.5f ) )
+	{
+		//  シーンモデル
+		SceneModelAnim::Draw( );
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  地面との当たり判定をする関数
+//--------------------------------------------------------------------------------------
+bool Player::JudgeHitGround( void )
+{
+	//  シーンクラスのポインタ
+	Scene* pScene = NULL;											
+
+	//  当たり判定用フィールドクラス
+	HitField* pHitField = NULL;
+
+#pragma omp parallel for
+	//  優先度の最大数分のループ
+	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
+	{
+		//  シーンの先頭アドレスを取得
+		pScene = Scene::GetScene( nCntPriority );
+
+		//  シーンが空ではない間ループ
+		while( pScene != NULL )
+		{
+			Scene::OBJTYPE objType;						//  物体の種類
+
+			//  物体の種類の取得
+			objType = pScene->GetObjType( );
+
+			//  種類が当たり判定用のフィールドの場合
+			if( objType == Scene::OBJTYPE_HIT_FIELD )
+			{
+				//  当たり判定用フィールドクラスにダウンキャスト
+				pHitField = ( HitField* )pScene;
+
+				//  ステンシルシャドウが存在している場合している場合
+				if( m_stencilShadow != nullptr )
+				{
+					float fScale = PLAYER_SHADOW_SCALE + ( m_position.y - pHitField->GetHeight( m_position )  ) * 0.01f;
+
+					D3DXVECTOR3 position = m_position;
+					position.y = pHitField->GetHeight( m_position );
+
+					m_stencilShadow->SetScale( D3DXVECTOR3( fScale , fScale , fScale ) );
+					m_stencilShadow->SetPosition( position );
+				}
+
+				float fHeight = pHitField->GetHeight( m_position );
+
+				if( !( fHeight == -100000.0f ) )
+				{	
+					if( m_position.y <= fHeight )
+					{
+						//  Y座標フィールドに合わせる
+						m_position.y = pHitField->GetHeight( m_position );
+
+						return true;
+					}
+				}
+			}
+
+			//  次のポインタを代入
+			pScene = pScene->GetNextScene( pScene );
+		}
+	}
+
+	return false;
+}
+
+//--------------------------------------------------------------------------------------
+//  敵との当たり判定をする関数
+//--------------------------------------------------------------------------------------
+bool Player::JudgeHitEnemy( void )
+{
+	//  シーンクラスのポインタ
+	Scene* pScene = NULL;	
+
+	if( m_bJudgeHit )
+	{
+#pragma omp parallel for
+		//  優先度の最大数分のループ
+		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
+		{
+			//  シーンの先頭アドレスを取得
+			pScene = Scene::GetScene( nCntPriority );
+
+			//  シーンが空ではない間ループ
+			while( pScene != NULL )
+			{
+				Scene::OBJTYPE objType;						//  物体の種類
+
+				//  物体の種類の取得
+				objType = pScene->GetObjType( );
+
+				//  CPU対戦モードの場合
+				if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
+				{
+					//  種類が敵の場合
+					if( objType == Scene::OBJTYPE_ENEMY )
+					{
+						//  ダウンキャスト
+						Enemy* pEnemy = ( Enemy* )pScene;
+
+						float fDist = 0.0f;
+
+						if( Utility::HitSphere( m_hitSphere , pEnemy->GetHitSphere( ) , &fDist ) )
+						{
+							//  速度をなくす
+							m_fSpeed = 0.0f;
+
+							//  反射するベクトルを求める
+							D3DXVECTOR3 reflectVec = m_hitSphere.position - pEnemy->GetHitSphere( ).position;
+							reflectVec.y = 0.0f;
+
+							D3DXVec3Normalize( &reflectVec , &reflectVec );
+
+							//  めり込んだ分座標を戻す
+							m_position += reflectVec * fDist;
+
+							return true;
+						}
+					}
+				}
+				//  プレイヤー対戦モードの場合
+				if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+				{
+					//  種類がプレイヤーの場合
+					if( objType == Scene::OBJTYPE_PLAYER )
+					{
+						//  ダウンキャスト
+						Player* pPlayer = ( Player* )pScene;
+
+						//  自分以外のプレイヤーでかつ、当たり判定をする場合
+						if( m_nPlayerNo != pPlayer->GetPlayerNo( ) && pPlayer->GetJudgeHit( ) )
+						{
+							float fDist = 0.0f;
+
+							if( Utility::HitSphere( m_hitSphere , pPlayer->GetHitSphere( ) , &fDist ) )
+							{
+								//  速度をなくす
+								m_fSpeed = 0.0f;
+
+								//  反射するベクトルを求める
+								D3DXVECTOR3 reflectVec = m_hitSphere.position - pPlayer->GetHitSphere( ).position;
+								reflectVec.y = 0.0f;
+
+								D3DXVec3Normalize( &reflectVec , &reflectVec );
+
+								//  めり込んだ分座標を戻す
+								m_position += reflectVec * fDist;
+
+								return true;
+							}
+						}
+					}
+				}
+
+				//  次のポインタを代入
+				pScene = pScene->GetNextScene( pScene );
+			}
+		}
+	}
+
+	return false;
+}
+
+//--------------------------------------------------------------------------------------
+//  壁との当たり判定をする関数
+//--------------------------------------------------------------------------------------
+bool Player::JudgeHitWall( void )
+{
+	bool hit = false;
+
+	//  壁との当たり判定
+	if( m_position.x > Game::GetFieldMax( ).x * 0.999f )
+	{
+		m_position.x = Game::GetFieldMax( ).x * 0.999f;
+
+		m_fSpeed = 0.0f;
+
+		hit = true;
+	}
+	if( m_position.x < Game::GetFieldMin( ).x * 0.999f )
+	{
+		m_position.x = Game::GetFieldMin( ).x * 0.999f;
+
+		m_fSpeed = 0.0f;
+
+		hit = true;
+	}
+	if( m_position.z > Game::GetFieldMax( ).z * 0.999f )
+	{
+		m_position.z = Game::GetFieldMax( ).z * 0.999f;
+
+		m_fSpeed = 0.0f;
+
+		hit = true;
+	}
+	if( m_position.z < Game::GetFieldMin( ).z * 0.999f )
+	{
+		m_position.z = Game::GetFieldMin( ).z * 0.999f;
+
+		m_fSpeed = 0.0f;
+
+		hit = true;
+	}
+
+	return hit;
 }
 
 //--------------------------------------------------------------------------------------
@@ -3231,7 +775,7 @@ void Player::Damage( D3DXVECTOR3 blowVecDirect , float fBlowPower , int nDamage 
 	float fSeekPosZ = ( float )RandomSeekPos( rd ) * 0.1f;
 
 	//  カメラの取得
-	Camera* pCamera = Game::GetCamera( m_nPlayerNo );
+	Camera* pCamera = SceneManager::GetCamera( m_nPlayerNo );
 
 	if( pCamera != NULL )
 	{
@@ -3269,11 +813,11 @@ void Player::Damage( D3DXVECTOR3 blowVecDirect , float fBlowPower , int nDamage 
 
 	//  エフェクトの生成
 	EffekseerManager::Create( EffekseerManager::TYPE_HIT000 , D3DXVECTOR3( m_hitSphere.position.x + fSeekPosX , m_hitSphere.position.y , m_hitSphere.position.z + fSeekPosZ ) ,
-							   D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
+							  D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
 
 	//  エフェクトの生成
 	EffekseerManager::Create( EffekseerManager::TYPE_HIT000 , D3DXVECTOR3( m_hitSphere.position.x - fSeekPosX , m_hitSphere.position.y , m_hitSphere.position.z - fSeekPosZ ) ,
-							   D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
+							  D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
 
 	//  エフェクトの停止
 	EffekseerManager::Stop( m_handle[ EffekseerManager::TYPE_AURA ] );
@@ -3321,23 +865,21 @@ void Player::Damage( D3DXVECTOR3 blowVecDirect , float fBlowPower , int nDamage 
 		}		
 
 		//  結果画面への移行フラグをたてる
-		Game::SetNextMode( Mode::MODE_RESULT );	
+		Game::SetNextMode( Mode::MODE::RESULT );	
 	}
 	else
 	{
 		if( bBlow == true )
 		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_BLOW ) )
-			{
-				SetAnimation( StateAnimator::MOTION_BLOW );
-			}
+			//  状態の変化
+			SetAnimation( StateAnimator::MOTION_BLOW );
+			ChangeState( m_allState[ static_cast< int >( Player::STATE::BLOW ) ] );
 		}
 		else
 		{
-			if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_BLOW ) )
-			{
-				SetAnimation( StateAnimator::MOTION_BLOW );
-			}
+			//  状態の変化
+			SetAnimation( StateAnimator::MOTION_BEND );
+			ChangeState( m_allState[ static_cast< int >( Player::STATE::BEND ) ] );
 		}
 	}
 }
@@ -3356,7 +898,7 @@ int Player::BraveDamage( int nDamage )
 	int nOverDamage = 0;		//  オーバーした分のダメージ格納
 
 	//  カメラの取得
-	Camera* pCamera = Game::GetCamera( m_nPlayerNo );
+	Camera* pCamera = SceneManager::GetCamera( m_nPlayerNo );
 
 	if( pCamera != NULL )
 	{
@@ -3380,11 +922,11 @@ int Player::BraveDamage( int nDamage )
 
 	//  エフェクトの生成
 	EffekseerManager::Create( EffekseerManager::TYPE_HIT000 , D3DXVECTOR3( m_hitSphere.position.x + fSeekPosX , m_hitSphere.position.y , m_hitSphere.position.z + fSeekPosZ ) ,
-							   D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
+							  D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
 
 	//  エフェクトの生成
 	EffekseerManager::Create( EffekseerManager::TYPE_HIT000 , D3DXVECTOR3( m_hitSphere.position.x - fSeekPosX , m_hitSphere.position.y , m_hitSphere.position.z - fSeekPosZ ) ,
-							   D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
+							  D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , D3DXVECTOR3( 1.0f , 1.0f , 1.0f ) );
 
 	//  体力が0以下になった場合
 	if( m_nBrave <= 0 )
@@ -3402,11 +944,358 @@ int Player::BraveDamage( int nDamage )
 }
 
 //--------------------------------------------------------------------------------------
-//  プレイヤー番号の取得処理
+//  プレイヤー全てのエフェクシアの再生ストップ処理
+//--------------------------------------------------------------------------------------
+void Player::StopAllEffekseer( void )
+{
+	for( int i = 0; i < EffekseerManager::TYPE_MAX; i++ )
+	{
+		if( m_handle[ i ] != -1 )
+		{
+			EffekseerManager::Stop( m_handle[ i ] );
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  ロックオン状態の変更
+//--------------------------------------------------------------------------------------
+void Player::ChangeLockon( void )
+{
+	m_bLockOn = !m_bLockOn;
+}
+
+//--------------------------------------------------------------------------------------
+//  現在のジャンプ力の設定
+//--------------------------------------------------------------------------------------
+void Player::SetCurrentJumpPower( float jumpPower )
+{
+	m_fCurrentJumpPower = jumpPower;
+}
+
+//--------------------------------------------------------------------------------------
+//  方向ベクトルの設定
+//--------------------------------------------------------------------------------------
+void Player::SetVecDirect( D3DXVECTOR3 vecDirect )
+{
+	m_vecDirect = vecDirect;
+}
+
+//--------------------------------------------------------------------------------------
+//  注視点の設定
+//--------------------------------------------------------------------------------------
+void Player::SetPositionAt( D3DXVECTOR3 positionAt )
+{
+	m_posAt = positionAt;
+}
+
+//--------------------------------------------------------------------------------------
+//  速度の設定
+//--------------------------------------------------------------------------------------
+void Player::SetSpeed( float speed )
+{
+	m_fSpeed = speed;
+}
+
+//--------------------------------------------------------------------------------------
+//  移動力の設定
+//--------------------------------------------------------------------------------------
+void Player::SetMovePower( float movePower )
+{
+	m_fMovePower = movePower;
+}
+
+//--------------------------------------------------------------------------------------
+//  吹っ飛び力の設定
+//--------------------------------------------------------------------------------------
+void Player::SetBlowPower( float blowPower )
+{
+	m_fBlowPower = blowPower;
+}
+
+//--------------------------------------------------------------------------------------
+//  無敵時間の設定
+//--------------------------------------------------------------------------------------
+void Player::SetInvisibleTime( int invisibleTime )
+{
+	m_nInvisibleTime = invisibleTime;
+}
+
+//--------------------------------------------------------------------------------------
+//  追尾方向の設定
+//--------------------------------------------------------------------------------------
+void Player::SetHomingDirect( bool homingDirect )
+{
+	m_bHomingLeft = homingDirect;
+}
+
+//--------------------------------------------------------------------------------------
+//  指定した種類のエフェクシア識別子の設定
+//--------------------------------------------------------------------------------------
+void Player::SetEffekseerHandle( EffekseerManager::TYPE type , ::Effekseer::Handle handle )
+{
+	m_handle[ static_cast< int >( type ) ] = handle;
+}
+
+//--------------------------------------------------------------------------------------
+//  敵と当たり判定するかのフラグ設定
+//--------------------------------------------------------------------------------------
+void Player::SetJudgeHit( bool judgeHit )
+{
+	m_bJudgeHit = judgeHit;
+}
+
+//--------------------------------------------------------------------------------------
+//  防御フラグの設定
+//--------------------------------------------------------------------------------------
+void Player::SetGuardFlag( bool guardFlag )
+{
+	m_bGuard = guardFlag;
+}
+
+
+//--------------------------------------------------------------------------------------
+//  魔法クラスのポインタの設定
+//--------------------------------------------------------------------------------------
+void Player::SetMagic( Magic* magic )
+{
+	m_pMagic = magic;
+}
+
+//--------------------------------------------------------------------------------------
+//  体力の増加
+//--------------------------------------------------------------------------------------
+void Player::AddLife( int addLife )
+{
+	m_nLife += addLife;
+}
+
+//--------------------------------------------------------------------------------------
+//  魔法の削除
+//--------------------------------------------------------------------------------------
+void Player::DeleteMagic( void )
+{
+	//  魔法を所持している場合
+	if( m_pMagic != NULL )
+	{
+		//  魔法の削除
+		m_pMagic->Delete( );
+		m_pMagic = NULL;
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  方向ベクトルの取得
+//--------------------------------------------------------------------------------------
+D3DXVECTOR3	Player::GetVecDirect( void )
+{
+	return m_vecDirect;
+}
+
+//--------------------------------------------------------------------------------------
+//  注視点の取得
+//--------------------------------------------------------------------------------------
+D3DXVECTOR3	Player::GetPositionAt( void )
+{
+	return m_posAt;
+}
+
+//--------------------------------------------------------------------------------------
+//  吹っ飛び方向ベクトルの取得
+//--------------------------------------------------------------------------------------
+D3DXVECTOR3	Player::GetBlowVecDirect( void )
+{
+	return m_blowVecDirect;
+}
+
+//--------------------------------------------------------------------------------------
+//  状態の変化
+//--------------------------------------------------------------------------------------
+void Player::ChangeState( PlayerState* playerState )
+{
+	//  同じの場合リターン
+	if( m_playerState == playerState )
+	{
+		return;
+	}
+
+	if( m_playerState != nullptr )
+	{
+		//  前回のプレイヤーステートの終了処理
+		m_playerState->Uninit( );
+
+		//  現在のプレイヤーステートの初期化処理
+		m_playerState = playerState;
+		m_playerState->Init( );
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  プレイヤー番号の取得
 //--------------------------------------------------------------------------------------
 int	Player::GetPlayerNo( void )
 {
 	return m_nPlayerNo;
+}
+
+//--------------------------------------------------------------------------------------
+//  無敵時間の取得
+//--------------------------------------------------------------------------------------
+int	Player::GetInvisibleTime( void )
+{
+	return m_nInvisibleTime;
+}
+
+//--------------------------------------------------------------------------------------
+//  魔法クラスのポインタの取得
+//--------------------------------------------------------------------------------------
+Magic* Player::GetMagic( void )
+{
+	return m_pMagic;
+}
+
+//--------------------------------------------------------------------------------------
+//  魔法の種類取得
+//--------------------------------------------------------------------------------------
+Player::MAGIC Player::GetMagicType( void )
+{
+	return m_magic;
+}
+
+//--------------------------------------------------------------------------------------
+//  速度の取得
+//--------------------------------------------------------------------------------------
+float Player::GetSpeed( void )
+{
+	return m_fSpeed;
+}
+
+//--------------------------------------------------------------------------------------
+//  基本速度の取得
+//--------------------------------------------------------------------------------------
+float Player::GetBaseSpeed( void )
+{
+	return m_fBaseSpeed;
+}
+
+//--------------------------------------------------------------------------------------
+//  ジャンプ力の取得
+//--------------------------------------------------------------------------------------
+float Player::GetJumpPower( void )
+{
+	return m_fJumpPower;
+}
+
+//--------------------------------------------------------------------------------------
+//  現在のジャンプ力の取得
+//--------------------------------------------------------------------------------------
+float Player::GetCurrentJumpPower( void )
+{
+	return m_fCurrentJumpPower;
+}
+
+//--------------------------------------------------------------------------------------
+//  目標までの距離の取得
+//--------------------------------------------------------------------------------------
+float Player::GetTargetDistance( void )
+{
+	//  シーンクラスのポインタ
+	Scene* pScene = NULL;											
+
+	//  当たり判定用フィールドクラス
+	HitField* pHitField = NULL;
+
+	float targetDistance = -1.0f;
+
+#pragma omp parallel for
+	//  優先度の最大数分のループ
+	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
+	{
+		//  シーンの先頭アドレスを取得
+		pScene = Scene::GetScene( nCntPriority );
+
+		//  シーンが空ではない間ループ
+		while( pScene != NULL )
+		{
+			Scene::OBJTYPE objType;						//  物体の種類
+
+			//  物体の種類の取得
+			objType = pScene->GetObjType( );
+
+			//  CPU対戦モードの場合
+			if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
+			{
+				//  種類が敵の場合
+				if( objType == Scene::OBJTYPE_ENEMY )
+				{
+					//  ダウンキャスト
+					Enemy* pEnemy = ( Enemy* )pScene;
+
+					//  敵の座標の代入
+					D3DXVECTOR3 posEnemy = pEnemy->GetPos( );
+
+					//  距離の算出
+					targetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
+											( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
+											( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
+
+					return targetDistance;
+				}
+			}
+			//  プレイヤー対戦モードの場合
+			else if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+			{
+				if( objType == Scene::OBJTYPE_PLAYER )
+				{
+					//  ダウンキャスト
+					Player* pPlayer = ( Player* )pScene;
+
+					//  自分以外のプレイヤー番号の場合
+					if( m_nPlayerNo != pPlayer->GetPlayerNo( ) )
+					{
+						//  敵の座標の代入
+						D3DXVECTOR3 posEnemy = pPlayer->GetPos( );
+
+						//  距離の算出
+						targetDistance = sqrtf( ( posEnemy.x - m_position.x ) * ( posEnemy.x - m_position.x ) +
+												( posEnemy.y - m_position.y ) * ( posEnemy.y - m_position.y ) + 
+												( posEnemy.z - m_position.z ) * ( posEnemy.z - m_position.z ) );
+
+						return targetDistance;
+					}
+				}
+			}
+
+			//  次のポインタを代入
+			pScene = pScene->GetNextScene( pScene );
+		}
+	}
+
+	return targetDistance;
+}
+
+//--------------------------------------------------------------------------------------
+//  移動力の取得
+//--------------------------------------------------------------------------------------
+float Player::GetMovePower( void )
+{
+	return m_fMovePower;
+}
+
+//--------------------------------------------------------------------------------------
+//  吹っ飛び力の取得
+//--------------------------------------------------------------------------------------
+float Player::GetBlowPower( void )
+{
+	return m_fBlowPower;
+}
+
+//--------------------------------------------------------------------------------------
+//  体力の取得
+//--------------------------------------------------------------------------------------
+int Player::GetLife( void )
+{
+	return m_nLife;
 }
 
 //--------------------------------------------------------------------------------------
@@ -3426,26 +1315,65 @@ bool Player::GetGuard( void )
 }
 
 //--------------------------------------------------------------------------------------
-//  プレイヤーをのけぞり状態にする処理
+//  ロックオン情報の取得
 //--------------------------------------------------------------------------------------
-void Player::Bend( void )
+bool Player::GetLockon( void )
 {
-	if( m_pStateAnimator->SetMotion( StateAnimator::MOTION_BEND ) )
-	{
-		SetAnimation( StateAnimator::MOTION_BEND );
-	}	
+	return m_bLockOn;
 }
 
 //--------------------------------------------------------------------------------------
-//  プレイヤー全てのエフェクシアの再生ストップ処理
+//  追尾する向きの取得( false : 右 , true : 左 )
 //--------------------------------------------------------------------------------------
-void Player::StopAllEffekseer( void )
+bool Player::GetHomingDirect( void )
 {
-	for( int i = 0; i < EffekseerManager::TYPE_MAX; i++ )
-	{
-		if( m_handle[ i ] != -1 )
-		{
-			EffekseerManager::Stop( m_handle[ i ] );
-		}
-	}
+	return m_bHomingLeft;
+}
+
+//--------------------------------------------------------------------------------------
+//  状態の取得
+//--------------------------------------------------------------------------------------
+PlayerState* Player::GetPlayerState( Player::STATE state )
+{
+	return m_allState[ static_cast< int >( state ) ];
+}
+
+//--------------------------------------------------------------------------------------
+//  エフェクシア識別子の取得
+//--------------------------------------------------------------------------------------
+::Effekseer::Handle Player::GetEffekseerHandle( EffekseerManager::TYPE type )
+{
+	return m_handle[ static_cast< int >( type ) ];
+}
+
+//--------------------------------------------------------------------------------------
+//  アニメーションキーの取得処理
+//--------------------------------------------------------------------------------------
+int	Player::GetAnimationKey( void )
+{
+	return m_nKey;
+}
+
+//--------------------------------------------------------------------------------------
+//  アニメーションキーの取得処理
+//--------------------------------------------------------------------------------------
+float Player::GetAnimationFrame( void )
+{
+	return m_fFrame;
+}
+
+//--------------------------------------------------------------------------------------
+//  ジャンプでの移動
+//--------------------------------------------------------------------------------------
+void Player::MoveHeight( float addMove )
+{
+	m_position.y += addMove;
+}
+
+//--------------------------------------------------------------------------------------
+//  ジャンプ力を下げる
+//--------------------------------------------------------------------------------------
+void Player::DownCurrentJumpPower( float downPower )
+{
+	m_fCurrentJumpPower -= downPower;
 }

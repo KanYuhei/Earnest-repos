@@ -23,6 +23,7 @@
 #include "camera.h"
 #include "meshDome.h"
 #include "readySelect.h"
+#include "light.h"
 #include <random>
 
 //--------------------------------------------------------------------------------------
@@ -102,11 +103,10 @@ static const float THIEF_SIZE = 1.0f;
 //--------------------------------------------------------------------------------------
 //  タイトルクラスのコンストラクタ
 //--------------------------------------------------------------------------------------
-CStageSelect::CStageSelect( )
+StageSelect::StageSelect( )
 {
 	m_nWaitTime = 0;
 	m_nFase = 0;
-	m_pCamera = NULL;
 	m_fAddScale = 0.0f;
 	m_bAdd = true;
 }
@@ -114,7 +114,7 @@ CStageSelect::CStageSelect( )
 //--------------------------------------------------------------------------------------
 //  タイトルクラスのデストラクタ
 //--------------------------------------------------------------------------------------
-CStageSelect::~CStageSelect( )
+StageSelect::~StageSelect( )
 {
 
 }
@@ -122,7 +122,7 @@ CStageSelect::~CStageSelect( )
 //--------------------------------------------------------------------------------------
 //  タイトルクラスの初期化処理
 //--------------------------------------------------------------------------------------
-void CStageSelect::Init( void )
+void StageSelect::Init( void )
 {
 	m_vs = VS_SOLO;
 	m_foucus = FOCUS_STAGE1;
@@ -194,20 +194,21 @@ void CStageSelect::Init( void )
 												D3DXVECTOR2( 1.0f , 1.0f ) );
 	}
 
+	Camera* camera = SceneManager::GetCamera( 0 );
+
 	//  カメラクラスポインタが空の場合
-	if( m_pCamera == NULL )
+	if( camera != nullptr )
 	{
-		//  カメラクラスの生成
-		m_pCamera = new Camera;
-		m_pCamera->Init( D3DXVECTOR3( 0.0f , 3.0f , -20.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-						 D3DX_PI / 3.0f , 1.0f , 10000.0f );
+		//  カメラクラスの初期化
+		camera->Init( D3DXVECTOR3( 0.0f , 3.0f , -20.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 	}
 }
 
 //--------------------------------------------------------------------------------------
 //  タイトルクラスの終了処理
 //--------------------------------------------------------------------------------------
-void CStageSelect::Uninit( void )
+void StageSelect::Uninit( void )
 {
 	Scene::ReleaseAll( );
 
@@ -239,21 +240,12 @@ void CStageSelect::Uninit( void )
 	{
 		m_pReadySelect = NULL;
 	}
-
-	//  カメラクラスポインタが空ではない場合
-	if( m_pCamera != NULL )
-	{
-		//  カメラクラスの破棄
-		m_pCamera->Uninit( );
-		delete m_pCamera;
-		m_pCamera = NULL;
-	}
 }
 
 //--------------------------------------------------------------------------------------
 //  タイトルクラスの更新処理
 //--------------------------------------------------------------------------------------
-void CStageSelect::Update( void )
+void StageSelect::Update( void )
 {
 	// キーボード情報の取得
 	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
@@ -263,6 +255,13 @@ void CStageSelect::Update( void )
 
 	//  PS4コントローラー情報の取得
 	PS4Controller*		pPS4Input = SceneManager::GetPS4Input( );
+
+	Light* pLight = SceneManager::GetLight( );
+
+	if( pLight != NULL )
+	{
+		pLight->SetDiffuseColor( D3DXCOLOR( 1.0f , 0.9f , 0.3f , 1.0f ) );
+	}
 
 	if( Fade::GetFade( ) == Fade::FADE_NONE )
 	{
@@ -499,7 +498,7 @@ void CStageSelect::Update( void )
 					m_nFase = 0;
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_TUTORIAL , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TUTORIAL , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 			}
 
@@ -704,7 +703,7 @@ void CStageSelect::Update( void )
 					m_nFase = 0;
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_TUTORIAL , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TUTORIAL , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 			}
 #endif
@@ -1335,7 +1334,7 @@ void CStageSelect::Update( void )
 					}
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 
 				if( m_vs == VS_PARTY && m_bCheckPlayer[ 0 ] == true && m_bCheckPlayer[ 1 ] == true )
@@ -1372,7 +1371,7 @@ void CStageSelect::Update( void )
 					}
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 			}
 
@@ -1455,7 +1454,7 @@ void CStageSelect::Update( void )
 					}
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 
 				if( m_vs == VS_PARTY && m_bCheckPlayer[ 0 ] == true && m_bCheckPlayer[ 1 ] == true )
@@ -1492,7 +1491,7 @@ void CStageSelect::Update( void )
 					}
 
 					//  フェードの設定
-					Fade::SetFade( Fade::FADE_OUT , Mode::MODE_GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+					Fade::SetFade( Fade::FADE_OUT , Mode::MODE::GAME , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 				}
 			}
 
@@ -1694,7 +1693,7 @@ void CStageSelect::Update( void )
 //--------------------------------------------------------------------------------------
 //  タイトルクラスの描画処理
 //--------------------------------------------------------------------------------------
-void CStageSelect::Draw( void )
+void StageSelect::Draw( void )
 {
 	Scene::DrawAll( );
 }

@@ -285,7 +285,7 @@ void MeshWall::MakeVertex( void )
 			pVtx[ 0 ].color = m_color;
 
 			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide , ( float )nCntVertical );
+			pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide , ( float )nCntVertical );
 
 			//  アドレスを進める
 			pVtx++;

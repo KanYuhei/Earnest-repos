@@ -50,6 +50,7 @@ Scene::Scene( int nPriority )
 	m_color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 	m_objType = OBJTYPE_NONE;
 	m_bDelete = false;
+	m_drawDepth = false;
 }
 
 //--------------------------------------------------------------------------------------
@@ -165,6 +166,35 @@ void Scene::DrawAll( void )
 		if( nCntPriority == MAX_NUM_PRIORITY - 2 )
 		{
 			EffekseerManager::Draw( );
+		}
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  全てのデプス値書き込み処理
+//--------------------------------------------------------------------------------------
+void Scene::DrawDepthAll( void )
+{
+	//  優先度の最大数分のループ
+	for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY - 1; nCntPriority++ )
+	{
+		if( m_pTop[ nCntPriority ] != NULL )
+		{
+			//  先頭ポインタの代入
+			Scene* pScene = m_pTop[ nCntPriority ];
+
+			//  シーンが空ではない間ループ
+			while( pScene != NULL )
+			{
+				if( pScene->m_drawDepth == true )
+				{
+					//  シーンの描画
+					pScene->DrawDepth( );
+				}
+
+				//  次のポインタを代入
+				pScene = pScene->m_pNext;
+			}
 		}
 	}
 }

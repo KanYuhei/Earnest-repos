@@ -18,12 +18,13 @@ class MagicTornade : public Magic
 {
 public:
 	MagicTornade( ){ }												//  コンストラクタ
-	~MagicTornade( ){ }											//  デストラクタ
+	~MagicTornade( ){ }												//  デストラクタ
 
 	HRESULT					Init( void );							//  初期化
 	void					Uninit( void );							//  終了
 	void					Update( void );							//  更新
 	void					Draw( void );							//  描画
+	void					DrawDepth( void ){ }					//  デプス値の書き込み
 
 	OWNER					GetOwner( void );						//  所有者の確認
 	void					Hit( void );							//  当たった時の処理

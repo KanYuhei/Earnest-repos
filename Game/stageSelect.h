@@ -25,13 +25,12 @@ class SceneBG;
 class StageSelect2D;
 class SelectVSMode;
 class CrystalMagic;
-class Camera;
 class ReadySelect;
 
 //--------------------------------------------------------------------------------------
 //  ステージセレクトクラスの定義
 //--------------------------------------------------------------------------------------
-class CStageSelect : public Mode
+class StageSelect : public Mode
 {
 public: 
 	typedef enum
@@ -49,8 +48,8 @@ public:
 		VS_MAX
 	} VS;
 
-	CStageSelect( );												//  コンストラクタ
-	~CStageSelect( );												//  デストラクタ
+	StageSelect( );												//  コンストラクタ
+	~StageSelect( );												//  デストラクタ
 
 	void				Init( void );								//  初期化						
 	void				Uninit( void );								//  終了
@@ -66,7 +65,6 @@ private:
 	SelectVSMode*		m_pVSMode[ VS_MAX ];						//  VSモード
 	CrystalMagic*		m_pCrystalMagic[ Game::CRYSTAL_MAX ];		//  魔法クリスタル
 	CrystalMagic*		m_pCrystalMagic2[ Game::CRYSTAL_MAX ];		//  魔法クリスタル
-	Camera*			m_pCamera;									//  カメラ
 	ReadySelect*		m_pReadySelect;								//  選択準備完了
 	PlayerSelect*		m_pPlayer[ 2 ];								//  プレイヤー
 	bool				m_bCheckPlayer[ 2 ];						//  両方のプレイヤー

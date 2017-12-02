@@ -1,5 +1,5 @@
 ﻿//--------------------------------------------------------------------------------------
-//  エフェクシア管理   ( camera.cpp )
+//  エフェクシア管理   ( effkseerManager.cpp )
 //
 //  Author : SHUN YAMASHITA
 //--------------------------------------------------------------------------------------
@@ -459,7 +459,7 @@ void EffekseerManager::SetSpeed( ::Effekseer::Handle handle , float fSpeed )
 void EffekseerManager::SetMatrix( int nCameraNo )
 {
 	//  カメラ情報の取得
-	Camera* pCamera = Game::GetCamera( nCameraNo );
+	Camera* pCamera = SceneManager::GetCamera( nCameraNo );
 
 	//  カメラクラスのポインタがある場合
 	if( pCamera != NULL )
@@ -487,5 +487,5 @@ bool EffekseerManager::GetExist( Effekseer::Handle handle )
 		return false;
 	}
 
-	return m_manager->Exists( handle );;
+	return m_manager->Exists( handle );
 }

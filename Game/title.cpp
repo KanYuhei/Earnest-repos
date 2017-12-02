@@ -19,6 +19,7 @@
 #include "meshDome.h"
 #include "titlePress.h"
 #include "effekseerManager.h"
+#include "camera.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -59,23 +60,15 @@ void Title::Init( void )
 {
 	m_bPush = false;
 
-	//  クラスポインタの初期化
-	m_pCamera = NULL;
+	Camera* camera = SceneManager::GetCamera( 0 );
 
 	//  カメラクラスポインタが空の場合
-	if( m_pCamera == NULL )
+	if( camera != nullptr )
 	{
-		//  カメラクラスの生成
-		m_pCamera = new Camera;
-		m_pCamera->Init( D3DXVECTOR3( 0.0f , 30.0f , -250.0f ) , D3DXVECTOR3( 0.0f , 200.0f , 0.0f ) ,
-						 D3DX_PI / 3.0f , 1.0f , 10000.0f );
+		//  カメラクラスの初期化
+		camera->Init( D3DXVECTOR3( 0.0f , 30.0f , -250.0f ) , D3DXVECTOR3( 0.0f , 200.0f , 0.0f ) ,
+					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 	}
-
-	//  メッシュドームの生成
-	MeshDome::Create( MeshDome::TYPE_COSMO ,
-					   D3DXVECTOR3( 0.0f , -10.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-					   D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.0001f , 0.0f ) ,
-					   32 , 32 );
 
 	//  背景
 	SceneBG::Create( SceneBG::TYPE_TITLE , D3DXVECTOR3( SCREEN_WIDTH * 0.5f , SCREEN_HEIGHT * 0.27f , 0.0f ) ,
@@ -84,8 +77,14 @@ void Title::Init( void )
 
 	//  プレスボタン
 	TitlePress::Create( D3DXVECTOR3( TITLE_PRESS_POS_X , TITLE_PRESS_POS_Y , 0.0f ) ,
-						 D3DXVECTOR3( TITLE_PRESS_SIZE_X , TITLE_PRESS_SIZE_Y , 0.0f ) ,
-						 D3DXVECTOR2( 0.0f , 0.0f ) , D3DXVECTOR2( 1.0f , 1.0f ) );
+						D3DXVECTOR3( TITLE_PRESS_SIZE_X , TITLE_PRESS_SIZE_Y , 0.0f ) ,
+						D3DXVECTOR2( 0.0f , 0.0f ) , D3DXVECTOR2( 1.0f , 1.0f ) );
+
+	//  メッシュドームの生成
+	MeshDome::Create( MeshDome::TYPE_COSMO ,
+					  D3DXVECTOR3( 0.0f , -10.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+					  D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.0001f , 0.0f ) ,
+					  32 , 32 );
 
 	for( int i = 0; i < ATMOSPHERE_NUM; i++ )
 	{
@@ -225,15 +224,6 @@ void Title::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
 	Scene::ReleaseAll( );
-
-	//  カメラクラスポインタが空ではない場合
-	if( m_pCamera != NULL )
-	{
-		//  カメラクラスの破棄
-		m_pCamera->Uninit( );
-		delete m_pCamera;
-		m_pCamera = NULL;
-	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -242,21 +232,21 @@ void Title::Uninit( void )
 void Title::Update( void )
 {
 	// キーボード情報の取得
-	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
+	Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 
 	//  Xboxコントローラー情報の取得
 	XboxController*	pXInput = SceneManager::GetXInput( );
 
 	//  PS4コントローラー情報の取得
-	PS4Controller*		pPS4Input = SceneManager::GetPS4Input( );
+	PS4Controller* pPS4Input = SceneManager::GetPS4Input( );
 
 	if( Fade::GetFade( ) == Fade::FADE_NONE )
 	{
 		if( ( pPS4Input->GetTrigger( 0 , PS4Controller::DIJ_CIRCLE ) || pPS4Input->GetTrigger( 0 , PS4Controller::DIJ_OPTIONS ) ) ||
-			 pKeyboard->GetKeyboardTrigger( DIK_RETURN ) || pKeyboard->GetKeyboardTrigger( DIK_SPACE ) )
+			  pKeyboard->GetKeyboardTrigger( DIK_RETURN ) || pKeyboard->GetKeyboardTrigger( DIK_SPACE ) )
 		{
 			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 		}
 	}
 }

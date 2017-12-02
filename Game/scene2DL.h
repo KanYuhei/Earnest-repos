@@ -30,8 +30,9 @@ public:
 	void					Uninit( void );								//  終了
 	void					Update( void );								//  更新
 	void					Draw( void );								//  描画
+	void					DrawDepth( void ){ }						//  デプス値の書き込み
 
-	static Scene2DL*		Create( D3DXVECTOR3 position,					//  生成
+	static Scene2DL*		Create( D3DXVECTOR3 position,				//  生成
 									D3DXVECTOR3 size , 
 									D3DXVECTOR2 posUV ,
 									D3DXVECTOR2 divideUV );

@@ -38,13 +38,13 @@ public:
 
 	typedef struct
 	{
-		D3DXVECTOR3 position;						//  XYZ座標
+		D3DXVECTOR3 position;					//  XYZ座標
 		D3DXVECTOR3 normal;						//  法線
 		float tu , tv;
 	} VERTEX;
 
 	Utility( ){ };								//  コンストラクタ
-	~Utility( ){ };							//  デストラクタ
+	~Utility( ){ };								//  デストラクタ
 
 	static float		RadianOf2Vector( D3DXVECTOR3 &vec1 , D3DXVECTOR3 &vec2 );
 	static float		AngleOf2Vector( D3DXVECTOR3 &vec1 , D3DXVECTOR3 &vec2 );
@@ -53,6 +53,10 @@ public:
 	static bool			HitSpherePoint( HIT_SPHERE &sph1 , D3DXVECTOR3 position );
 	static bool			IntoView( D3DXVECTOR3 vec1 , D3DXVECTOR3 vec2 , float fViewAngle );
 	static void			SetupVertexFog( DWORD color , DWORD mode , BOOL useRange , float fStart , float fEnd , float fDensity );
+	static D3DXMATRIX*	GetFixedLookAtMatrix( D3DXMATRIX* pMtx ,
+											  D3DXVECTOR3* pPos ,
+											  D3DXVECTOR3* pPosAt ,
+											  D3DXVECTOR3* pVecUp );
 
 	static D3DXVECTOR2	BezierCurve2D( D3DXVECTOR2 p1 , D3DXVECTOR2 p2 , D3DXVECTOR2 controllPoint , float fTime );
 

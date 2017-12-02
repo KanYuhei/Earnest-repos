@@ -68,7 +68,7 @@ void TeamLogo::Update( void )
 		else if( m_nTime == 0 )
 		{
 			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::TITLE , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 		}
 	}
 

@@ -162,15 +162,15 @@ void SceneFBX::myNode::recursiveDraw( void )
 				FbxTime allFrame = ( m_endTime - m_startTime );
 				int nAllFrame = allFrame.GetFrameCount( );
 					
-				//for( auto itb = it->bornRefarences.begin(); itb != it->bornRefarences.end(); ++itb ) 
-				//{                    
-				//	//mtx += itm->matrixes[itb->index] * itb->weight;
-				//	mtx += itm->matrixes[itb->index][ m_currentFrame % 73 ] * itb->weight;
-				//}
+				for( auto itb = it->bornRefarences.begin(); itb != it->bornRefarences.end(); ++itb ) 
+				{                    
+					//mtx += itm->matrixes[itb->index] * itb->weight;
+					mtx += itm->matrixes[itb->index][ m_currentFrame % 73 ] * itb->weight;
+				}
 
 				D3DXVECTOR3 pos;                 
 				D3DXVec3TransformCoord(&pos, &it->positions, &mtx);                
-				positions.push_back(it->positions);             
+				positions.push_back(pos);             
 			} 
 
 			if( m_makeVertrx == false )
@@ -201,7 +201,7 @@ void SceneFBX::myNode::recursiveDraw( void )
 					pVtx[ i ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 
 					//  UV座標の指定
-					pVtx[ i ].tex = itm->texcoords[ itm->texcoordIndices[ i ] ];
+					pVtx[ i ].texcoord = itm->texcoords[ itm->texcoordIndices[ i ] ];
 				}
 
 				//  頂点バッファのアンロック
@@ -226,13 +226,13 @@ void SceneFBX::myNode::recursiveDraw( void )
 			D3DXMatrixIdentity( &mtxRot );
 
 			//  拡大行列の作成
-			D3DXMatrixScaling( &mtxScale , 10.0f , 10.0f , 10.0f );
+			D3DXMatrixScaling( &mtxScale , 0.3f , 0.3f , 0.3f );
 
 			//  拡大行列の掛け算
 			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
 
 			//  平行移動行列の作成
-			D3DXMatrixTranslation( &mtxTrans , 0.0f , 0.0f , 0.0f );
+			D3DXMatrixTranslation( &mtxTrans , 0.0f , 0.0f , 100.0f );
 
 			//  平行移動行列の掛け算
 			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );

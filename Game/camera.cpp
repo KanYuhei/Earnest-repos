@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include "keyboard.h"
 #include "game.h"
+#include "shaderManager.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -48,6 +49,7 @@ Camera::Camera( )
 	m_fSwayAngle = 0.0f;
 	m_nMode = 0;
 	m_bFree = false;
+	m_bDivide = false;
 	m_nCameraNo = 0;
 }
 
@@ -64,9 +66,6 @@ Camera::~Camera( )
 //--------------------------------------------------------------------------------------
 HRESULT Camera::Init( D3DXVECTOR3 posEye , D3DXVECTOR3 posAt , float fFovY , float fNear , float fFar , int nCameraNo , bool bDivide )
 {
-	D3DXMATRIX			mtxView;						//  ビュー座標変換行列
-	D3DXMATRIX			mtxProj;						//  プロジェクション座標行列
-
 	LPDIRECT3DDEVICE9	pDevice;
 
 	//  デバイス情報の取得
@@ -84,39 +83,36 @@ HRESULT Camera::Init( D3DXVECTOR3 posEye , D3DXVECTOR3 posAt , float fFovY , flo
 	//  カメラ番号の代入
 	m_nCameraNo = nCameraNo;
 
+	//  分割フラグの代入
+	m_bDivide = bDivide;
+
+	//  視野距離最低値の代入
+	m_fNear = fNear;
+
+	//  視野距離最大値の代入
+	m_fFar = fFar;
+
 	if( bDivide == false )
 	{
 		//  プロジェクション行列の作成
-		D3DXMatrixPerspectiveFovLH( &mtxProj ,											//  プロジェクション行列のアドレス
+		D3DXMatrixPerspectiveFovLH( &m_projectionMatrix ,								//  プロジェクション行列のアドレス
 									m_fFovY ,											//  画角
 									( float )SCREEN_WIDTH / SCREEN_HEIGHT ,				//  アスペクト比
 									fNear ,												//  near( 0.0f < near )
 									fFar );												//  far
-
-		//  プロジェクション座標変換
-		pDevice->SetTransform( D3DTS_PROJECTION , &mtxProj );
 	}
 	else
 	{
-		if( m_nCameraNo == 0 )
-		{
-			//  プロジェクション行列の作成
-			D3DXMatrixPerspectiveFovLH( &mtxProj ,											//  プロジェクション行列のアドレス
-										m_fFovY ,											//  画角
-										( float )( SCREEN_WIDTH / 2 ) / ( SCREEN_HEIGHT ) ,	//  アスペクト比
-										fNear ,												//  near( 0.0f < near )
-										fFar );												//  far
-
-			//  プロジェクション座標変換
-			pDevice->SetTransform( D3DTS_PROJECTION , &mtxProj );
-		}
+		//  プロジェクション行列の作成
+		D3DXMatrixPerspectiveFovLH( &m_projectionMatrix ,								//  プロジェクション行列のアドレス
+									m_fFovY ,											//  画角
+									( float )( SCREEN_WIDTH / 2 ) / ( SCREEN_HEIGHT ) ,	//  アスペクト比
+									fNear ,												//  near( 0.0f < near )
+									fFar );												//  far
 	}
 
 	//  ビュー座標変換行列の設定
-	D3DXMatrixLookAtLH( &mtxView , &m_posEye , &m_posAt , &m_vecUp );
-
-	//  ビュー座標変換
-	pDevice->SetTransform( D3DTS_VIEW , &mtxView );
+	D3DXMatrixLookAtLH( &m_viewMatrix , &m_posEye , &m_posAt , &m_vecUp );
 
 	//  基準値の代入
 	m_basePosEye = posEye;
@@ -371,90 +367,6 @@ void Camera::Update( void )
 			m_posAt.x = cosf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.x;
 			m_posAt.z = sinf( fAngle ) * CAMERA_TO_DISTANCE + m_posEye.z;
 		}
-
-		//if( pKeyboard->GetKeyboardPress( DIK_A ) )
-		//{
-		//	m_basePos.x -= 1.0f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_D ) )
-		//{
-		//	m_basePos.x += 1.0f;
-		//}	
-		//if( pKeyboard->GetKeyboardPress( DIK_W ) )
-		//{
-		//	m_basePos.z += 1.0f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_S ) )
-		//{
-		//	m_basePos.z -= 1.0f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_Z ) )
-		//{
-		//	m_basePos.y += 1.0f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_X ) )
-		//{
-		//	m_basePos.y -= 1.0f;
-		//}
-
-		//if( pKeyboard->GetKeyboardPress( DIK_J ) )
-		//{
-		//	fAxisX -= 0.1f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_L ) )
-		//{
-		//	fAxisX += 0.1f;
-		//}	
-		//if( pKeyboard->GetKeyboardPress( DIK_I ) )
-		//{
-		//	fAxisY += 0.1f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_K ) )
-		//{
-		//	fAxisY -= 0.1f;
-		//}	
-
-		//m_fRotY -= fAxisX / ( float )SCREEN_WIDTH * D3DX_PI * 2.0f;
-		//m_fRotX -= fAxisY / ( float )SCREEN_HEIGHT * D3DX_PI * 2.0f;
-
-		//float fWhile = 0.0f;
-
-		//if( pKeyboard->GetKeyboardPress( DIK_UPARROW ) )
-		//{
-		//	fWhile += 1.0f;
-		//}
-		//if( pKeyboard->GetKeyboardPress( DIK_DOWNARROW ) )
-		//{
-		//	fWhile -= 1.0f;
-		//}
-
-		////  物体までの距離の調整( ズームイン 、ズームアウト )
-		//m_fDistance -= fWhile * 0.002f;
-
-		////  一時座標の格納
-		//D3DXVECTOR3 position( m_basePos.x , m_basePos.y , m_basePos.z - m_fDistance );
-
-		////  Y軸回転行列の作成
-		//D3DXMATRIX mtxRotY;
-		//D3DXMatrixIdentity( &mtxRotY );
-		//D3DXMatrixRotationY( &mtxRotY , m_fRotY );
-
-		////  X軸回転行列の作成
-		//D3DXMATRIX mtxRotX;
-		//D3DXMatrixIdentity( &mtxRotX );
-		//D3DXMatrixRotationX( &mtxRotX , m_fRotX );
-
-		////  回転行列の合成
-		//D3DXMATRIX mtxRot;
-		//D3DXMatrixMultiply( &mtxRot , &mtxRotX , &mtxRotY );
-
-		////  座標変換
-		//D3DXVec3TransformCoord( &m_posEye , &position , &mtxRot );
-
-		////  座標変換
-		//D3DXVec3TransformCoord( &m_vecUp , &D3DXVECTOR3( 0.0f , 1.0f , 0.0f ) , &mtxRot );
-
-		//m_posAt = m_basePos;
 	}
 }
 
@@ -535,6 +447,22 @@ void Camera::MoveCameraPosAt( D3DXVECTOR3 moveAt , float fRevice )
 }
 
 //--------------------------------------------------------------------------------------
+//  ビュー行列を取得する関数
+//--------------------------------------------------------------------------------------
+const D3DXMATRIX& Camera::GetViewMatrix( void )
+{
+	return m_viewMatrix;
+}
+
+//--------------------------------------------------------------------------------------
+//  プロジェクション行列を取得する関数
+//--------------------------------------------------------------------------------------
+const D3DXMATRIX& Camera::GetProjectionMatrix( void )
+{
+	return m_projectionMatrix;
+}
+
+//--------------------------------------------------------------------------------------
 //  視点座標を取得する関数
 //--------------------------------------------------------------------------------------
 D3DXVECTOR3 Camera::GetCameraPosEye( void )
@@ -606,17 +534,12 @@ void Camera::ChangeMode( void )
 //--------------------------------------------------------------------------------------
 void Camera::SetCamera( void )
 {
-	//  ローカル変数の宣言
-	D3DXVECTOR3			work;						//  格納用
-	D3DXVECTOR3			work2;						//  格納用2
-	D3DXMATRIX			mtxView;					//  ビュー座標変換行列
-	D3DXMATRIX			mtxProj;					//  プロジェクション座標行列
-	LPDIRECT3DDEVICE9	pDevice;
-
 	//  デバイス情報の取得
-	pDevice = SceneManager::GetRenderer( )->GetDevice( );
+	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
-	if( Game::GetModeVS( ) == Game::MODE_VS_CPU )
+	//  モードゲーム以外または、CPU対戦の場合
+	if( ( Game::GetModeVS( ) == Game::MODE_VS_CPU && Mode::MODE::GAME ) ||
+		SceneManager::GetMode( ) != Mode::MODE::GAME )
 	{
 		D3DVIEWPORT9 vp;
 
@@ -646,9 +569,64 @@ void Camera::SetCamera( void )
 	}
 
 	//  ビュー座標変換行列の設定
-	D3DXMatrixLookAtLH( &mtxView , &m_posEye , &m_posAt , &m_vecUp );
+	D3DXMatrixLookAtLH( &m_viewMatrix , &m_posEye , &m_posAt , &m_vecUp );
 
-	//  ビュー座標変換
-	pDevice->SetTransform( D3DTS_VIEW , &mtxView );	
+	if( m_bDivide == false )
+	{
+		//  プロジェクション行列の作成
+		D3DXMatrixPerspectiveFovLH( &m_projectionMatrix ,								//  プロジェクション行列のアドレス
+									m_fFovY ,											//  画角
+									( float )SCREEN_WIDTH / SCREEN_HEIGHT ,				//  アスペクト比
+									m_fNear ,											//  near( 0.0f < near )
+									m_fFar );											//  far
+	}
+	else
+	{
+		//  プロジェクション行列の作成
+		D3DXMatrixPerspectiveFovLH( &m_projectionMatrix ,								//  プロジェクション行列のアドレス
+									m_fFovY ,											//  画角
+									( float )( SCREEN_WIDTH / 2 ) / ( SCREEN_HEIGHT ) ,	//  アスペクト比
+									m_fNear ,											//  near( 0.0f < near )
+									m_fFar );											//  far
+	}
 }
 
+//--------------------------------------------------------------------------------------
+//  ビューポート行列の設定をする関数
+//--------------------------------------------------------------------------------------
+void Camera::SetViewport( void )
+{
+	//  デバイス情報の取得
+	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
+
+	//  モードゲーム以外または、CPU対戦の場合
+	if( ( Game::GetModeVS( ) == Game::MODE_VS_CPU && Mode::MODE::GAME ) ||
+		SceneManager::GetMode( ) != Mode::MODE::GAME )
+	{
+		D3DVIEWPORT9 vp;
+
+		vp.X = 0;
+		vp.Y = 0;
+		vp.Width = SCREEN_WIDTH;
+		vp.Height = SCREEN_HEIGHT;
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 1.0f;
+
+		//  ビューポート変換の設定
+		pDevice->SetViewport( &vp );
+	}
+	if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+	{
+		D3DVIEWPORT9 vp;
+
+		vp.X = ( SCREEN_WIDTH / 2 ) * m_nCameraNo;
+		vp.Y = 0;
+		vp.Width = SCREEN_WIDTH / 2;
+		vp.Height = SCREEN_HEIGHT;
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 1.0f;
+
+		//  ビューポート変換の設定
+		pDevice->SetViewport( &vp );
+	}
+}

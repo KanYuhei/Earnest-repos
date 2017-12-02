@@ -18,6 +18,7 @@
 #include "manager.h"
 #include "renderer.h"
 #include "game.h"
+#include "shaderManager.h"
 #include <random>
 
 //--------------------------------------------------------------------------------------
@@ -99,7 +100,10 @@ void Particle::Update( void )
 void Particle::Draw( void )
 {  
 	//  カメラの情報取得
-	Camera* pCamera = Game::GetCamera( SceneManager::GetLoop( ) );
+	Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+
+	//  シェーダー情報の取得
+	Shader3DNoLight* shader3DNoLight = ( Shader3DNoLight* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_NO_LIGHT );
 
 	if( pCamera != NULL )
 	{
@@ -116,12 +120,6 @@ void Particle::Draw( void )
 			//  αブレンド設定( 加算処理 )	
 			pDevice->SetRenderState( D3DRS_DESTBLEND , D3DBLEND_ONE );						
 
-			//  ライトクラスの取得
-			Light* pLight = SceneManager::GetLight( );
-
-			//  ライトを消す
-			pLight->LightOff( );
-
 			//  αテストの有効
 			pDevice->SetRenderState( D3DRS_ALPHATESTENABLE , TRUE );
 
@@ -136,9 +134,6 @@ void Particle::Draw( void )
 
 			//  3Dポリゴンの描画
 			Scene3D::Draw( );
-
-			//  ライトを点ける
-			pLight->LightOn( );
 
 			//  Zバッファの書き込み設定
 			pDevice->SetRenderState( D3DRS_ZWRITEENABLE , TRUE );

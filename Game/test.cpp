@@ -22,6 +22,8 @@
 #include "meshField.h"
 #include "objectFBX.h"
 #include "sceneFBX.h"
+#include "unityFBX.h"
+#include "light.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -59,17 +61,21 @@ Test::~Test( )
 //--------------------------------------------------------------------------------------
 void Test::Init( void )
 {
-	//  クラスポインタの初期化
-	m_pCamera = NULL;
+	Camera* camera = SceneManager::GetCamera( 0 );
 
 	//  カメラクラスポインタが空の場合
-	if( m_pCamera == NULL )
+	if( camera != nullptr )
 	{
-		//  カメラクラスの生成
-		m_pCamera = new Camera;
-		m_pCamera->Init( D3DXVECTOR3( 0.0f , 10.0f , -50.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-						 D3DX_PI / 3.0f , 1.0f , 10000.0f );
-		m_pCamera->ChangeMode( );
+		//  カメラクラスの初期化
+		camera->Init( D3DXVECTOR3( 0.0f , 30.0f , -250.0f ) , D3DXVECTOR3( 0.0f , 200.0f , 0.0f ) ,
+					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
+	}
+
+	Light* pLight = SceneManager::GetLight( );
+
+	if( pLight != NULL )
+	{
+		pLight->SetDiffuseColor( D3DXCOLOR( 1.0f , 0.3f , 0.3f , 1.0f ) );
 	}
 
 	//  メッシュドームの生成
@@ -84,10 +90,8 @@ void Test::Init( void )
 					   D3DXVECTOR2( 0.0f , 0.0f ) );
 
 	//  FBXの生成
-	//ObjectFBX* fbx = new ObjectFBX;
-	//fbx->Init( );
-	SceneFBX* fbx2 = new SceneFBX;
-	fbx2->Init( );
+	ObjectFBX::Create( D3DXVECTOR3( 0.0f , 0.0f , 100.0f ) , 0.05f );
+	UnityFBX::Create( D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) , 0.05f );
 
 	for( int i = 0; i < ATMOSPHERE_NUM; i++ )
 	{
@@ -227,15 +231,6 @@ void Test::Uninit( void )
 {
 	//  オブジェクトクラスの全解放
 	Scene::ReleaseAll( );
-
-	//  カメラクラスポインタが空ではない場合
-	if( m_pCamera != NULL )
-	{
-		//  カメラクラスの破棄
-		m_pCamera->Uninit( );
-		delete m_pCamera;
-		m_pCamera = NULL;
-	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -244,20 +239,13 @@ void Test::Uninit( void )
 void Test::Update( void )
 {
 	// キーボード情報の取得
-	Keyboard*			pKeyboard = SceneManager::GetKeyboard( );
+	Keyboard* pKeyboard = SceneManager::GetKeyboard( );
 
 	//  Xboxコントローラー情報の取得
 	XboxController*	pXInput = SceneManager::GetXInput( );
 
 	//  PS4コントローラー情報の取得
-	PS4Controller*		pPS4Input = SceneManager::GetPS4Input( );
-
-	//  カメラクラスポインタが空ではない場合
-	if( m_pCamera != NULL )
-	{
-		m_pCamera->Update( );
-		m_pCamera->SetCamera( );
-	}
+	PS4Controller* pPS4Input = SceneManager::GetPS4Input( );
 
 	if( Fade::GetFade( ) == Fade::FADE_NONE )
 	{
@@ -265,8 +253,16 @@ void Test::Update( void )
 			 pKeyboard->GetKeyboardTrigger( DIK_RETURN ) || pKeyboard->GetKeyboardTrigger( DIK_SPACE ) )
 		{
 			//  フェードの設定
-			Fade::SetFade( Fade::FADE_OUT , Mode::MODE_STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
+			Fade::SetFade( Fade::FADE_OUT , Mode::MODE::STAGE_SELECT , D3DXCOLOR( 0.0f , 0.0f , 0.0f , 0.0f ) , 0.02f );
 		}
+	}
+
+	Camera* camera = SceneManager::GetCamera( 0 );
+
+	//  カメラクラスの更新
+	if( camera != nullptr )
+	{
+		camera->Update( );
 	}
 }
 

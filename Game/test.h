@@ -36,7 +36,6 @@ public:
 	void			Draw( void );						//  •`‰æ
 
 private:
-	Camera*			m_pCamera;
 };
 
 #endif

@@ -12,6 +12,8 @@
 #include "renderer.h"
 #include "texture.h"
 #include "light.h"
+#include "shaderManager.h"
+#include "camera.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -95,8 +97,6 @@ void MeshSphere::Draw( void )
 	//  テクスチャ情報の取得
 	Texture* pTexture = SceneManager::GetTexture( );
 
-	D3DMATERIAL9 material;
-
 	//  メインからデバイス情報を取得
 	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
@@ -107,68 +107,65 @@ void MeshSphere::Draw( void )
 	//  テクスチャの設定
 	SetTexture( );
 
-	//  ワイヤーフレーム描画に変更
-	pDevice->SetRenderState( D3DRS_FILLMODE , D3DFILL_WIREFRAME );
+	//  シェーダー情報の取得
+	Shader3DNoLight* shader3DNoLight = ( Shader3DNoLight* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_NO_LIGHT );
 
-	//  行列を単位行列に変換
-	D3DXMatrixIdentity( &mtxWorld );
+	if( shader3DNoLight != nullptr )
+	{
+		//  ワイヤーフレーム描画に変更
+		pDevice->SetRenderState( D3DRS_FILLMODE , D3DFILL_WIREFRAME );
 
-	//  回転行列の作成
-	D3DXMatrixRotationYawPitchRoll( &mtxRot , m_rot.y , m_rot.x , m_rot.z );
+		//  行列を単位行列に変換
+		D3DXMatrixIdentity( &mtxWorld );
 
-	//  回転行列の掛け算
-	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+		//  回転行列の作成
+		D3DXMatrixRotationYawPitchRoll( &mtxRot , m_rot.y , m_rot.x , m_rot.z );
 
-	//  平行移動行列の作成
-	D3DXMatrixTranslation( &mtxTrans , m_position.x ,m_position.y , m_position.z );
+		//  回転行列の掛け算
+		D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
 
-	//  平行移動行列の掛け算
-	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+		//  平行移動行列の作成
+		D3DXMatrixTranslation( &mtxTrans , m_position.x ,m_position.y , m_position.z );
 
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
+		//  平行移動行列の掛け算
+		D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
 
-	//  ライトを消す
-	Light* pLight = SceneManager::GetLight( );
-	pLight->LightOff( );
+		//  GPUとVRAMの接続
+		pDevice->SetStreamSource( 0 ,										//  パイプライン番号
+								  m_pVtxBuff ,								//  頂点バッファのアドレス
+						  		  0 ,										//  オフセット( byte )
+								  sizeof( VERTEX_3D ) );					//  一個分の頂点データのサイズ( ストライド )
 
-	//  材質クラスの初期化
-	ZeroMemory( &material , sizeof( D3DMATERIAL9 ) );
+		//  インデックスバッファの設定
+		pDevice->SetIndices( m_pIndexBuff );
 
-	material.Diffuse = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-	material.Ambient = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+		//  テクスチャの設定
+		pDevice->SetTexture( 0 , pTexture->GetTextureImage( MESH_SPHERE_TEXTURENAME ) );
 
-	//  材質の設定
-	pDevice->SetMaterial( &material );
+		Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+		D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+		D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
 
-	//  GPUとVRAMの接続
-	pDevice->SetStreamSource( 0 ,										//  パイプライン番号
-							  m_pVtxBuff ,								//  頂点バッファのアドレス
-						  	  0 ,										//  オフセット( byte )
-							  sizeof( VERTEX_3D ) );					//  一個分の頂点データのサイズ( ストライド )
+		//  シェーダーに必要な情報の設定
+		shader3DNoLight->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix );
 
-	//  インデックスバッファの設定
-	pDevice->SetIndices( m_pIndexBuff );
+		//  シェーダー3Dの描画開始
+		shader3DNoLight->DrawBegin( );
 
-	//  頂点フォーマットの設定
-	pDevice->SetFVF( FVF_VERTEX_3D );
+		//  プリミティブの描画
+		pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+									   0 ,									//  最初の頂点インデックス番号のオフセット
+									   0 ,									//  最小の頂点インデックス番号のオフセット
+									   m_nNumVertex ,						//  頂点数														
+									   0 ,									//  スタートインデックス
+									   m_nNumPolygon );						//  プリミティブ数	
 
-	//  テクスチャの設定
-	pDevice->SetTexture( 0 , pTexture->GetTextureImage( MESH_SPHERE_TEXTURENAME ) ); 
+		//  シェーダー3Dの描画終了
+		ShaderManager::DrawEnd( );
 
-	//  プリミティブの描画
-	pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
-								   0 ,									//  最初の頂点インデックス番号のオフセット
-								   0 ,									//  最小の頂点インデックス番号のオフセット
-								   m_nNumVertex ,						//  頂点数														
-								   0 ,									//  スタートインデックス
-								   m_nNumPolygon );						//  プリミティブ数	
-
-	//  ライトを点ける
-	pLight->LightOn( );
-
-	//  通常描画に変更
-	pDevice->SetRenderState( D3DRS_FILLMODE , D3DFILL_SOLID );
+		//  通常描画に変更
+		pDevice->SetRenderState( D3DRS_FILLMODE , D3DFILL_SOLID );
+	}
 }
 
 //--------------------------------------------------------------------------------------
@@ -282,7 +279,7 @@ void MeshSphere::MakeVertex( void )
 			pVtx[ 0 ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 
 			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * ( 0.5f / ( float )m_nDivideSide ) , ( float )nCntVertical * ( 1.0f / ( float )m_nDivideVertical ) );
+			pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * ( 0.5f / ( float )m_nDivideSide ) , ( float )nCntVertical * ( 1.0f / ( float )m_nDivideVertical ) );
 
 			//  アドレスを進める
 			pVtx++;
@@ -341,7 +338,7 @@ void MeshSphere::SetTexture( void )
 			for( int nCntSide = 0; nCntSide < m_nDivideSide + 1; nCntSide++ )
 			{
 				//  UV座標の指定
-				pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * ( 2.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
+				pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * ( 2.0f / ( float )m_nDivideSide ) + m_scroll.x , ( float )nCntVertical * ( 1.0f / m_nDivideVertical ) + m_scroll.y );
 
 				//  アドレスを進める
 				pVtx++;

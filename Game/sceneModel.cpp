@@ -16,6 +16,9 @@
 #include "camera.h"
 #include "keyboard.h"
 #include "sceneBG.h"
+#include "shaderManager.h"
+#include "light.h"
+#include "depthShadow.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -53,6 +56,8 @@ SceneModel::SceneModel( )
 	D3DXQuaternionIdentity( &m_quaternion );
 
 	m_type = TYPE_TREE;
+	
+	m_drawDepth = true;
 }
 
 //--------------------------------------------------------------------------------------
@@ -88,13 +93,13 @@ HRESULT SceneModel::Init( void )
 	char			aTextureFileName[ 128 ] = { };
 	int				nIndex = 0;
 
-	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
-
 	//  デバイス情報の取得
-	pDevice = SceneManager::GetRenderer( )->GetDevice( );
+	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
 	//  テクスチャクラスの取得
 	Texture* pTexture = SceneManager::GetTexture( );
+
+	LPD3DXMESH oldMesh = nullptr;
 
 	if( m_type == TYPE_TREE )
 	{
@@ -106,7 +111,7 @@ HRESULT SceneModel::Init( void )
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
@@ -116,14 +121,14 @@ HRESULT SceneModel::Init( void )
 	else if( m_type == TYPE_CASTLE )
 	{
 		//  xファイルの読み込み
-		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME2 ,				//  ファイル名
+		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME2 ,			//  ファイル名
 		 							   D3DXMESH_MANAGED ,			//  オプション
 									   pDevice ,					//  デバイス
 									   NULL ,						//  
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
@@ -133,14 +138,14 @@ HRESULT SceneModel::Init( void )
 	else if( m_type == TYPE_FIELD000 )
 	{
 		//  xファイルの読み込み
-		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME3 ,				//  ファイル名
+		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME3 ,			//  ファイル名
 		 							   D3DXMESH_MANAGED ,			//  オプション
 									   pDevice ,					//  デバイス
 									   NULL ,						//  
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
@@ -150,14 +155,14 @@ HRESULT SceneModel::Init( void )
 	else if( m_type == TYPE_HIT_FIELD000 )
 	{
 		//  xファイルの読み込み
-		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME4 ,				//  ファイル名
+		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME4 ,			//  ファイル名
 		 							   D3DXMESH_MANAGED ,			//  オプション
 									   pDevice ,					//  デバイス
 									   NULL ,						//  
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
@@ -167,14 +172,14 @@ HRESULT SceneModel::Init( void )
 	else if( m_type == TYPE_FIELD001 )
 	{
 		//  xファイルの読み込み
-		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME5 ,				//  ファイル名
+		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME5 ,			//  ファイル名
 		 							   D3DXMESH_MANAGED ,			//  オプション
 									   pDevice ,					//  デバイス
 									   NULL ,						//  
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
@@ -184,19 +189,40 @@ HRESULT SceneModel::Init( void )
 	else if( m_type == TYPE_HIT_FIELD001 )
 	{
 		//  xファイルの読み込み
-		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME6 ,				//  ファイル名
+		if( FAILED( D3DXLoadMeshFromX( MODEL_FILENAME6 ,			//  ファイル名
 		 							   D3DXMESH_MANAGED ,			//  オプション
 									   pDevice ,					//  デバイス
 									   NULL ,						//  
 									   &m_pBuffMatModel ,			//  マテリアル情報
 									   NULL ,						//  
 									   &m_nNumMatModel ,			//  マテリアル数
-									   &m_pMeshModel ) ) )			//  メッシュ情報
+									   &oldMesh ) ) )				//  メッシュ情報
 		{
 			MessageBox( NULL , "xファイルを上手く取得出来ませんでした。" , "エラーメッセージ" , MB_OK );
 
 			return E_FAIL;
 		}
+	}
+
+	D3DVERTEXELEMENT9 elements[ ] = 
+	{  
+		//  引数( 1 : パイプライン番号 , 2 : オフセット , 3 : データサイズ( 型 ) , 4 : , 5 : 使用用途 , 6 : , ( 5～6はセマンティクス ) )
+		//  ( 自分で考えたデータを送る場合はTEXCOORDで送るように )
+		{ 0 , 0 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_POSITION , 0 } ,
+		{ 0 , sizeof( float ) * 3 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_NORMAL, 0 } ,
+		{ 0 , sizeof( float ) * 6 , D3DDECLTYPE_FLOAT2 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_TEXCOORD , 0 } ,		
+		D3DDECL_END( )  //  終了
+	};
+
+	//  メッシュをシェーダーに適用
+	HRESULT hr = oldMesh->CloneMesh( D3DXMESH_MANAGED | D3DXMESH_WRITEONLY , elements , pDevice , &m_pMeshModel );
+
+	//  エラーチェック
+	if( FAILED( hr ) )
+	{
+		MessageBox( NULL , "Xファイルの変換が上手くいきませんでした" , "CloneMeshでのエラー" , MB_OK );
+
+		return E_FAIL;
 	}
 
 	//  マテリアル情報の先頭アドレスを取得
@@ -368,7 +394,6 @@ void SceneModel::Update( void )
 //--------------------------------------------------------------------------------------
 void SceneModel::Draw( void )
 {
-	D3DMATERIAL9	matDef;							//  マテリアルの初期情報
 	D3DXMATERIAL*	pMat = NULL;					//  マテリアル
 
 	D3DXMATRIX mtxWorld;							//  ワールド行列
@@ -381,14 +406,16 @@ void SceneModel::Draw( void )
 
 	LPDIRECT3DDEVICE9 pDevice;
 
+	//  シェーダー情報の取得
+	Shader3D* shader3D = ( Shader3D* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D );
+	Shader3DNoTexture* shader3DNoTexture = ( Shader3DNoTexture* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_NO_TEXTURE );
+	Shader3DRimLightTexture* shader3DRimLightTexture = ( Shader3DRimLightTexture* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_RIM_LIGHT_TEXTURE );
+
 	//  デバイス情報の取得
 	pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
 	//  テクスチャクラスの取得
 	Texture* pTexture = SceneManager::GetTexture( );
-
-	//  ライトを消す
-	pDevice->SetRenderState( D3DRS_LIGHTING , true );
 
 	//  行列を単位行列に変換
 	D3DXMatrixIdentity( &mtxWorld );
@@ -417,43 +444,172 @@ void SceneModel::Draw( void )
 	//  平行移動行列の掛け算
 	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
 
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
-
-	//  マテリアルの初期情報の取得
-	pDevice->GetMaterial( &matDef );
-
 	//  マテリアル情報の先頭アドレスを取得
 	pMat = ( D3DXMATERIAL* )m_pBuffMatModel->GetBufferPointer( );
+
+	//  ライトの方向ベクトルを取得する
+	D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
+	D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
+
+	//  ローカル単位ベクトルに変更
+	D3DXVECTOR3 lightDirectLocal;
+
+	D3DXMATRIX worldInverseMatrix;
+	D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
+	D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
+	D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
+
+	Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+	D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+	D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
+
+	//  シェーダー情報の取得
+	Shader3DDepthShadow* shader3DDepthShadow = ( Shader3DDepthShadow* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_DEPTH_SHADOW );
+
+	D3DXMATRIX lightViewProjectionMatrix = SceneManager::GetLight( )->GetViewMatrix( ) * SceneManager::GetLight( )->GetProjectionMatrix( );
+	D3DXVECTOR4	tmpOffset;
+	tmpOffset.x = 0.5f / ( float )( SCREEN_WIDTH );
+	tmpOffset.y = 0.5f / ( float )( SCREEN_HEIGHT );
+	tmpOffset.z = 0.0f;
+	tmpOffset.w = 0.0f;
+
+	//  シェーダーに必要な情報の設定
+	//shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
+	shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
+										lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
+
+	UINT textureSampler = shader3DDepthShadow->GetSamplerTextureIndex( );
+	UINT shadowSampler = shader3DDepthShadow->GetSamplerShadowIndex( );
 
 	//  マテリアルの数分のループ
 	for( int nCntMaterial = 0; nCntMaterial < ( int )m_nNumMatModel; nCntMaterial++ )
 	{
-		//  拡散光の設定
-		pMat[ nCntMaterial ].MatD3D.Diffuse = m_color;
-
-		//  環境光の設定
-		pMat[ nCntMaterial ].MatD3D.Ambient = D3DXCOLOR( 0.6f , 0.6f , 0.6f , 1.0f );
-
-		//  マテリアルの設定
-		pDevice->SetMaterial( &pMat[ nCntMaterial ].MatD3D );
+		D3DXCOLOR color = D3DXCOLOR( pMat[ nCntMaterial ].MatD3D.Diffuse.r ,
+									 pMat[ nCntMaterial ].MatD3D.Diffuse.g ,
+									 pMat[ nCntMaterial ].MatD3D.Diffuse.b ,
+									 pMat[ nCntMaterial ].MatD3D.Diffuse.a );
 
 		if( pMat[ nCntMaterial ].pTextureFilename == NULL )
 		{
 			//  テクスチャの設定
-			pDevice->SetTexture( 0 , NULL );
+			pDevice->SetTexture( 0 , nullptr );
+
+			//  シェーダーに必要な情報の設定
+			shader3DNoTexture->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , color );
+
+			//  シェーダー3Dの描画開始
+			shader3DNoTexture->DrawBegin( );
 		}
 		else
 		{
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャ拡大時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャ縮小時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
+
+			//  シャドウマップテクスチャの設定
+			pDevice->SetTexture( shadowSampler , DepthShadow::GetRendereTargetTexture( ) );
+			
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャ拡大時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャ縮小時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
+			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
+
 			//  テクスチャの設定
-			pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_aTextureName[ nCntMaterial ] ) );
+			pDevice->SetTexture( textureSampler , pTexture->GetTextureImage( m_aTextureName[ nCntMaterial ] ) );
+
+			//  シェーダーに必要な情報の設定
+			shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
+												lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
+			//shader3D->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix , lightDirectLocal , lightDiffuseColor );
+
+			////  シェーダー3Dの描画開始
+			//shader3D->DrawBegin( );
+			shader3DDepthShadow->DrawBegin( );
 		}
 
 		//  メッシュの描画
 		m_pMeshModel->DrawSubset( nCntMaterial );
 
-		//  材質の設定
-		pDevice->SetMaterial( &matDef );
+		//  シェーダー描画の終了
+		ShaderManager::DrawEnd( );
+	}
+}
+
+//--------------------------------------------------------------------------------------
+//  xモデルのデプス値の書き込み処理
+//--------------------------------------------------------------------------------------
+void SceneModel::DrawDepth( void )
+{
+	D3DXMATERIAL*	pMat = NULL;					//  マテリアル
+
+	D3DXMATRIX mtxWorld;							//  ワールド行列
+	D3DXMATRIX mtxTrans;							//  平行移動行列
+	D3DXMATRIX mtxScale;							//  スケール行列
+	D3DXMATRIX mtxRot;								//  回転行列
+
+	D3DXMATRIX mtxView;								//  ビュー座標変換行列
+	D3DXMATRIX mtxProj;								//  プロジェクション座標行列
+
+	LPDIRECT3DDEVICE9 pDevice;
+
+	//  デバイス情報の取得
+	pDevice = SceneManager::GetRenderer( )->GetDevice( );
+
+	//  行列を単位行列に変換
+	D3DXMatrixIdentity( &mtxWorld );
+
+	//  拡大行列の作成
+	D3DXMatrixScaling( &mtxScale , m_scale.x , m_scale.y , m_scale.z );
+
+	//  拡大行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+	if( m_type == TYPE_TREE )
+	{
+		D3DXMatrixRotationQuaternion( &mtxRot , &m_quaternion );
+	}
+	else
+	{
+		D3DXMatrixRotationYawPitchRoll( &mtxRot , m_rot.y , m_rot.x , m_rot.z );
+	}
+
+	//  回転行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+	//  平行移動行列の作成
+	D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y + 1.0f , m_position.z );
+
+	//  平行移動行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+	//  シェーダー情報の取得
+	Shader3DShadowMap* shader3DShadowMap = ( Shader3DShadowMap* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_SHADOW_MAP );
+
+	//  カメラクラスの取得
+	Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+
+	D3DXMATRIX viewMatrix = SceneManager::GetLight( )->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	//  マテリアルの数分のループ
+	for( int nCntMaterial = 0; nCntMaterial < ( int )m_nNumMatModel; nCntMaterial++ )
+	{
+		//  テクスチャの設定
+		pDevice->SetTexture( 0 , nullptr );
+
+		//  シェーダーに必要な情報の設定
+		shader3DShadowMap->SetShaderInfo( mtxWorld , viewMatrix * projectionMatrix );
+
+		//  シェーダー描画開始
+		shader3DShadowMap->DrawBegin( );
+
+		//  メッシュの描画
+		m_pMeshModel->DrawSubset( nCntMaterial );
+
+		//  描画終了
+		ShaderManager::DrawEnd( );
 	}
 }
 

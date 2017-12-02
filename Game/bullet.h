@@ -53,7 +53,7 @@ public:
 									float fSpeed ,
 									int nLife = 180 );			//  生成
 
-	Utility::HIT_SPHERE	GetHitSphere( void );				//  球体の当たり判定の取得
+	Utility::HIT_SPHERE		GetHitSphere( void );				//  球体の当たり判定の取得
 	TYPE					GetType( void );					//  種類の取得
 	OWNER					GetOwner( void );					//  所有者の確認
 	void					Hit( D3DXVECTOR3 vecDirect );		//  当たった時の処理
@@ -61,12 +61,12 @@ public:
 private:
 	TYPE					m_type;								//  種類
 	OWNER					m_owner;							//  所有者
-	Shadow*				m_pShadow;							//  影のクラスのポインタ
+	Shadow*					m_pShadow;							//  影のクラスのポインタ
 	D3DXVECTOR3				m_vecDirect;						//  進行方向
 	float					m_fSpeed;							//  速度
 	bool					m_bHoming;							//  追尾するかどうか
 	int						m_nLife;							//  体力
-	Utility::HIT_SPHERE	m_hitSphere;						//  当たり判定
+	Utility::HIT_SPHERE		m_hitSphere;						//  当たり判定
 };
 
 #endif

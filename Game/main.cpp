@@ -28,6 +28,8 @@
 //--------------------------------------------------------------------------------------
 LRESULT CALLBACK WndProc( HWND hWnd , UINT uMsg , WPARAM wParam , LPARAM lParam );
 
+//extern LRESULT ImGui_ImplDX9_WndProcHandler( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam );
+
 //--------------------------------------------------------------------------------------
 //  グローバル変数の宣言
 //--------------------------------------------------------------------------------------
@@ -263,13 +265,6 @@ LRESULT CALLBACK WndProc( HWND hWnd , UINT uMsg , WPARAM wParam , LPARAM lParam 
 					//  ウィンドウの削除
 					DestroyWindow( hWnd );
 				}
-			}
-
-			//  ESCキーが押された場合
-			if( wParam == VK_F3 )
-			{
-				//  ウィンドウの削除
-				DestroyWindow( hWnd );
 			}
 
 			break;

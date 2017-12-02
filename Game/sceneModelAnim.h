@@ -41,14 +41,15 @@ public:
 
 	SceneModelAnim( int nPriority = 3 );										//  デフォルトコンストラクタ
 	SceneModelAnim( D3DXVECTOR3 position ,										//  コンストラクタ
-					 D3DXVECTOR3 rot ,
-					 D3DXVECTOR3 scale );				
+					D3DXVECTOR3 rot ,
+					D3DXVECTOR3 scale );				
 	~SceneModelAnim( );															//  デストラクタ
 
 	HRESULT					Init( void );										//  初期化
 	void					Uninit( void );										//  終了
 	void					Update( void );										//  更新
 	void					Draw( void );										//  描画
+	void					DrawDepth( void );									//  デプス値の書き込み
 
 	static SceneModelAnim*	Create( TYPE type ,									//  生成
 									D3DXVECTOR3 position ,							
@@ -57,19 +58,18 @@ public:
 
 	D3DXVECTOR3				GetModelPartsPos( int nIndex );						// モデルパーツ座標の取得
 
-	Utility::HIT_SPHERE		GetAttackHitSphere( void );							// 
 	Utility::HIT_SPHERE		GetHitSphere( void );								// 
 
-protected:
 	void					SetAnimation( StateAnimator::MOTION motion );		//  アニメーションの設定
 
 	void					SetScale( D3DXVECTOR3 scale );						//  大きさの設定
 	D3DXVECTOR3				GetScale( void);									//  大きさの取得
 
-	void					SetPositionAt( D3DXVECTOR3 posAt );						//  注視点の設定
+	void					SetPositionAt( D3DXVECTOR3 posAt );					//  注視点の設定
 
 	bool					GetAnimationFinish( void );							//  アニメーションが終わっているかの確認
 
+protected:
 	D3DXVECTOR3				m_posAt;											//  注視点の座標
 
 	D3DXVECTOR3				m_scale;											//  大きさの倍率
@@ -84,7 +84,6 @@ protected:
 	float					m_fFrame;											//  フレームカウント
 	bool					m_bAnimationFinish;
 
-	Utility::HIT_SPHERE		m_attackHitSphere;									//  当たり判定
 	Utility::HIT_SPHERE		m_hitSphere;										//  当たり判定
 
 private:

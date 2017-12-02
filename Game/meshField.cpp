@@ -14,6 +14,9 @@
 #include "light.h"
 #include "game.h"
 #include "keyboard.h"
+#include "shaderManager.h"
+#include "camera.h"
+#include "depthShadow.h"
 #include <stdio.h>
 
 //--------------------------------------------------------------------------------------
@@ -204,8 +207,6 @@ void MeshField::Draw( void )
 	//  テクスチャ情報の取得
 	Texture* pTexture = SceneManager::GetTexture( );
 
-	D3DMATERIAL9 material;
-
 	//  メインからデバイス情報を取得
 	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
@@ -225,22 +226,6 @@ void MeshField::Draw( void )
 	//  回転行列の掛け算
 	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
 
-	//  ワールド座標変換
-	pDevice->SetTransform( D3DTS_WORLD , &mtxWorld );
-
-	//  ライトを消す
-	Light* pLight = SceneManager::GetLight( );
-	pLight->LightOn( );
-
-	//  材質クラスの初期化
-	ZeroMemory( &material , sizeof( D3DMATERIAL9 ) );
-
-	material.Diffuse = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-	material.Ambient = D3DXCOLOR( 0.6f , 0.6f , 0.6f , 1.0f );
-
-	//  材質の設定
-	pDevice->SetMaterial( &material );
-
 	//  GPUとVRAMの接続
 	pDevice->SetStreamSource( 0 ,													//  パイプライン番号
 							  m_pVtxBuff ,											//  頂点バッファのアドレス
@@ -250,26 +235,74 @@ void MeshField::Draw( void )
 	//  インデックスバッファの設定
 	pDevice->SetIndices( m_pIndexBuff );
 
-	//  頂点フォーマットの設定
-	pDevice->SetFVF( FVF_VERTEX_3D );
+	//  シェーダー情報の取得
+	Shader3D* shader3D = ( Shader3D* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D );
+
+	//  ライトの方向ベクトルを取得する
+	D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
+	D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
+
+	//  ローカル単位ベクトルに変更
+	D3DXVECTOR3 lightDirectLocal;
+
+	D3DXMATRIX worldInverseMatrix;
+	D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
+	D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
+	D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
+
+	Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+	D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+	D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
+
+	//  シェーダー情報の取得
+	Shader3DDepthShadow* shader3DDepthShadow = ( Shader3DDepthShadow* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_DEPTH_SHADOW );
+
+	D3DXMATRIX lightViewProjectionMatrix = SceneManager::GetLight( )->GetViewMatrix( ) * SceneManager::GetLight( )->GetProjectionMatrix( );
+	D3DXVECTOR4	tmpOffset;
+	tmpOffset.x = 0.5f / ( float )( SCREEN_WIDTH );
+	tmpOffset.y = 0.5f / ( float )( SCREEN_HEIGHT );
+	tmpOffset.z = 0.0f;
+	tmpOffset.w = 0.0f;
+
+	//  シェーダーに必要な情報の設定
+	//shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
+	shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
+										lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
+
+	UINT textureSampler = shader3DDepthShadow->GetSamplerTextureIndex( );
+	UINT shadowSampler = shader3DDepthShadow->GetSamplerShadowIndex( );
+
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
 
 	switch( m_type )
 	{
 		case TYPE_FIELD:
 		{
 			//  テクスチャの設定
-			pDevice->SetTexture( 0 , pTexture->GetTextureImage( MESH_FIELD_TEXTURENAME0 ) ); 
+			pDevice->SetTexture( textureSampler , pTexture->GetTextureImage( MESH_FIELD_TEXTURENAME0 ) );
 
 			break;
 		}
 		case TYPE_SEA:
 		{
 			//  テクスチャの設定
-			pDevice->SetTexture( 0 , pTexture->GetTextureImage( MESH_FIELD_TEXTURENAME1 ) ); 
+			pDevice->SetTexture( textureSampler , pTexture->GetTextureImage( MESH_FIELD_TEXTURENAME1 ) );
 
 			break;
 		}
 	}
+
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
+
+	//  シャドウマップテクスチャの設定
+	pDevice->SetTexture( shadowSampler , DepthShadow::GetRendereTargetTexture( ) );
+
+	//  シェーダー3Dの描画開始
+	//shader3D->DrawBegin( );
+	shader3DDepthShadow->DrawBegin( );
 
 	//  プリミティブの描画
 	pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,									//  プリミティブの種類
@@ -283,8 +316,79 @@ void MeshField::Draw( void )
 								   m_nDivideVertical +						
 								   4 * ( m_nDivideVertical - 1 ) );	
 
-	//  ライトを点ける
-	pLight->LightOff( );
+	//  シェーダー3Dの描画終了
+	ShaderManager::DrawEnd( );
+
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
+	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
+}
+
+//--------------------------------------------------------------------------------------
+//  メッシュフィールドのデプス値書き込み処理
+//--------------------------------------------------------------------------------------
+void MeshField::DrawDepth( void )
+{
+	////  メインからデバイス情報を取得
+	//LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
+
+	//D3DXMATRIX mtxWorld;							//  ワールド行列
+	//D3DXMATRIX mtxTrans;							//  移動行列
+	//D3DXMATRIX mtxRot;								//  回転行列
+
+	////  行列を単位行列に変換
+	//D3DXMatrixIdentity( &mtxWorld );
+
+	////  回転行列の作成
+	//D3DXMatrixRotationYawPitchRoll( &mtxRot ,
+	//								m_rot.y ,
+	//								m_rot.x ,
+	//								m_rot.z );
+
+	////  回転行列の掛け算
+	//D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+	////  GPUとVRAMの接続
+	//pDevice->SetStreamSource( 0 ,													//  パイプライン番号
+	//						  m_pVtxBuff ,											//  頂点バッファのアドレス
+	//					  	  0 ,													//  オフセット( byte )
+	//						  sizeof( VERTEX_3D ) );								//  一個分の頂点データのサイズ( ストライド )
+
+	////  シェーダー情報の取得
+	//Shader3DShadowMap* shader3DShadowMap = ( Shader3DShadowMap* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_SHADOW_MAP );
+
+	////  カメラクラスの取得
+	//Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+
+	//D3DXMATRIX viewMatrix = SceneManager::GetLight( )->GetViewMatrix( );
+	//D3DXMATRIX projectionMatrix = SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	//shader3DShadowMap->SetShaderInfo( mtxWorld , viewMatrix * projectionMatrix );
+
+	////  インデックスバッファの設定
+	//pDevice->SetIndices( m_pIndexBuff );
+
+	////  テクスチャの設定
+	//pDevice->SetTexture( 0 , nullptr );
+
+	////  シェーダー描画開始
+	//shader3DShadowMap->DrawBegin( );
+
+	////  プリミティブの描画
+	//pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,							//  プリミティブの種類
+	//							   0 ,												//  最初の頂点インデックス番号のオフセット
+	//							   0 ,												//  最小の頂点インデックス番号のオフセット
+	//							   ( NUM_VERTEX2 * ( ( m_nDivideSide + 1 )			//  頂点数
+	//							   * m_nDivideVertical						
+	//							   + m_nDivideVertical - 1 ) ) ,												
+	//							   0 ,												//  スタートインデックス
+	//							   NUM_POLYGON * m_nDivideSide *					//  プリミティブ数
+	//							   m_nDivideVertical +						
+	//							   4 * ( m_nDivideVertical - 1 ) );
+
+	////  描画終了
+	//ShaderManager::DrawEnd( );
 }
 
 //--------------------------------------------------------------------------------------
@@ -348,7 +452,7 @@ void MeshField::MakeVertex( void )
 	if( FAILED( pDevice->CreateVertexBuffer( sizeof( VERTEX_3D ) * ( m_nDivideSide + 1 ) *
 																   ( m_nDivideVertical + 1 ) ,		//  作成したい頂点バッファのサイズ
 											 D3DUSAGE_WRITEONLY ,									//  使用方法
-											 FVF_VERTEX_3D ,										//  
+											 0 ,													//  
 											 D3DPOOL_MANAGED ,										//  メモリ管理方法( MANAGED → お任せ )
 											 &m_pVtxBuff ,											//  バッファ
 											 NULL ) ) )
@@ -395,7 +499,7 @@ void MeshField::MakeVertex( void )
 			pVtx[ 0 ].color = m_color;
 
 			//  UV座標の指定
-			pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide  , ( float )nCntVertical );
+			pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide  , ( float )nCntVertical );
 
 			//  法線ベクトルの設定
 			pVtx[ 0 ].normal = D3DXVECTOR3( 0.0f , 1.0f , 0.0f );
@@ -506,7 +610,7 @@ void MeshField::SetVertex( void )
 				pVtx[ 0 ].position = m_fieldPos[ nCntVertical ][ nCntSide ];
 
 				//  UV座標の指定
-				pVtx[ 0 ].tex = D3DXVECTOR2( ( float )nCntSide * 5.0f + m_scroll.x  , ( float )nCntVertical * 5.0f + m_scroll.y );
+				pVtx[ 0 ].texcoord = D3DXVECTOR2( ( float )nCntSide * 5.0f + m_scroll.x  , ( float )nCntVertical * 5.0f + m_scroll.y );
 
 				//  頂点色の設定( 0 ～ 255 の整数値 )
 				pVtx[ 0 ].color = m_color;

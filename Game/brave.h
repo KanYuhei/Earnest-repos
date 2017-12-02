@@ -27,8 +27,9 @@ public:
 	void					Uninit( void );						//  終了
 	void					Update( void );						//  更新
 	void					Draw( void );						//  描画
+	void					DrawDepth( void ){ }				//  デプス値の書き込み
 
-	static Brave*			Create( D3DXVECTOR3 position ,			//  生成				
+	static Brave*			Create( D3DXVECTOR3 position ,		//  生成				
 									D3DXVECTOR3 size , 
 									int nBaseBrave , 
 									int nNumDigit );
