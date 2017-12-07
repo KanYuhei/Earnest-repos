@@ -258,23 +258,26 @@ void MeshField::Draw( void )
 	//  シェーダー情報の取得
 	Shader3DDepthShadow* shader3DDepthShadow = ( Shader3DDepthShadow* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_DEPTH_SHADOW );
 
+	//  光源のビュープロジェクション行列の取得
 	D3DXMATRIX lightViewProjectionMatrix = SceneManager::GetLight( )->GetViewMatrix( ) * SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	//  UVオフセット値の計算
 	D3DXVECTOR4	tmpOffset;
-	tmpOffset.x = 0.5f / ( float )( SCREEN_WIDTH );
-	tmpOffset.y = 0.5f / ( float )( SCREEN_HEIGHT );
+	tmpOffset.x = 0.5f / DepthShadow::TEXTURE_WIDTH;
+	tmpOffset.y = 0.5f / DepthShadow::TEXTURE_HEIGHT;
 	tmpOffset.z = 0.0f;
 	tmpOffset.w = 0.0f;
+
+	//  バイアス値の取得
+	float bias = DepthShadow::GetBias( );
 
 	//  シェーダーに必要な情報の設定
 	//shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
 	shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
-										lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
+										lightDirectLocal , lightViewProjectionMatrix , tmpOffset , bias );
 
 	UINT textureSampler = shader3DDepthShadow->GetSamplerTextureIndex( );
 	UINT shadowSampler = shader3DDepthShadow->GetSamplerShadowIndex( );
-
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
 
 	switch( m_type )
 	{
@@ -293,9 +296,6 @@ void MeshField::Draw( void )
 			break;
 		}
 	}
-
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
 
 	//  シャドウマップテクスチャの設定
 	pDevice->SetTexture( shadowSampler , DepthShadow::GetRendereTargetTexture( ) );
@@ -318,11 +318,6 @@ void MeshField::Draw( void )
 
 	//  シェーダー3Dの描画終了
 	ShaderManager::DrawEnd( );
-
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-	SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
 }
 
 //--------------------------------------------------------------------------------------
@@ -330,65 +325,65 @@ void MeshField::Draw( void )
 //--------------------------------------------------------------------------------------
 void MeshField::DrawDepth( void )
 {
-	////  メインからデバイス情報を取得
-	//LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
+	//  メインからデバイス情報を取得
+	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
-	//D3DXMATRIX mtxWorld;							//  ワールド行列
-	//D3DXMATRIX mtxTrans;							//  移動行列
-	//D3DXMATRIX mtxRot;								//  回転行列
+	D3DXMATRIX mtxWorld;							//  ワールド行列
+	D3DXMATRIX mtxTrans;							//  移動行列
+	D3DXMATRIX mtxRot;								//  回転行列
 
-	////  行列を単位行列に変換
-	//D3DXMatrixIdentity( &mtxWorld );
+	//  行列を単位行列に変換
+	D3DXMatrixIdentity( &mtxWorld );
 
-	////  回転行列の作成
-	//D3DXMatrixRotationYawPitchRoll( &mtxRot ,
-	//								m_rot.y ,
-	//								m_rot.x ,
-	//								m_rot.z );
+	//  回転行列の作成
+	D3DXMatrixRotationYawPitchRoll( &mtxRot ,
+									m_rot.y ,
+									m_rot.x ,
+									m_rot.z );
 
-	////  回転行列の掛け算
-	//D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+	//  回転行列の掛け算
+	D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
 
-	////  GPUとVRAMの接続
-	//pDevice->SetStreamSource( 0 ,													//  パイプライン番号
-	//						  m_pVtxBuff ,											//  頂点バッファのアドレス
-	//					  	  0 ,													//  オフセット( byte )
-	//						  sizeof( VERTEX_3D ) );								//  一個分の頂点データのサイズ( ストライド )
+	//  GPUとVRAMの接続
+	pDevice->SetStreamSource( 0 ,													//  パイプライン番号
+							  m_pVtxBuff ,											//  頂点バッファのアドレス
+						  	  0 ,													//  オフセット( byte )
+							  sizeof( VERTEX_3D ) );								//  一個分の頂点データのサイズ( ストライド )
 
-	////  シェーダー情報の取得
-	//Shader3DShadowMap* shader3DShadowMap = ( Shader3DShadowMap* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_SHADOW_MAP );
+	//  シェーダー情報の取得
+	Shader3DShadowMap* shader3DShadowMap = ( Shader3DShadowMap* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_SHADOW_MAP );
 
-	////  カメラクラスの取得
-	//Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+	//  カメラクラスの取得
+	Camera* pCamera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
 
-	//D3DXMATRIX viewMatrix = SceneManager::GetLight( )->GetViewMatrix( );
-	//D3DXMATRIX projectionMatrix = SceneManager::GetLight( )->GetProjectionMatrix( );
+	D3DXMATRIX viewMatrix = SceneManager::GetLight( )->GetViewMatrix( );
+	D3DXMATRIX projectionMatrix = SceneManager::GetLight( )->GetProjectionMatrix( );
 
-	//shader3DShadowMap->SetShaderInfo( mtxWorld , viewMatrix * projectionMatrix );
+	shader3DShadowMap->SetShaderInfo( mtxWorld , viewMatrix * projectionMatrix );
 
-	////  インデックスバッファの設定
-	//pDevice->SetIndices( m_pIndexBuff );
+	//  インデックスバッファの設定
+	pDevice->SetIndices( m_pIndexBuff );
 
-	////  テクスチャの設定
-	//pDevice->SetTexture( 0 , nullptr );
+	//  テクスチャの設定
+	pDevice->SetTexture( 0 , nullptr );
 
-	////  シェーダー描画開始
-	//shader3DShadowMap->DrawBegin( );
+	//  シェーダー描画開始
+	shader3DShadowMap->DrawBegin( );
 
-	////  プリミティブの描画
-	//pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,							//  プリミティブの種類
-	//							   0 ,												//  最初の頂点インデックス番号のオフセット
-	//							   0 ,												//  最小の頂点インデックス番号のオフセット
-	//							   ( NUM_VERTEX2 * ( ( m_nDivideSide + 1 )			//  頂点数
-	//							   * m_nDivideVertical						
-	//							   + m_nDivideVertical - 1 ) ) ,												
-	//							   0 ,												//  スタートインデックス
-	//							   NUM_POLYGON * m_nDivideSide *					//  プリミティブ数
-	//							   m_nDivideVertical +						
-	//							   4 * ( m_nDivideVertical - 1 ) );
+	//  プリミティブの描画
+	pDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP ,							//  プリミティブの種類
+								   0 ,												//  最初の頂点インデックス番号のオフセット
+								   0 ,												//  最小の頂点インデックス番号のオフセット
+								   ( NUM_VERTEX2 * ( ( m_nDivideSide + 1 )			//  頂点数
+								   * m_nDivideVertical						
+								   + m_nDivideVertical - 1 ) ) ,												
+								   0 ,												//  スタートインデックス
+								   NUM_POLYGON * m_nDivideSide *					//  プリミティブ数
+								   m_nDivideVertical +						
+								   4 * ( m_nDivideVertical - 1 ) );
 
-	////  描画終了
-	//ShaderManager::DrawEnd( );
+	//  描画終了
+	ShaderManager::DrawEnd( );
 }
 
 //--------------------------------------------------------------------------------------

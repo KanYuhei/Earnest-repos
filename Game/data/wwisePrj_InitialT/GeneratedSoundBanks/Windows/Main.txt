@@ -1,6 +1,11 @@
 Event	ID	Name			Wwise Object Path	Notes
 	737535402	BGM_Title			\Default Work Unit\BGM_Title		1801198963	BGM_Yurumu			\Default Work Unit\BGM_Yurumu		1963088955	BGM_Yurumu2			\Default Work Unit\BGM_Yurumu2		3702967662	BGM_Game			\Default Work Unit\BGM_Game		4239768699	BGM_Result			\Default Work Unit\BGM_Result	
 In Memory Audio	ID	Name	Audio source file		Wwise Object Path	Notes	Data Size
-	138671148	BGM_Title	E:\	1035421180	BGM_Result	E:\
+	138671148	BGM_Title	C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\SFX\BGM_Title_F17FB28C.wem		\Interactive Music Hierarchy\Default Work Unit\Switch_BGM\Playlist_BGM_Title\Segment_BGM_Title\BGM_Title		0
+	1035421180	BGM_Result	C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\SFX\BGM_Result_F17FB28C.wem		\Interactive Music Hierarchy\Default Work Unit\Switch_BGM\Playlist_BGM_Result\Segment_BGM_Result\BGM_Result		63450060
+
 Streamed Audio	ID	Name	Audio source file	Generated audio file	Wwise Object Path	Notes
-	80547042	BGM_Yurumu2	E:\	302305094	BGM_Game	E:\	873045681	BGM_Yurumu	E:\
+	80547042	BGM_Yurumu2	C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\SFX\eternal troding this yurumu!!!_02_24bit_F17FB28C.wem	80547042.wem	\Actor-Mixer Hierarchy\Default Work Unit\BGM_Yurumu2	
+	302305094	BGM_Game	C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\SFX\BGM_Game_F17FB28C.wem	302305094.wem	\Interactive Music Hierarchy\Default Work Unit\Switch_BGM\Playlist_BGM_Game\Segment_BGM_Game\BGM_Game	
+	873045681	BGM_Yurumu	C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\SFX\BGM_Yurumu_F17FB28C.wem	873045681.wem	\Actor-Mixer Hierarchy\Default Work Unit\BGM_Yurumu	
+

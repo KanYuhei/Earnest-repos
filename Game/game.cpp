@@ -91,7 +91,16 @@ void Game::Init( void )
 	//  ステージの生成
 	SetStage( );
 
-	Block::Create( D3DXVECTOR3( -200.0f , 0.0f , -30.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+	Block::Create( D3DXVECTOR3( -200.0f , 0.0f , -100.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+				   D3DXVECTOR3( 0.1f , 0.1f , 0.1f ) ); 
+
+	Block::Create( D3DXVECTOR3( -190.0f , 0.0f , 150.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+				   D3DXVECTOR3( 0.1f , 0.1f , 0.1f ) ); 
+
+	Block::Create( D3DXVECTOR3( 180.0f , 0.0f , 200.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+				   D3DXVECTOR3( 0.1f , 0.1f , 0.1f ) ); 
+
+	Block::Create( D3DXVECTOR3( 150.0f , 0.0f , -300.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
 				   D3DXVECTOR3( 0.1f , 0.1f , 0.1f ) ); 
 
 	//  デバイス情報の取得

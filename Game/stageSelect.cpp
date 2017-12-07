@@ -164,7 +164,7 @@ void StageSelect::Init( void )
 	//  メッシュドームの生成
 	MeshDome::Create( MeshDome::TYPE_SKY ,
 					   D3DXVECTOR3( 0.0f , -1.0f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
-					   D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.00008f , 0.0f ) ,
+					   D3DXVECTOR3( 10000.0f , 0.0f , 10000.0f ) , D3DXVECTOR2( 0.00003f , 0.0f ) ,
 					   32 , 32 );
 
 	//  メッシュドームの生成
@@ -200,7 +200,7 @@ void StageSelect::Init( void )
 	if( camera != nullptr )
 	{
 		//  カメラクラスの初期化
-		camera->Init( D3DXVECTOR3( 0.0f , 3.0f , -20.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
+		camera->Init( D3DXVECTOR3( 0.0f , 3.0f , 20.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
 					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
 	}
 }
@@ -407,7 +407,7 @@ void StageSelect::Update( void )
 					if( m_pPlayer[ 0 ] == NULL )
 					{
 						//  プレイヤーの生成
-						m_pPlayer[ 0 ] = PlayerSelect::Create( D3DXVECTOR3( 0.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , -5.0f ) , 
+						m_pPlayer[ 0 ] = PlayerSelect::Create( D3DXVECTOR3( 0.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 5.0f ) , 
 																D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
 																D3DXVECTOR3( THIEF_SIZE , THIEF_SIZE , THIEF_SIZE ) , 0.0f );
 					}
@@ -480,7 +480,7 @@ void StageSelect::Update( void )
 					if( m_pPlayer[ 0 ] == NULL )
 					{
 						//  プレイヤーの生成
-						m_pPlayer[ 0 ] = PlayerSelect::Create( D3DXVECTOR3( -10.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , -15.0f ) ,
+						m_pPlayer[ 0 ] = PlayerSelect::Create( D3DXVECTOR3( -10.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 15.0f ) ,
 																D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
 																D3DXVECTOR3( THIEF_SIZE , THIEF_SIZE , THIEF_SIZE ) , 0.0f );
 					}
@@ -488,7 +488,7 @@ void StageSelect::Update( void )
 					if( m_pPlayer[ 1 ] == NULL )
 					{
 						//  プレイヤーの生成
-						m_pPlayer[ 1 ] = PlayerSelect::Create( D3DXVECTOR3( 10.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , -15.0f ) , 
+						m_pPlayer[ 1 ] = PlayerSelect::Create( D3DXVECTOR3( 10.0f , -1.3f , 0.0f ) , D3DXVECTOR3( 0.0f , 0.0f , 15.0f ) , 
 																D3DXVECTOR3( 0.0f , 0.0f , 0.0f ) ,
 																D3DXVECTOR3( THIEF_SIZE , THIEF_SIZE , THIEF_SIZE ) , 0.0f );
 					}

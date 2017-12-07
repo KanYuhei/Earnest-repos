@@ -20,9 +20,12 @@
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
 //--------------------------------------------------------------------------------------
-LPDIRECT3DTEXTURE9 DepthShadow::m_depthShadowTexture = nullptr;			//  テクスチャ
-LPDIRECT3DSURFACE9 DepthShadow::m_depthShadowSurface = nullptr;			//  レンダーターゲット用サーフェイス
-LPDIRECT3DSURFACE9 DepthShadow::m_shadowMap = nullptr;					//  テクスチャ用の深度バッファー
+LPDIRECT3DTEXTURE9	DepthShadow::m_depthShadowTexture = nullptr;			//  テクスチャ
+LPDIRECT3DSURFACE9	DepthShadow::m_depthShadowSurface = nullptr;			//  レンダーターゲット用サーフェイス
+LPDIRECT3DSURFACE9	DepthShadow::m_shadowMap = nullptr;						//  テクスチャ用の深度バッファー
+float				DepthShadow::m_bias = 0.00005f;
+const UINT			DepthShadow::TEXTURE_WIDTH = 2048;						//  テクスチャの幅
+const UINT			DepthShadow::TEXTURE_HEIGHT = 2048;						//  テクスチャの高さ
 
 //--------------------------------------------------------------------------------------
 //  デプスシャドウクラスのコンストラクタ
@@ -45,13 +48,15 @@ DepthShadow::~DepthShadow( )
 //--------------------------------------------------------------------------------------
 HRESULT DepthShadow::Init( void )
 {
+	m_bias = 0.00005f;
+
 	//  デバイス情報の取得
 	LPDIRECT3DDEVICE9 pDevice = SceneManager::GetRenderer( )->GetDevice( );
 
 	//  レンダーターゲット用の空のテクスチャ生成
 	D3DXCreateTexture( pDevice ,						//  デバイス
-					   SCREEN_WIDTH * 3.0f ,			//  スクリーンの幅
-					   SCREEN_HEIGHT * 3.0f ,			//  スクリーンの高さ
+					   TEXTURE_WIDTH ,					//  スクリーンの幅
+					   TEXTURE_HEIGHT ,					//  スクリーンの高さ
 					   1 ,								//  ミップマップの数
 					   D3DUSAGE_RENDERTARGET ,			//  使用用途
 					   D3DFMT_A32B32G32R32F ,			//  色の要素
@@ -62,9 +67,9 @@ HRESULT DepthShadow::Init( void )
 	m_depthShadowTexture->GetSurfaceLevel( 0 , &m_depthShadowSurface );
 
 	// テクスチャへのレンダリングに使う深度バッファーの作成
-	if( FAILED( pDevice->CreateDepthStencilSurface( SCREEN_WIDTH * 3.0f ,
-													SCREEN_HEIGHT * 3.0f ,
-													D3DFMT_D24X8,
+	if( FAILED( pDevice->CreateDepthStencilSurface( TEXTURE_WIDTH ,
+													TEXTURE_HEIGHT ,
+													D3DFMT_D24S8,
 													D3DMULTISAMPLE_NONE,
 													0,
 													TRUE,
@@ -143,6 +148,22 @@ void DepthShadow::SetDepthSerface( void )
 		//  テクスチャ用の深度バッファを設定
 		pDevice->SetDepthStencilSurface( m_shadowMap );
 	}
+}
+
+//--------------------------------------------------------------------------------------
+//  バイアス値の設定処理
+//--------------------------------------------------------------------------------------
+void DepthShadow::SetBias( float bias )
+{
+	m_bias = bias;
+}
+
+//--------------------------------------------------------------------------------------
+//  バイアス値の取得処理
+//--------------------------------------------------------------------------------------
+float DepthShadow::GetBias( void )
+{
+	return m_bias;
 }
 
 //--------------------------------------------------------------------------------------

@@ -95,7 +95,7 @@ typedef struct
 	D3DXVECTOR3 position;									//  XYZ座標
 	float		rhw;										//  rhw
 	D3DCOLOR	color;										//  色情報
-	D3DXVECTOR2 texcoord;										//  テクスチャ座標 
+	D3DXVECTOR2 texcoord;									//  テクスチャ座標 
 } VERTEX_2D;												//  2D頂点
 
 typedef struct
@@ -103,7 +103,14 @@ typedef struct
 	D3DXVECTOR3 position;									//  XYZ座標
 	D3DXVECTOR3 normal;										//  法線
 	D3DCOLOR	color;										//  色情報
-	D3DXVECTOR2 texcoord;										//  テクスチャ座標 
+	D3DXVECTOR2 texcoord;									//  テクスチャ座標 
 } VERTEX_3D;												//  3D頂点
+
+typedef struct
+{
+	D3DXVECTOR3 position;									//  XYZ座標
+	D3DXVECTOR3 normal;										//  法線
+	D3DXVECTOR2 texcoord;									//  テクスチャ座標 
+} VERTEX_3D_ANOTHER;	
 
 #endif

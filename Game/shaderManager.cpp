@@ -58,6 +58,10 @@ void ShaderManager::Init( void )
 	m_shader[ ( int )TYPE::SHADER_3D_DEPTH_SHADOW ]->Init( );
 	m_shader[ ( int )TYPE::SHADER_3D_SHADOW_MAP ] = new Shader3DShadowMap( );
 	m_shader[ ( int )TYPE::SHADER_3D_SHADOW_MAP ]->Init( );
+	m_shader[ ( int )TYPE::SHADER_3D_THUN ] = new Shader3DThun( );
+	m_shader[ ( int )TYPE::SHADER_3D_THUN ]->Init( );
+	m_shader[ ( int )TYPE::SHADER_3D_OUTLINE ] = new Shader3DOutline( );
+	m_shader[ ( int )TYPE::SHADER_3D_OUTLINE ]->Init( );
 }
 
 //--------------------------------------------------------------------------------------

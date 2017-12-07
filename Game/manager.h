@@ -50,53 +50,53 @@ public:
 	SceneManager( );													//  コンストラクタ
 	~SceneManager( );													//  デストラクタ
 
-	virtual HRESULT				Init( HINSTANCE hInstance ,			//  初期化
+	virtual HRESULT				Init( HINSTANCE hInstance ,				//  初期化
 									  HWND hWnd ,
-									  bool bWindow );				
-	virtual void				Uninit( void );						//  終了
-	virtual void				Update( void );						//  更新
-	virtual void				Draw( void );						//  描画
+									  bool bWindow );					
+	virtual void				Uninit( void );							//  終了
+	virtual void				Update( void );							//  更新
+	virtual void				Draw( void );							//  描画
 
-	static	void				SetMode( Mode::MODE mode );			//  モードの設定
+	static	void				SetMode( Mode::MODE mode );				//  モードの設定
 
-	static  Renderer*			GetRenderer( void );				//  レンダラークラスの取得
-	static	Texture*			GetTexture( void );					//  テクスチャクラスの取得
-	static  Keyboard*			GetKeyboard( void );				//  キーボードクラスの取得
-	static  XboxController*		GetXInput( void );					//  Xboxコントローラークラスの取得
-	static  PS4Controller*		GetPS4Input( void );				//  PS4コントローラークラスの取得
-	static	Camera*				GetCamera( int cameraNo = 0 );		//  指定番号のカメラクラスの取得
-	static	Light*				GetLight( void );					//  ライトクラスの取得
-	static	Sound*				GetSound( void );					//  サウンドクラスの取得
-	static	Wwise*				GetWwise( void );					//  Wwiseクラスの取得
-	static	WWISE_GAMEOBJ*		GetWwiseObject( void );				//  Wwise用のオブジェクト取得
-	static	Mode*				GetModeClass( void );				//  モード情報の取得
-	static	Mode::MODE			GetMode( void );					//  モード情報の取得
-	static	SceneManager::STAGE	GetStage( void );					//  ステージ情報の取得
+	static  Renderer*			GetRenderer( void );					//  レンダラークラスの取得
+	static	Texture*			GetTexture( void );						//  テクスチャクラスの取得
+	static  Keyboard*			GetKeyboard( void );					//  キーボードクラスの取得
+	static  XboxController*		GetXInput( void );						//  Xboxコントローラークラスの取得
+	static  PS4Controller*		GetPS4Input( void );					//  PS4コントローラークラスの取得
+	static	Camera*				GetCamera( int cameraNo = 0 );			//  指定番号のカメラクラスの取得
+	static	Light*				GetLight( void );						//  ライトクラスの取得
+	static	Sound*				GetSound( void );						//  サウンドクラスの取得
+	static	Wwise*				GetWwise( void );						//  Wwiseクラスの取得
+	static	WWISE_GAMEOBJ*		GetWwiseObject( void );					//  Wwise用のオブジェクト取得
+	static	Mode*				GetModeClass( void );					//  モード情報の取得
+	static	Mode::MODE			GetMode( void );						//  モード情報の取得
+	static	SceneManager::STAGE	GetStage( void );						//  ステージ情報の取得
 	static	void				SetStage( SceneManager::STAGE stage );	//  ステージの種類の設定
-	static	int					GetLoop( void );					//  ループ数の取得
+	static	int					GetLoop( void );						//  ループ数の取得
 
 private:
-	static	STAGE				m_stage;							//  ステージの種類
+	static	STAGE				m_stage;								//  ステージの種類
 
-	static	Renderer*			m_pRenderer;						//  レンダラークラスのポインタ
-	static	Texture*			m_pTexture;							//  テクスチャクラスのポインタ
-	static	Keyboard*			m_pKeyboard;						//  キーボードクラスのポインタ
-	static	XboxController*		m_pXboxInput;						//  Xboxコントローラークラスのポインタ
-	static	PS4Controller*		m_pPS4Input;						//  PS4コントローラークラスのポインタ
-	static	Camera*				m_pCamera[ MAX_CAMERA_NUMBER ];		//  カメラクラスのポインタ
-	static	Light*				m_pLight;							//  ライトクラスのポインタ
-	static	Sound*				m_pSound;							//  サウンドクラスのポインタ
-	static	Wwise*				m_pWwise;							//  Wwiseクラスのポインタ
-	static	Fade*				m_pFade;							//  フェードクラスのポインタ
-	static	WWISE_GAMEOBJ*		m_wwiseObject;						//  Wwise用のオブジェクト
+	static	Renderer*			m_pRenderer;							//  レンダラークラスのポインタ
+	static	Texture*			m_pTexture;								//  テクスチャクラスのポインタ
+	static	Keyboard*			m_pKeyboard;							//  キーボードクラスのポインタ
+	static	XboxController*		m_pXboxInput;							//  Xboxコントローラークラスのポインタ
+	static	PS4Controller*		m_pPS4Input;							//  PS4コントローラークラスのポインタ
+	static	Camera*				m_pCamera[ MAX_CAMERA_NUMBER ];			//  カメラクラスのポインタ
+	static	Light*				m_pLight;								//  ライトクラスのポインタ
+	static	Sound*				m_pSound;								//  サウンドクラスのポインタ
+	static	Wwise*				m_pWwise;								//  Wwiseクラスのポインタ
+	static	Fade*				m_pFade;								//  フェードクラスのポインタ
+	static	WWISE_GAMEOBJ*		m_wwiseObject;							//  Wwise用のオブジェクト
 
-	static	Mode*				m_pMode;							//  モードクラスのポインタ
-	static	Mode::MODE			m_mode;								//  モード列挙型の宣言
+	static	Mode*				m_pMode;								//  モードクラスのポインタ
+	static	Mode::MODE			m_mode;									//  モード列挙型の宣言
 
-	static	int					m_nLoop;							//  ループ数
+	static	int					m_nLoop;								//  ループ数
 
-	LPDIRECT3DVERTEXBUFFER9		m_vertexBuffer;						//  頂点バッファ
-	LPDIRECT3DVERTEXBUFFER9		m_shadowMap;						//  頂点バッファ
+	LPDIRECT3DVERTEXBUFFER9		m_vertexBuffer;							//  頂点バッファ
+	LPDIRECT3DVERTEXBUFFER9		m_shadowMap;							//  頂点バッファ
 };
 
 #endif

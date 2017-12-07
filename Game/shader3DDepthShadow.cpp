@@ -33,7 +33,8 @@ void Shader3DDepthShadow::Init( void )
 		//  ( 自分で考えたデータを送る場合はTEXCOORDで送るように )
 		{ 0 , 0 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_POSITION , 0 } ,
 		{ 0 , sizeof( float ) * 3 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_NORMAL, 0 } ,
-		{ 0 , sizeof( float ) * 6 , D3DDECLTYPE_FLOAT2 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_TEXCOORD , 0 } ,		
+		{ 0 , sizeof( float ) * 6 , D3DDECLTYPE_D3DCOLOR , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_COLOR , 0 } ,
+		{ 0 , sizeof( float ) * 6 + sizeof( D3DCOLOR ) , D3DDECLTYPE_FLOAT2 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_TEXCOORD , 0 } ,		
 		D3DDECL_END( )  //  終了
 	};
 
@@ -286,6 +287,20 @@ void Shader3DDepthShadow::SetOffset( const D3DXVECTOR4 &offset )
 }
 
 //--------------------------------------------------------------------------------------
+//  バイアス値の設定
+//--------------------------------------------------------------------------------------
+void Shader3DDepthShadow::SetBias( const float& bias )
+{
+	//  デバイスの取得
+	LPDIRECT3DDEVICE9 device = SceneManager::GetRenderer( )->GetDevice( );
+
+	if( m_pixelShaderConstantTable != nullptr )
+	{
+		m_pixelShaderConstantTable->SetFloat( device ,  "bias" , bias );
+	}
+}
+
+//--------------------------------------------------------------------------------------
 //  シェーダー描画に必要な情報の設定
 //--------------------------------------------------------------------------------------
 void Shader3DDepthShadow::SetShaderInfo( const D3DXMATRIX &worldMatrix ,
@@ -293,7 +308,8 @@ void Shader3DDepthShadow::SetShaderInfo( const D3DXMATRIX &worldMatrix ,
 										 const D3DXMATRIX &projectionMatrix ,
 										 const D3DXVECTOR3 &lightDirectionLocal ,
 										 const D3DXMATRIX &lightViewProjectionMatrix ,
-										 const D3DXVECTOR4 &offset )
+										 const D3DXVECTOR4 &offset ,
+										 const float& bias )
 {
 	SetWorldMatrix( worldMatrix );
 	SetViewMatrix( viewMatrix );
@@ -301,10 +317,11 @@ void Shader3DDepthShadow::SetShaderInfo( const D3DXMATRIX &worldMatrix ,
 	SetLightDirectionLocal( lightDirectionLocal );
 	SetLightViewProjectionMatrix( lightViewProjectionMatrix );
 	SetOffset( offset );
+	SetBias( bias );
 }
 
 //--------------------------------------------------------------------------------------
-//  テクスチャサンプラーステート識別番号の取得
+//  テクスチャサンプラー識別番号の取得
 //--------------------------------------------------------------------------------------
 UINT Shader3DDepthShadow::GetSamplerTextureIndex( void )
 {
@@ -314,7 +331,7 @@ UINT Shader3DDepthShadow::GetSamplerTextureIndex( void )
 }
 
 //--------------------------------------------------------------------------------------
-//  シャドウサンプラーステート識別番号の取得
+//  シャドウサンプラー識別番号の取得
 //--------------------------------------------------------------------------------------
 UINT Shader3DDepthShadow::GetSamplerShadowIndex( void )
 {

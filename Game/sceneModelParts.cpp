@@ -18,11 +18,14 @@
 #include "shaderManager.h"
 #include "light.h"
 #include "game.h"
+#include "depthShadow.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
 //--------------------------------------------------------------------------------------
-#define TEXTURE_FILEPATH		"data\\TEXTURE"					//  テクスチャへのファイルパス
+#define TEXTURE_FILEPATH							"data\\TEXTURE"					//  テクスチャへのファイルパス
+
+static const char THUN_SHADER_TEXTURE_NAME[ 256 ] = "data/SHADER/thun001.png";		//  トゥーンマップ用テクスチャ
 
 //--------------------------------------------------------------------------------------
 //  インスタンス生成
@@ -90,7 +93,8 @@ HRESULT SceneModelParts::Init( void )
 		//  ( 自分で考えたデータを送る場合はTEXCOORDで送るように )
 		{ 0 , 0 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_POSITION , 0 } ,
 		{ 0 , sizeof( float ) * 3 , D3DDECLTYPE_FLOAT3 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_NORMAL, 0 } ,
-		{ 0 , sizeof( float ) * 6 , D3DDECLTYPE_FLOAT2 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_TEXCOORD , 0 } ,		
+		{ 0 , sizeof( float ) * 6 , D3DDECLTYPE_D3DCOLOR , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_COLOR , 0 } ,
+		{ 0 , sizeof( float ) * 6 + sizeof( D3DCOLOR ) , D3DDECLTYPE_FLOAT2 , D3DDECLMETHOD_DEFAULT , D3DDECLUSAGE_TEXCOORD , 0 } ,		
 		D3DDECL_END( )  //  終了
 	};
 
@@ -158,6 +162,7 @@ HRESULT SceneModelParts::Init( void )
 
 			//  テクスチャの登録
 			pTexture->SetTextureImage( aTextureFilePath );
+			pTexture->SetTextureImage( THUN_SHADER_TEXTURE_NAME );
 		}
 	}
 
@@ -301,6 +306,29 @@ void SceneModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR
 	D3DXVECTOR3 cameraPositionEye = camera->GetCameraPosEye( );
 	D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
 
+	//  シェーダー情報の取得
+	Shader3DDepthShadow* shader3DDepthShadow = ( Shader3DDepthShadow* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_DEPTH_SHADOW );
+
+	//  光源のビュープロジェクション行列の取得
+	D3DXMATRIX lightViewProjectionMatrix = SceneManager::GetLight( )->GetViewMatrix( ) * SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	//  UVオフセット値の計算
+	D3DXVECTOR4	tmpOffset;
+	tmpOffset.x = 0.5f / DepthShadow::TEXTURE_WIDTH;
+	tmpOffset.y = 0.5f / DepthShadow::TEXTURE_HEIGHT;
+	tmpOffset.z = 0.0f;
+	tmpOffset.w = 0.0f;
+
+	//  バイアス値の取得
+	float bias = DepthShadow::GetBias( );
+
+	//  シェーダー情報の取得
+	Shader3DThun* shader3DThun = ( Shader3DThun* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_THUN );
+
+	//  サンプラーのインデックス情報取得
+	UINT textureIndex = shader3DThun->GetSamplerTextureIndex( );
+	UINT thunIndex = shader3DThun->GetSamplerThunIndex( );
+
 	//  マテリアルの数分のループ
 	for( int nCntMaterial = 0; nCntMaterial < ( int )m_nNumMatModel; nCntMaterial++ )
 	{
@@ -330,13 +358,18 @@ void SceneModelParts::Draw( D3DXVECTOR3 position , D3DXVECTOR3 posAt , D3DXCOLOR
 			////  シェーダー3Dの描画開始
 			//shader3D->DrawBegin( );
 
-			//  シェーダーに必要な情報の設定
-			shader3DRimLightTexture->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix ,
-													worldInverseTransposeMatrix , cameraPositionEye , lightDirectWorld , 
-													specularPower , D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f ) );
+			////  シェーダーに必要な情報の設定
+			//shader3DRimLightTexture->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix ,
+			//										worldInverseTransposeMatrix , cameraPositionEye , lightDirectWorld , 
+			//										specularPower , D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f ) );
+			shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
+												lightDirectLocal , lightViewProjectionMatrix , tmpOffset , bias );
+			//shader3DThun->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal );
 
 			//  シェーダー3Dの描画開始
-			shader3DRimLightTexture->DrawBegin( );
+			//shader3DRimLightTexture->DrawBegin( );
+			shader3DDepthShadow->DrawBegin( );
+			//shader3DThun->DrawBegin( );
 		}
 
 		//  メッシュの描画

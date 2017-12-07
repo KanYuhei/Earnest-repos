@@ -28,6 +28,7 @@ public:
 	HRESULT				Init( void );										//  初期化
 	void				Uninit( void );										//  終了
 	void				Update( void );										//  更新
+	void				Draw( void );										//  描画
 
 	void				SetDiffuseColor( D3DXCOLOR color ,					//  指定ライトの拡散光の設定
 										 int nNo = 0 );
@@ -58,6 +59,9 @@ public:
 	const float&		GetDistance( void );								//  距離の取得
 
 private:
+	LPD3DXMESH			m_pMeshModel;										//  メッシュ情報
+	LPD3DXBUFFER		m_pBuffMatModel;									//  マテリアル情報
+	DWORD				m_nNumMatModel;										//  マテリアル数
 	D3DLIGHT9			m_light[ MAX_LIGHT ];								//  ライト
 	D3DXVECTOR3			m_position;											//  座標
 	D3DXVECTOR3			m_positionAt;										//  注視点座標
@@ -68,6 +72,7 @@ private:
 	float				m_far;												//  ファー
 	D3DXMATRIX			m_viewMatrix;										//  ビュー行列
 	D3DXMATRIX			m_projectionMatrix;									//  プロジェクション行列
+	char				m_aTextureName[ 3 ][ 256 ];							//  テクスチャ名保存用
 };
 
 #endif

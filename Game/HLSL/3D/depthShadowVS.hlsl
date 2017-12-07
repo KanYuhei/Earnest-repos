@@ -8,6 +8,7 @@ struct IN_VERTEX
 {
 	float3 position : POSITION0;
 	float3 normal : NORMAL0;
+	float4 color : COLOR0;
 	float2 texcoord : TEXCOORD0;
 };
 

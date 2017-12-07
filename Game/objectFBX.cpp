@@ -19,6 +19,11 @@
 #include <algorithm>
 
 //--------------------------------------------------------------------------------------
+//  定数定義
+//--------------------------------------------------------------------------------------
+static const char THUN_SHADER_TEXTURE_NAME[ 256 ] = "data/SHADER/thun001.png";
+
+//--------------------------------------------------------------------------------------
 //  コンストラクタ
 //--------------------------------------------------------------------------------------
 ObjectFBX::ObjectFBX( )
@@ -28,6 +33,7 @@ ObjectFBX::ObjectFBX( )
 	m_currentFrame = 0;
 	m_allTime = 0;
 	m_scale = 1.0f;
+	m_drawDepth = true;
 }
 
 //--------------------------------------------------------------------------------------
@@ -137,6 +143,10 @@ HRESULT ObjectFBX::Init( void )
 	lScene->Destroy( ); 
 	lSdkManager->Destroy( ); 
 
+	//  トゥーンシェーダー用のテクスチャ取得
+	Texture* texture = SceneManager::GetTexture( );
+	texture->SetTextureImage( THUN_SHADER_TEXTURE_NAME );
+
 	return S_OK;
 }
 
@@ -205,238 +215,483 @@ void ObjectFBX::recursiveDraw( void )
 	//  シェーダー情報の取得
 	Shader3D* shader3D = ( Shader3D* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D );
 
-	if( shader3D != nullptr )
-	{
-		//  テクスチャクラスの取得
-		Texture* pTexture = SceneManager::GetTexture( );
+	//  シェーダー情報の取得
+	Shader3DThun* shader3DThun = ( Shader3DThun* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_THUN );
 
-		for( auto itm = m_meshes.begin( ); itm != m_meshes.end( ); ++itm ) 
-		{  
-			if( itm->matrixes.empty( ) ) 
-			{
-				// 頂点の座標変換             
-				std::vector< D3DXVECTOR3 > positions;
-				int size = itm->points.size( );
+	//  シェーダー情報の取得
+	Shader3DOutline* shader3DOutline = ( Shader3DOutline* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_OUTLINE );
 
-				positions.reserve( size ); 
+	//  サンプラーのインデックス情報取得
+	UINT textureIndex = shader3DThun->GetSamplerTextureIndex( );
+	UINT thunIndex = shader3DThun->GetSamplerThunIndex( );
+
+	//  テクスチャクラスの取得
+	Texture* pTexture = SceneManager::GetTexture( );
+
+	//  テクスチャの設定
+	pDevice->SetTexture( thunIndex , pTexture->GetTextureImage( THUN_SHADER_TEXTURE_NAME ) );
+
+	for( auto itm = m_meshes.begin( ); itm != m_meshes.end( ); ++itm ) 
+	{  
+		if( itm->matrixes.empty( ) ) 
+		{
+			// 頂点の座標変換             
+			std::vector< D3DXVECTOR3 > positions;
+			int size = itm->points.size( );
+
+			positions.reserve( size ); 
  
-				D3DXMATRIX mtx;             
+			D3DXMATRIX mtx;             
 				
-				for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
-				{                
-					ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
+			for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
+			{                
+				ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
 
-					D3DXVECTOR3 pos = it->positions;                              
-					positions.push_back( pos );             
-				} 
+				D3DXVECTOR3 pos = it->positions;                              
+				positions.push_back( pos );             
+			} 
 
-				VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
+			VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
 
-				if( m_pVtxBuffers.at( countLoop ) != NULL )
+			if( m_pVtxBuffers.at( countLoop ) != NULL )
+			{
+				//  頂点バッファをロックして、仮想アドレスを取得する
+				m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
+														( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
+														0 );							//  ロックの種類
+
+				int size = itm->positionIndices.size( );
+
+				for( int countIndex = 0; countIndex < size; ++countIndex )
 				{
-					//  頂点バッファをロックして、仮想アドレスを取得する
-					m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
-														 ( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
-														 0 );							//  ロックの種類
+					//  頂点座標の設定( 3D座標 ・ 右回り )
+					pVtx[ countIndex ].position = positions[ itm->positionIndices[ countIndex ] ];
 
-					int size = itm->positionIndices.size( );
+					//  法線の指定
+					pVtx[ countIndex ].normal = itm->normals[ itm->normalIndices[ countIndex ] ];
 
-					for( int countIndex = 0; countIndex < size; ++countIndex )
-					{
-						//  頂点座標の設定( 3D座標 ・ 右回り )
-						pVtx[ countIndex ].position = positions[ itm->positionIndices[ countIndex ] ];
+					//  頂点色の設定( 0 ～ 255 の整数値 )
+					pVtx[ countIndex ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
 
-						//  法線の指定
-						pVtx[ countIndex ].normal = itm->normals[ itm->normalIndices[ countIndex ] ];
-
-						//  頂点色の設定( 0 ～ 255 の整数値 )
-						pVtx[ countIndex ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-
-						//  UV座標の指定
-						pVtx[ countIndex ].texcoord = itm->texcoords[ itm->texcoordIndices[ countIndex ] ];
-					}
-
-					//  頂点バッファのアンロック
-					m_pVtxBuffers.at( countLoop )->Unlock( );     
+					//  UV座標の指定
+					pVtx[ countIndex ].texcoord = itm->texcoords[ itm->texcoordIndices[ countIndex ] ];
 				}
 
-				D3DXMatrixIdentity( &mtxWorld );
-				D3DXMatrixIdentity( &mtxScale );
-				D3DXMatrixIdentity( &mtxRot );
-
-				//  拡大行列の作成
-				D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
-
-				//  拡大行列の掛け算
-				D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
-
-				//  平行移動行列の作成
-				D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
-
-				//  平行移動行列の掛け算
-				D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
-
-				//  ライトの方向ベクトルを取得する
-				D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
-				D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
-
-				//  ローカル単位ベクトルに変更
-				D3DXVECTOR3 lightDirectLocal;
-
-				D3DXMATRIX worldInverseMatrix;
-				D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
-				D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
-				D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
-
-				Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
-				D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
-				D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
-				D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
-
-				//  シェーダーに必要な情報の設定
-				shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
-
-				// 頂点バッファをデータストリームに設定
-				pDevice->SetStreamSource( 0 ,								//  パイプライン番号
-										  m_pVtxBuffers.at( countLoop ) ,	//  頂点バッファのアドレス
-										  0 ,								//  オフセット( byte )
-										  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
-
-				// テクスチャの設定
-				pDevice->SetTexture( 0 , pTexture->GetTextureImage( "data/FBX/texture/Head.png" ) );
-
-				//  シェーダー3Dの描画開始
-				shader3D->DrawBegin( );
-
-				// ポリゴンの描画
-				pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
-										0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
-										itm->positionIndices.size( ) / 3 );		//  プリミティブ数  
-
-				//  シェーダー3Dの描画終了
-				ShaderManager::DrawEnd( );
-			}      
-			else 
-			{
-				// 骨あり（つまりワンスキンなど） 
- 
-				// 頂点の座標変換             
-				std::vector< D3DXVECTOR3 > positions;
-				int size = itm->points.size( );
-
-				positions.reserve( size ); 
- 
-				D3DXMATRIX mtx;             
-				
-				for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
-				{                
-					ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
-
-					for( auto itb = it->bornRefarences.begin( ); itb != it->bornRefarences.end( ); ++itb ) 
-					{                    
-						mtx += itm->matrixes[ itb->index ][ m_currentFrame % m_allTime ] * itb->weight;
-					}
-
-					D3DXVECTOR3 pos = it->positions;                 
-					D3DXVec3TransformCoord( &pos , &it->positions , &mtx );                
-					positions.push_back( pos );             
-				} 
-
-				VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
-
-				if( m_pVtxBuffers.at( countLoop ) != NULL )
-				{
-					//  頂点バッファをロックして、仮想アドレスを取得する
-					m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
-														 ( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
-														 0 );							//  ロックの種類
-
-					for( size_t i = 0; i < itm->positionIndices.size( ); i++ ) 
-					{             
-						//  頂点座標の設定( 3D座標 ・ 右回り )
-						pVtx[ i ].position = positions[ itm->positionIndices[ i ] ];
-
-						//  法線の指定
-						pVtx[ i ].normal = itm->normals[ itm->normalIndices[ i ] ];
-
-						//  頂点色の設定( 0 ～ 255 の整数値 )
-						pVtx[ i ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
-
-						//  UV座標の指定
-						pVtx[ i ].texcoord = itm->texcoords[ itm->texcoordIndices[ i ] ];
-					}
-
-					//  頂点バッファのアンロック
-					m_pVtxBuffers.at( countLoop )->Unlock( );     
-				}
-
-				D3DXMatrixIdentity( &mtxWorld );
-				D3DXMatrixIdentity( &mtxScale );
-				D3DXMatrixIdentity( &mtxRot );
-
-				//  拡大行列の作成
-				D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
-
-				//  拡大行列の掛け算
-				D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
-
-				//  平行移動行列の作成
-				D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
-
-				//  平行移動行列の掛け算
-				D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
-
-				//  頂点フォーマットの設定
-				shader3D->SetVertexDeclaration( );
-
-				//  ワールド行列の設定
-				shader3D->SetWorldMatrix( mtxWorld );
-
-				//  ライトの方向ベクトルを取得する
-				D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
-				D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
-
-				//  ローカル単位ベクトルに変更
-				D3DXVECTOR3 lightDirectLocal;
-
-				D3DXMATRIX worldInverseMatrix;
-				D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
-				D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
-				D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
-
-				Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
-				D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
-				D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
-				D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
-
-				//  シェーダーに必要な情報の設定
-				shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
-
-				// 頂点バッファをデータストリームに設定
-				pDevice->SetStreamSource( 0 ,								//  パイプライン番号
-										  m_pVtxBuffers.at( countLoop ) ,	//  頂点バッファのアドレス
-										  0 ,								//  オフセット( byte )
-										  sizeof( VERTEX_3D ) );			//  一個分の頂点データのサイズ( ストライド )
-
-				// テクスチャの設定
-				pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_textures[ itm->materialIndex ].c_str( ) ) );
-
-				//  シェーダー3Dの描画開始
-				shader3D->DrawBegin( );
-
-				// ポリゴンの描画
-				pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
-										0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
-										itm->positionIndices.size( ) / 3 );		//  プリミティブ数
-
-				//  シェーダー3Dの描画終了
-				ShaderManager::DrawEnd( );
+				//  頂点バッファのアンロック
+				m_pVtxBuffers.at( countLoop )->Unlock( );     
 			}
 
-			//  ループカウント
-			countLoop++;
+			D3DXMatrixIdentity( &mtxWorld );
+			D3DXMatrixIdentity( &mtxScale );
+			D3DXMatrixIdentity( &mtxRot );
+
+			//  拡大行列の作成
+			D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
+
+			//  拡大行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+			D3DXMatrixRotationYawPitchRoll( &mtxRot , D3DX_PI , 0.0f , 0.0f );
+
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+			//  平行移動行列の作成
+			D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
+
+			//  平行移動行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+			//  ライトの方向ベクトルを取得する
+			D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
+			D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
+
+			//  ローカル単位ベクトルに変更
+			D3DXVECTOR3 lightDirectLocal;
+
+			D3DXMATRIX worldInverseMatrix;
+			D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
+			D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
+			D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
+
+			Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+			D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+			D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+			D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
+
+			//  シェーダーに必要な情報の設定
+			//shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
+			shader3DThun->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,									//  パイプライン番号
+									  m_pVtxBuffers.at( countLoop ) ,		//  頂点バッファのアドレス
+									  0 ,									//  オフセット( byte )
+									  sizeof( VERTEX_3D ) );				//  一個分の頂点データのサイズ( ストライド )
+
+			// テクスチャの設定
+			pDevice->SetTexture( textureIndex , pTexture->GetTextureImage( "data/FBX/texture/Head.png" ) );
+
+			//  シェーダー3Dの描画開始
+			//shader3D->DrawBegin( );
+			shader3DThun->DrawBegin( );
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
+									0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
+									itm->positionIndices.size( ) / 3 );		//  プリミティブ数  
+
+			//  シェーダー3Dの描画終了
+			ShaderManager::DrawEnd( );
+		}      
+		else 
+		{
+			// 骨あり（つまりワンスキンなど） 
+ 
+			// 頂点の座標変換             
+			std::vector< D3DXVECTOR3 > positions;
+			int size = itm->points.size( );
+
+			positions.reserve( size ); 
+ 
+			D3DXMATRIX mtx;             
+				
+			for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
+			{                
+				ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
+
+				for( auto itb = it->bornRefarences.begin( ); itb != it->bornRefarences.end( ); ++itb ) 
+				{                    
+					mtx += itm->matrixes[ itb->index ][ m_currentFrame % m_allTime ] * itb->weight;
+				}
+
+				D3DXVECTOR3 pos = it->positions;                 
+				D3DXVec3TransformCoord( &pos , &it->positions , &mtx );                
+				positions.push_back( pos );             
+			} 
+
+			VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
+
+			if( m_pVtxBuffers.at( countLoop ) != NULL )
+			{
+				//  頂点バッファをロックして、仮想アドレスを取得する
+				m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
+													 ( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
+													 0 );							//  ロックの種類
+
+				for( size_t i = 0; i < itm->positionIndices.size( ); i++ ) 
+				{             
+					//  頂点座標の設定( 3D座標 ・ 右回り )
+					pVtx[ i ].position = positions[ itm->positionIndices[ i ] ];
+
+					//  法線の指定
+					pVtx[ i ].normal = itm->normals[ itm->normalIndices[ i ] ];
+
+					//  頂点色の設定( 0 ～ 255 の整数値 )
+					pVtx[ i ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+					//  UV座標の指定
+					pVtx[ i ].texcoord = itm->texcoords[ itm->texcoordIndices[ i ] ];
+				}
+
+				//  頂点バッファのアンロック
+				m_pVtxBuffers.at( countLoop )->Unlock( );     
+			}
+
+			D3DXMatrixIdentity( &mtxWorld );
+			D3DXMatrixIdentity( &mtxScale );
+			D3DXMatrixIdentity( &mtxRot );
+
+			//  拡大行列の作成
+			D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
+
+			//  拡大行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+			D3DXMatrixRotationYawPitchRoll( &mtxRot , 0.0f , D3DX_PI , 0.0f );
+
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+			//  平行移動行列の作成
+			D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
+
+			//  平行移動行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+			//  頂点フォーマットの設定
+			shader3D->SetVertexDeclaration( );
+
+			//  ワールド行列の設定
+			shader3D->SetWorldMatrix( mtxWorld );
+
+			//  ライトの方向ベクトルを取得する
+			D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
+			D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
+
+			//  ローカル単位ベクトルに変更
+			D3DXVECTOR3 lightDirectLocal;
+
+			D3DXMATRIX worldInverseMatrix;
+			D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
+			D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
+			D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
+
+			Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+			D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+			D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+			D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
+
+			//  シェーダーに必要な情報の設定
+			shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,									//  パイプライン番号
+									  m_pVtxBuffers.at( countLoop ) ,		//  頂点バッファのアドレス
+									  0 ,									//  オフセット( byte )
+									  sizeof( VERTEX_3D ) );				//  一個分の頂点データのサイズ( ストライド )
+
+			// テクスチャの設定
+			pDevice->SetTexture( 0 , pTexture->GetTextureImage( m_textures[ itm->materialIndex ].c_str( ) ) );
+
+			//  シェーダー3Dの描画開始
+			shader3D->DrawBegin( );
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
+									0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
+									itm->positionIndices.size( ) / 3 );		//  プリミティブ数
+
+			//  シェーダー3Dの描画終了
+			ShaderManager::DrawEnd( );
 		}
+
+		//  ループカウント
+		countLoop++;
 	}
+
+	//  ループ数の初期化
+	countLoop = 0;
+
+	//  レンダーステートの設定
+    pDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CW );				//  裏面描画
+
+	for( auto itm = m_meshes.begin( ); itm != m_meshes.end( ); ++itm ) 
+	{  
+		if( itm->matrixes.empty( ) ) 
+		{
+			// 頂点の座標変換             
+			std::vector< D3DXVECTOR3 > positions;
+			int size = itm->points.size( );
+
+			positions.reserve( size ); 
+ 
+			D3DXMATRIX mtx;             
+				
+			for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
+			{                
+				ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
+
+				D3DXVECTOR3 pos = it->positions;                              
+				positions.push_back( pos );             
+			} 
+
+			VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
+
+			if( m_pVtxBuffers.at( countLoop ) != NULL )
+			{
+				//  頂点バッファをロックして、仮想アドレスを取得する
+				m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
+														( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
+														0 );							//  ロックの種類
+
+				int size = itm->positionIndices.size( );
+
+				for( int countIndex = 0; countIndex < size; ++countIndex )
+				{
+					//  頂点座標の設定( 3D座標 ・ 右回り )
+					pVtx[ countIndex ].position = positions[ itm->positionIndices[ countIndex ] ];
+
+					//  法線の指定
+					pVtx[ countIndex ].normal = itm->normals[ itm->normalIndices[ countIndex ] ];
+
+					//  頂点色の設定( 0 ～ 255 の整数値 )
+					pVtx[ countIndex ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+					//  UV座標の指定
+					pVtx[ countIndex ].texcoord = itm->texcoords[ itm->texcoordIndices[ countIndex ] ];
+				}
+
+				//  頂点バッファのアンロック
+				m_pVtxBuffers.at( countLoop )->Unlock( );     
+			}
+
+			D3DXMatrixIdentity( &mtxWorld );
+			D3DXMatrixIdentity( &mtxScale );
+			D3DXMatrixIdentity( &mtxRot );
+
+			//  拡大行列の作成
+			D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
+
+			//  拡大行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+			D3DXMatrixRotationYawPitchRoll( &mtxRot , D3DX_PI , 0.0f , 0.0f );
+
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+			//  平行移動行列の作成
+			D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
+
+			//  平行移動行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+			Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+			D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+			D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+
+			//  シェーダーに必要な情報の設定
+			shader3DOutline->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,									//  パイプライン番号
+									  m_pVtxBuffers.at( countLoop ) ,		//  頂点バッファのアドレス
+									  0 ,									//  オフセット( byte )
+									  sizeof( VERTEX_3D ) );				//  一個分の頂点データのサイズ( ストライド )
+
+			//  シェーダー3Dの描画開始
+			shader3DOutline->DrawBegin( );
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
+									0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
+									itm->positionIndices.size( ) / 3 );		//  プリミティブ数  
+
+			//  シェーダー3Dの描画終了
+			ShaderManager::DrawEnd( );
+		}      
+		else 
+		{
+			// 骨あり（つまりワンスキンなど） 
+ 
+			// 頂点の座標変換             
+			std::vector< D3DXVECTOR3 > positions;
+			int size = itm->points.size( );
+
+			positions.reserve( size ); 
+ 
+			D3DXMATRIX mtx;             
+				
+			for( auto it = itm->points.begin( ); it != itm->points.end( ); ++it ) 
+			{                
+				ZeroMemory( &mtx, sizeof( D3DXMATRIX ) );   
+
+				for( auto itb = it->bornRefarences.begin( ); itb != it->bornRefarences.end( ); ++itb ) 
+				{                    
+					mtx += itm->matrixes[ itb->index ][ m_currentFrame % m_allTime ] * itb->weight;
+				}
+
+				D3DXVECTOR3 pos = it->positions;                 
+				D3DXVec3TransformCoord( &pos , &it->positions , &mtx );                
+				positions.push_back( pos );             
+			} 
+
+			VERTEX_3D* pVtx = NULL;				//  頂点バッファのポインタ
+
+			if( m_pVtxBuffers.at( countLoop ) != NULL )
+			{
+				//  頂点バッファをロックして、仮想アドレスを取得する
+				m_pVtxBuffers.at( countLoop )->Lock( 0 , 0 ,						//  取る先頭と、サイズ( 0 , 0 で全部 )
+														( void** )&pVtx ,				//  アドレスが書かれたメモ帳のアドレス
+														0 );							//  ロックの種類
+
+				for( size_t i = 0; i < itm->positionIndices.size( ); i++ ) 
+				{             
+					//  頂点座標の設定( 3D座標 ・ 右回り )
+					pVtx[ i ].position = positions[ itm->positionIndices[ i ] ];
+
+					//  法線の指定
+					pVtx[ i ].normal = itm->normals[ itm->normalIndices[ i ] ];
+
+					//  頂点色の設定( 0 ～ 255 の整数値 )
+					pVtx[ i ].color = D3DXCOLOR( 1.0f , 1.0f , 1.0f , 1.0f );
+
+					//  UV座標の指定
+					pVtx[ i ].texcoord = itm->texcoords[ itm->texcoordIndices[ i ] ];
+				}
+
+				//  頂点バッファのアンロック
+				m_pVtxBuffers.at( countLoop )->Unlock( );     
+			}
+
+			D3DXMatrixIdentity( &mtxWorld );
+			D3DXMatrixIdentity( &mtxScale );
+			D3DXMatrixIdentity( &mtxRot );
+
+			//  拡大行列の作成
+			D3DXMatrixScaling( &mtxScale , m_scale , m_scale , m_scale );
+
+			//  拡大行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxScale );
+
+			D3DXMatrixRotationYawPitchRoll( &mtxRot , 0.0f , D3DX_PI , 0.0f );
+
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxRot );
+
+			//  平行移動行列の作成
+			D3DXMatrixTranslation( &mtxTrans , m_position.x , m_position.y , m_position.z );
+
+			//  平行移動行列の掛け算
+			D3DXMatrixMultiply( &mtxWorld , &mtxWorld , &mtxTrans );
+
+			//  頂点フォーマットの設定
+			shader3D->SetVertexDeclaration( );
+
+			//  ワールド行列の設定
+			shader3D->SetWorldMatrix( mtxWorld );
+
+			//  ライトの方向ベクトルを取得する
+			D3DXVECTOR3 lightDirectWorld = SceneManager::GetLight( )->GetDirection( );
+			D3DXVec3Normalize( &lightDirectWorld , &lightDirectWorld );
+
+			//  ローカル単位ベクトルに変更
+			D3DXVECTOR3 lightDirectLocal;
+
+			D3DXMATRIX worldInverseMatrix;
+			D3DXMatrixInverse( &worldInverseMatrix , NULL , &( mtxRot * mtxTrans ) );
+			D3DXVec3TransformNormal( &lightDirectLocal , &lightDirectWorld , &worldInverseMatrix );
+			D3DXVec3Normalize( &lightDirectLocal , &lightDirectLocal );
+
+			Camera* camera = SceneManager::GetCamera( SceneManager::GetLoop( ) );
+			D3DXMATRIX viewMatrix = camera->GetViewMatrix( );
+			D3DXMATRIX projectionMatrix = camera->GetProjectionMatrix( );
+			D3DXCOLOR lightDiffuseColor = SceneManager::GetLight( )->GetLight( 0 ).Diffuse;
+
+			//  シェーダーに必要な情報の設定
+			shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
+
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,									//  パイプライン番号
+									  m_pVtxBuffers.at( countLoop ) ,		//  頂点バッファのアドレス
+									  0 ,									//  オフセット( byte )
+									  sizeof( VERTEX_3D ) );				//  一個分の頂点データのサイズ( ストライド )
+
+			//  シェーダー3Dの描画開始
+			shader3D->DrawBegin( );
+
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLELIST ,					//  プリミティブの種類
+									0 ,										//  オフセット( 何番目の頂点から描画するか選べる )
+									itm->positionIndices.size( ) / 3 );		//  プリミティブ数
+
+			//  シェーダー3Dの描画終了
+			ShaderManager::DrawEnd( );
+		}
+
+		//  ループカウント
+		countLoop++;
+	}
+
+	//  レンダーステートの設定
+    pDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CCW );			//  表面描画
 }
 
 //--------------------------------------------------------------------------------------

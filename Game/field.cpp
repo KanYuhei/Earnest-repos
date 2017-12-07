@@ -40,6 +40,8 @@ Field::~Field( )
 //--------------------------------------------------------------------------------------
 HRESULT Field::Init( void )
 {
+	m_drawDepth = true;
+
 	//  シーンモデル
 	SceneModel::Init( );
 

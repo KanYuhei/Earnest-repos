@@ -19,6 +19,9 @@
 //--------------------------------------------------------------------------------------
 //  前方宣言
 //--------------------------------------------------------------------------------------
+class CharacterAI;
+class MetaAI;
+class NavigationAI;
 
 //--------------------------------------------------------------------------------------
 //  AI管理クラスの定義
@@ -26,14 +29,16 @@
 class AIManager
 {
 public: 
-	AIManager( );										//  コンストラクタ
+	AIManager( );											//  コンストラクタ
 
-	void		Init( void );							//  初期化
-	void		Uninit( void );							//  終了
-	void		Update( void );							//  更新
+	static void		Init( void );							//  初期化
+	static void		Uninit( void );							//  終了
+	static void		Update( void );							//  更新
 
 private:
-
+	static std::vector< CharacterAI* >	m_characterAI;		//  キャラクターAI
+	static MetaAI*						m_metaAI;			//  メタAI
+	static NavigationAI*				m_navigationAI;		//  ナビゲーションAI
 };
 
 #endif

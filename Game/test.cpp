@@ -69,6 +69,7 @@ void Test::Init( void )
 		//  ƒJƒƒ‰ƒNƒ‰ƒX‚Ì‰Šú‰»
 		camera->Init( D3DXVECTOR3( 0.0f , 30.0f , -250.0f ) , D3DXVECTOR3( 0.0f , 200.0f , 0.0f ) ,
 					  D3DX_PI / 3.0f , 1.0f , 10000.0f );
+		camera->ChangeMode( );
 	}
 
 	Light* pLight = SceneManager::GetLight( );

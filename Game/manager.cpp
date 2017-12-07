@@ -32,9 +32,9 @@
 #include "test.h"
 #include "Wwise.h"
 #include "shaderManager.h"
-#include "imgui_impl_dx9.h"
 #include "player.h"
 #include "depthShadow.h"
+#include "debugManager.h"
 
 //--------------------------------------------------------------------------------------
 //  マクロ定義
@@ -211,6 +211,9 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 		m_pFade = Fade::Create( );
 	}
 
+	//  デバッグ管理クラスの初期化
+	DebugManager::Init( );
+
 	//  モードの設定
 	SetMode( m_mode );
 
@@ -320,9 +323,6 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 		m_shadowMap->Unlock( );
 	}
 
-    // Setup ImGui binding
-    ImGui_ImplDX9_Init( GetWindow( ) , m_pRenderer->GetDevice( ) );
-
 	return S_OK;
 }
 
@@ -331,8 +331,8 @@ HRESULT SceneManager::Init( HINSTANCE hInstance , HWND hWnd, bool bWindow )
 //--------------------------------------------------------------------------------------
 void SceneManager::Uninit( void )
 {
-	//  ImGuiの終了
-	ImGui_ImplDX9_Shutdown( );
+	//  デバッグ管理クラスの終了
+	DebugManager::Uninit( );
 
 	//  デプスシャドウの終了
 	DepthShadow::Uninit( );
@@ -478,97 +478,8 @@ void SceneManager::Update( void )
 		m_pRenderer->ChangeFillMode( );
 	}
 
-	ImGui_ImplDX9_NewFrame( );
-
-    bool show_test_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_col = ImColor(114, 144, 154);
-
-    // 1. Show a simple window
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-    {
-		ImGui::Begin( "Test Window", &show_test_window );
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-		D3DXVECTOR3 posPlayer( 0.0f , 0.0f , 0.0f );			//  プレイヤーの座標
-		D3DXVECTOR3 positionAtPlayer( 0.0f , 0.0f , 0.0f );		//  プレイヤーの注視点
-		D3DXVECTOR3 vecDirectPlayer( 0.0f , 0.0f , 0.0f );		//  プレイヤーの方向ベクトル
-		Scene* pScene = NULL;
-
-		//  優先度の最大数分のループ
-		for( int nCntPriority = 0; nCntPriority < MAX_NUM_PRIORITY; nCntPriority++ )
-		{
-			//  シーンの先頭アドレスを取得
-			pScene = Scene::GetScene( nCntPriority );
-
-			//  シーンが空ではない間ループ
-			while( pScene != NULL )
-			{
-				Scene::OBJTYPE objType;						//  物体の種類
-
-				//  物体の種類の取得
-				objType = pScene->GetObjType( );
-
-				//  種類がプレイヤーの場合
-				if( objType == Scene::OBJTYPE_PLAYER )
-				{
-					//  プレイヤー情報の取得
-					posPlayer = pScene->GetPos( );
-
-					Player* player = ( Player* )pScene;
-
-					//  プレイヤー情報の取得
-					positionAtPlayer = player->GetPositionAt( );
-
-					vecDirectPlayer = player->GetVecDirect( );
-				}
-
-				//  次のポインタを代入
-				pScene = pScene->GetNextScene( pScene );
-			}
-		}
-
-		ImGui::Text( "PLAYER : Position( %.2f , %.2f , %.2f )" , posPlayer.x , posPlayer.y , posPlayer.z );
-		ImGui::Text( "PLAYER : PositionAt( %.2f , %.2f , %.2f )" , positionAtPlayer.x , positionAtPlayer.y , positionAtPlayer.z );
-		ImGui::Text( "PLAYER : VecDirect( %.2f , %.2f , %.2f )" , vecDirectPlayer.x , vecDirectPlayer.y , vecDirectPlayer.z );
-
-		D3DXVECTOR3 lightPosition;
-		D3DXVECTOR3 lightPositionAt;
-		ImGui::Text( "LIGHT : Position( %.2f , %.2f , %.2f )" , m_pLight->GetPosition( ).x , m_pLight->GetPosition( ).y , m_pLight->GetPosition( ).z );
-		lightPosition.x = m_pLight->GetPosition( ).x;
-		lightPosition.y = m_pLight->GetPosition( ).y;
-		lightPosition.z = m_pLight->GetPosition( ).z;
-		ImGui::SliderFloat( "Position.x" , &lightPosition.x , -10000.0f , 10000.0f );
-		ImGui::SliderFloat( "Position.y" , &lightPosition.y , -10000.0f , 10000.0f );
-		ImGui::SliderFloat( "Position.z" , &lightPosition.z , -10000.0f , 10000.0f );
-		ImGui::Text( "LIGHT : PositionAt( %.2f , %.2f , %.2f )" , m_pLight->GetPositionAt( ).x , m_pLight->GetPositionAt( ).y , m_pLight->GetPositionAt( ).z );
-		//float distance = m_pLight->GetDistance( );
-		//ImGui::SliderFloat( "Distance" , &distance , 0.0f , 1000.0f );
-		//m_pLight->SetDistance( distance );
-		lightPositionAt.x = m_pLight->GetPositionAt( ).x;
-		lightPositionAt.y = m_pLight->GetPositionAt( ).y;
-		lightPositionAt.z = m_pLight->GetPositionAt( ).z;
-		ImGui::SliderFloat( "PositionAt.x" , &lightPositionAt.x , -1000.0f , 1000.0f );
-		ImGui::SliderFloat( "PositionAt.y" , &lightPositionAt.y , -1000.0f , 1000.0f );
-		ImGui::SliderFloat( "PositionAt.z" , &lightPositionAt.z , -1000.0f , 1000.0f );
-		m_pLight->SetViewMatrix( lightPosition , lightPositionAt );
-
-		float fov = m_pLight->GetFov( );
-		float fNear = m_pLight->GetNear( );
-		float fFar = m_pLight->GetFar( );
-		ImGui::SliderFloat( "Fov" , &fov , 0.0f , 3.0f );
-		ImGui::SliderFloat( "Near" , &fNear , 0.1f , 50000.0f );
-		ImGui::SliderFloat( "Far" , &fFar , 100.0f , 50000.0f );
-		m_pLight->SetProjectionMatrix( fov , fNear , fFar );
-
-		//D3DXVECTOR3 lightDirection = m_pLight->GetDirection( );
-		//ImGui::SliderFloat( "LightDirection.x" , &lightDirection.x , -1.0f , 1.0f );
-		//ImGui::SliderFloat( "LightDirection.y" , &lightDirection.y , -1.0f , 1.0f );
-		//ImGui::SliderFloat( "LightDirection.z" , &lightDirection.z , -1.0f , 1.0f );
-		//m_pLight->SetVectorDirection( lightDirection );
-
-		ImGui::End( );
-    }
+	//  デバッグ管理クラスの更新
+	DebugManager::Update( );
 
 	if( Fade::GetFade( ) == Fade::FADE_NONE )
 	{
@@ -608,8 +519,8 @@ void SceneManager::Draw( void )
 			//  レンダーターゲットの変更
 			DepthShadow::SetRendererTarget( );
 
-			////  深度バッファの設定
-			//DepthShadow::SetDepthSerface( );
+			//  深度バッファの設定
+			DepthShadow::SetDepthSerface( );
 
 			//  シャドウマップの深度バッファ値の初期化
 			DepthShadow::DrawClearBuffer( );
@@ -618,8 +529,8 @@ void SceneManager::Draw( void )
 
 			vp.X = 0;
 			vp.Y = 0;
-			vp.Width = SCREEN_WIDTH * 3.0f;
-			vp.Height = SCREEN_HEIGHT * 3.0f;
+			vp.Width = DepthShadow::TEXTURE_WIDTH;
+			vp.Height = DepthShadow::TEXTURE_HEIGHT;
 			vp.MinZ = 0.0f;
 			vp.MaxZ = 1.0f;
 
@@ -635,23 +546,23 @@ void SceneManager::Draw( void )
 			//  描画終了
 			m_pRenderer->DrawEnd( );
 
+			//  エフェクシアの行列を設定する関数
+			EffekseerManager::SetMatrix( 0 );
+
+			//  サーフェイスにレンダーターゲットを設定
+			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::SURFACE );
+
+			//  バックバッファ用の深度バッファ設定
+			m_pRenderer->SetBackBufferDepth( );
+
+			//  バックバッファ＆Ｚバッファのクリア
+			m_pRenderer->DrawClearBuffer( );
+
 			//  カメラのビューポート行列の設定
 			if( m_pCamera[ 0 ] != nullptr )
 			{	
 				m_pCamera[ 0 ]->SetCamera( );
 			}
-
-			//  エフェクシアの行列を設定する関数
-			EffekseerManager::SetMatrix( 0 );
-
-			//  サーフェイスにレンダーターゲットを設定
-			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
-
-			////  バックバッファ用の深度バッファ設定
-			//m_pRenderer->SetBackBufferDepth( );
-
-			//  バックバッファ＆Ｚバッファのクリア
-			m_pRenderer->DrawClearBuffer( );
 
 			//  描画開始
 			m_pRenderer->DrawBegin( );
@@ -662,45 +573,45 @@ void SceneManager::Draw( void )
 				m_pMode->Draw( );
 			}
 
-			////  描画終了
-			//m_pRenderer->DrawEnd( );
+			//  描画終了
+			m_pRenderer->DrawEnd( );
 
-			////  バックバッファにレンダーターゲットを設定
-			//m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
+			//  バックバッファにレンダーターゲットを設定
+			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::BACKBUFFER );
 
-			//// バックバッファ＆Ｚバッファのクリア
-			//m_pRenderer->DrawClearBuffer( );
+			// バックバッファ＆Ｚバッファのクリア
+			m_pRenderer->DrawClearBuffer( );
 
 			//  デバイス情報の取得
 			LPDIRECT3DDEVICE9 pDevice = m_pRenderer->GetDevice( );
 
-			////  描画開始
-			//m_pRenderer->DrawBegin( );
+			//  描画開始
+			m_pRenderer->DrawBegin( );
 
-			//// 頂点バッファをデータストリームに設定
-			//pDevice->SetStreamSource( 0 ,								//  パイプライン番号
-			//						  m_vertexBuffer ,					//  頂点バッファのアドレス
-			//						  0 ,								//  オフセット( byte )
-			//						  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
+			// 頂点バッファをデータストリームに設定
+			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
+									  m_vertexBuffer ,					//  頂点バッファのアドレス
+									  0 ,								//  オフセット( byte )
+									  sizeof( VERTEX_2D ) );			//  一個分の頂点データのサイズ( ストライド )
 
-			//// 頂点フォーマットの設定
-			//pDevice->SetFVF( FVF_VERTEX_2D );
+			// 頂点フォーマットの設定
+			pDevice->SetFVF( FVF_VERTEX_2D );
 
-			//if( m_pRenderer != nullptr )
-			//{
-			//	// テクスチャの設定
-			//	pDevice->SetTexture( 0 , m_pRenderer->GetRendereTargetTexture( ) ); 
-			//}
-			//else
-			//{
-			//	// テクスチャの設定
-			//	pDevice->SetTexture( 0 , NULL ); 
-			//}
+			if( m_pRenderer != nullptr )
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , m_pRenderer->GetRendereTargetTexture( ) ); 
+			}
+			else
+			{
+				// テクスチャの設定
+				pDevice->SetTexture( 0 , NULL ); 
+			}
 
-			//// ポリゴンの描画
-			//pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
-			//						0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
-			//						NUM_POLYGON );						//  プリミティブ数
+			// ポリゴンの描画
+			pDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP ,				//  プリミティブの種類
+									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
+									NUM_POLYGON );						//  プリミティブ数
 
 //#ifdef _DEBUG
 
@@ -721,7 +632,7 @@ void SceneManager::Draw( void )
 			else
 			{
 				// テクスチャの設定
-				pDevice->SetTexture( 0 , NULL ); 
+				pDevice->SetTexture( 0 , NULL );
 			}
 
 			// ポリゴンの描画
@@ -738,17 +649,12 @@ void SceneManager::Draw( void )
 				m_pFade->Draw( );
 			}
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 
-			//  GUIの描画
-			ImGui::Render( );
+			//  デバッグ管理クラスの描画
+			DebugManager::Draw( );
 
-#else
-
-			//  GUIの描画
-			ImGui::Render( );
-
-#endif
+//#endif
 
 			//  描画終了
 			m_pRenderer->DrawEndPresent( );
@@ -760,11 +666,23 @@ void SceneManager::Draw( void )
 			//  レンダーターゲットの変更
 			DepthShadow::SetRendererTarget( );
 
+			//  深度バッファの設定
+			DepthShadow::SetDepthSerface( );
+
 			//  シャドウマップの深度バッファ値の初期化
 			DepthShadow::DrawClearBuffer( );
 
-			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
-			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
+			D3DVIEWPORT9 vp;
+
+			vp.X = 0;
+			vp.Y = 0;
+			vp.Width = DepthShadow::TEXTURE_WIDTH;
+			vp.Height = DepthShadow::TEXTURE_HEIGHT;
+			vp.MinZ = 0.0f;
+			vp.MaxZ = 1.0f;
+
+			//  ビューポート変換の設定
+			m_pRenderer->GetDevice( )->SetViewport( &vp );
 
 			//  描画開始
 			m_pRenderer->DrawBegin( );
@@ -775,11 +693,11 @@ void SceneManager::Draw( void )
 			//  描画終了
 			m_pRenderer->DrawEnd( );
 
-			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-			m_pRenderer->GetDevice( )->SetSamplerState( 0 , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
-
 			//  サーフェイスにレンダーターゲットを設定
 			m_pRenderer->SetRendererTarget( Renderer::RENDERE_TARGET::SURFACE );
+
+			//  バックバッファ用の深度バッファ設定
+			m_pRenderer->SetBackBufferDepth( );
 
 			//  バックバッファ＆Ｚバッファのクリア
 			m_pRenderer->DrawClearBuffer( );
@@ -848,7 +766,7 @@ void SceneManager::Draw( void )
 									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
 									NUM_POLYGON );						//  プリミティブ数
 
-//#ifdef _DEBUG
+#ifdef _DEBUG
 
 			// 頂点バッファをデータストリームに設定
 			pDevice->SetStreamSource( 0 ,								//  パイプライン番号
@@ -875,7 +793,7 @@ void SceneManager::Draw( void )
 									0 ,									//  オフセット( 何番目の頂点から描画するか選べる )
 									NUM_POLYGON );						//  プリミティブ数
 
-//#endif
+#endif
 
 			//  フェードクラスポインタが空ではない場合
 			if( m_pFade != NULL )
@@ -884,17 +802,12 @@ void SceneManager::Draw( void )
 				m_pFade->Draw( );
 			}
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 
-			//  GUIの描画
-			ImGui::Render( );
+			//  デバッグ管理クラスの終了
+			DebugManager::Draw( );
 
-#else
-
-			//  GUIの描画
-			ImGui::Render( );
-
-#endif
+//#endif
 
 			//  描画終了
 			m_pRenderer->DrawEndPresent( );

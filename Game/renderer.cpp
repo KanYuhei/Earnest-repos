@@ -120,26 +120,26 @@ HRESULT Renderer::Init( HWND hWnd, bool bWindow )
 	}
 
 	//  レンダーステートの設定
-    m_pD3DDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CCW );					// カリングを行わない
-	m_pD3DDevice->SetRenderState( D3DRS_ZENABLE , TRUE );							// Zバッファを使用
-	m_pD3DDevice->SetRenderState( D3DRS_STENCILENABLE , FALSE );					// ステンシルシャドウを使わない設定
-	m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE , TRUE );					// αブレンドを行う
-	m_pD3DDevice->SetRenderState( D3DRS_SRCBLEND , D3DBLEND_SRCALPHA );				// αソースカラーの指定
-	m_pD3DDevice->SetRenderState( D3DRS_DESTBLEND , D3DBLEND_INVSRCALPHA );			// αデスティネーションカラーの指定
+    m_pD3DDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CCW );					//  裏面をカリング
+	m_pD3DDevice->SetRenderState( D3DRS_ZENABLE , TRUE );							//  Zバッファを使用
+	m_pD3DDevice->SetRenderState( D3DRS_STENCILENABLE , FALSE );					//  ステンシルシャドウを使わない設定
+	m_pD3DDevice->SetRenderState( D3DRS_ALPHABLENDENABLE , TRUE );					//  αブレンドを行う
+	m_pD3DDevice->SetRenderState( D3DRS_SRCBLEND , D3DBLEND_SRCALPHA );				//  αソースカラーの指定
+	m_pD3DDevice->SetRenderState( D3DRS_DESTBLEND , D3DBLEND_INVSRCALPHA );			//  αデスティネーションカラーの指定
 
 	for( int countSampler = 0; countSampler < 2; ++countSampler )
 	{
 		//  サンプラーステートの設定
-		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャＵ値の繰り返し設定
-		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャＶ値の繰り返し設定
-		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MINFILTER , D3DTEXF_ANISOTROPIC );	// テクスチャ縮小時の補間設定
-		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MAXANISOTROPY , 8 );					// テクスチャの補間精度の設定
-
-		//  テクスチャステージステートの設定
-		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAOP , D3DTOP_SELECTARG1 );	// アルファブレンディング処理(初期値はD3DTOP_SELECTARG1)
-		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAARG1 , D3DTA_TEXTURE );		// 最初のアルファ引数(初期値はD3DTA_TEXTURE、テクスチャがない場合はD3DTA_DIFFUSE)
-		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAARG2 , D3DTA_CURRENT );		// ２番目のアルファ引数(初期値はD3DTA_CURRENT)
+		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		//  テクスチャＵ値の繰り返し設定
+		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		//  テクスチャＶ値の繰り返し設定
+		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MINFILTER , D3DTEXF_ANISOTROPIC );	//  テクスチャ縮小時の補間設定
+		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );			//  テクスチャ拡大時の補間設定
+		m_pD3DDevice->SetSamplerState( countSampler , D3DSAMP_MAXANISOTROPY , 8 );					//  テクスチャの補間精度の設定
+																									    
+		//  テクスチャステージステートの設定														    
+		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAOP , D3DTOP_SELECTARG1 );	//  アルファブレンディング処理(初期値はD3DTOP_SELECTARG1)
+		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAARG1 , D3DTA_TEXTURE );		//  最初のアルファ引数(初期値はD3DTA_TEXTURE、テクスチャがない場合はD3DTA_DIFFUSE)
+		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAARG2 , D3DTA_CURRENT );		//  ２番目のアルファ引数(初期値はD3DTA_CURRENT)
 
 		//  α要素の設定
 		m_pD3DDevice->SetTextureStageState( countSampler , D3DTSS_ALPHAOP , D3DTOP_MODULATE );
@@ -163,8 +163,18 @@ HRESULT Renderer::Init( HWND hWnd, bool bWindow )
 	//  レンダーターゲットの取得
 	m_pD3DDevice->GetRenderTarget( 0 , &m_backBufferSurface );
 
-	//  バックバッファのZバッファの取得
-	m_pD3DDevice->GetDepthStencilSurface( &m_backBufferDepth );
+	// テクスチャへのレンダリングに使う深度バッファーの作成
+	if( FAILED( m_pD3DDevice->CreateDepthStencilSurface( SCREEN_WIDTH ,
+														 SCREEN_HEIGHT ,
+														 D3DFMT_D24S8,
+														 D3DMULTISAMPLE_NONE,
+														 0,
+														 TRUE,
+														 &m_backBufferDepth,
+														 NULL ) ) )
+	{
+		return E_FAIL;
+	}
 						
 
 #ifdef _DEBUG	
@@ -202,6 +212,13 @@ void Renderer::Uninit( void )
 	{
 		m_backBufferSurface->Release( );
 		m_backBufferSurface = nullptr;
+	}
+
+	//  バックバッファの破棄
+	if( m_backBufferDepth != nullptr )
+	{
+		m_backBufferDepth->Release( );
+		m_backBufferDepth = nullptr;
 	}
 
 	//  レンダーターゲット用のサーフェイスの破棄
@@ -245,50 +262,6 @@ void Renderer::Update( bool bUpdate )
 	//  ポリゴンの更新
 	Scene::UpdateAllDelete( );
 }
-
-////--------------------------------------------------------------------------------------
-////  レンダラークラスの描画処理
-////--------------------------------------------------------------------------------------
-//void Renderer::Draw( void )
-//{
-//	//  バックバッファ＆Ｚバッファのクリア
-//	m_pD3DDevice->Clear( 0, NULL, ( D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER ), D3DCOLOR_RGBA( 0, 0, 0, 0 ), 1.0f, 0 );
-//
-//	// Direct3Dによる描画の開始
-//	if( SUCCEEDED( m_pD3DDevice->BeginScene( ) ) )
-//	{
-//		//  エフェクシアの描画
-//		EffekseerManager::Draw( );
-//
-//		//  ポリゴンの描画
-//		Scene::DrawAll( );
-//
-//		//  フェードの描画
-//		m_pFade->Draw( );
-//
-//#ifdef _DEBUG
-//
-//		//  GUIの描画
-//		ImGui::Render( );
-//
-//		//  FPS表示
-//		//DrawFPS();
-//
-//		//  モードがゲーム状態の場合
-//		if( SceneManager::GetMode( ) == Mode::MODE::GAME )
-//		{
-//			//DrawField( );
-//		}
-//
-//#endif
-//
-//		//  Direct3Dによる描画の終了
-//		m_pD3DDevice->EndScene();
-//	}
-//
-//	//  バックバッファとフロントバッファの入れ替え
-//	m_pD3DDevice->Present( NULL, NULL, NULL, NULL );
-//}
 
 //--------------------------------------------------------------------------------------
 //  レンダラークラスの描画開始処理

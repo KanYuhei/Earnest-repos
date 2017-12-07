@@ -1,51 +1,11 @@
-﻿  stageSelect.cpp
-  sceneBG.cpp
-  renderer.cpp
-  player.cpp
-  manager.cpp
-  magicTornade.cpp
-  magicLightning.cpp
-  magicFire.cpp
-  game.cpp
-  enemy.cpp
-  effekseerManager.cpp
-  camera.cpp
+﻿  depthShadow.cpp
   コードを生成中...
   スキップ中... (関連する変更は検出されませんでした)
-  utility.cpp
-  titlePress.cpp
-  title.cpp
-  texture.cpp
-  teamLogo.cpp
-  stateAnimator.cpp
-  stageSelect2D.cpp
-  shadow.cpp
   sceneModelParts.cpp
-  sceneModelAnim.cpp
   sceneModel.cpp
-  sceneFBX.cpp
-  scene3D.cpp
-  scene2DL.cpp
-  scene2D.cpp
-  scene.cpp
-  result.cpp
-  particle.cpp
-  number.cpp
-  meshWall.cpp
-  meshSphere.cpp
   meshField.cpp
-  meshDome.cpp
-  meshCube.cpp
-  main.cpp
+  manager.cpp
   light.cpp
-  life.cpp
-  joystick.cpp
-  hitField.cpp
-  field.cpp
-  fade.cpp
-  colision.cpp
-  bullet.cpp
-  brave.cpp
-  animation.cpp
-  GM31_lesson.vcxproj -> C:\Users\yamashita.shun\Desktop\GitHub_Earnest\Game\\GM31_lessonDebug.exe
-  GM31_lesson.vcxproj -> C:\Users\yamashita.shun\Desktop\GitHub_Earnest\Game\\GM31_lessonDebug.pdb (Full PDB)
+  debugManager.cpp
+  GM31_lesson.vcxproj -> C:\Users\yamashita.shun\Desktop\Game_AI&Debug\\GM31_lessonDebug.exe
+  GM31_lesson.vcxproj -> C:\Users\yamashita.shun\Desktop\Game_AI&Debug\\GM31_lessonDebug.pdb (Full PDB)

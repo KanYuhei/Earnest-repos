@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <SoundBanksInfo Platform="Windows" BasePlatform="Windows" SchemaVersion="11" SoundbankVersion="125">
 	<RootPaths>
-		<ProjectRoot>E:\擬似ローカル\新しいフォルダー\Visual Studio 2017\Projects\GM31\20170831_頭文字T_11_3Dサウンド\data\wwisePrj_InitialT\</ProjectRoot>
-		<SourceFilesRoot>E:\擬似ローカル\新しいフォルダー\Visual Studio 2017\Projects\GM31\20170831_頭文字T_11_3Dサウンド\data\wwisePrj_InitialT\.cache\Windows\</SourceFilesRoot>
-		<SoundBanksRoot>E:\擬似ローカル\新しいフォルダー\Visual Studio 2017\Projects\GM31\20170831_頭文字T_11_3Dサウンド\data\wwisePrj_InitialT\GeneratedSoundBanks\Windows\</SoundBanksRoot>
+		<ProjectRoot>C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\</ProjectRoot>
+		<SourceFilesRoot>C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\.cache\Windows\</SourceFilesRoot>
+		<SoundBanksRoot>C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\GeneratedSoundBanks\Windows\</SoundBanksRoot>
 		<ExternalSourcesInputFile></ExternalSourcesInputFile>
-		<ExternalSourcesOutputRoot>E:\擬似ローカル\新しいフォルダー\Visual Studio 2017\Projects\GM31\20170831_頭文字T_11_3Dサウンド\data\wwisePrj_InitialT\GeneratedSoundBanks\Windows\</ExternalSourcesOutputRoot>
+		<ExternalSourcesOutputRoot>C:\Users\yamashita.shun\Desktop\Earnest_repos\Game\data\wwisePrj_InitialT\GeneratedSoundBanks\Windows\</ExternalSourcesOutputRoot>
 	</RootPaths>
 	<DialogueEvents/>
 	<StreamedFiles>

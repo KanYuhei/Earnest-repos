@@ -467,17 +467,21 @@ void SceneModel::Draw( void )
 	//  シェーダー情報の取得
 	Shader3DDepthShadow* shader3DDepthShadow = ( Shader3DDepthShadow* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_DEPTH_SHADOW );
 
+	//  光源のビュープロジェクション行列の取得
 	D3DXMATRIX lightViewProjectionMatrix = SceneManager::GetLight( )->GetViewMatrix( ) * SceneManager::GetLight( )->GetProjectionMatrix( );
+
+	//  UVオフセット値の計算
 	D3DXVECTOR4	tmpOffset;
-	tmpOffset.x = 0.5f / ( float )( SCREEN_WIDTH );
-	tmpOffset.y = 0.5f / ( float )( SCREEN_HEIGHT );
+	tmpOffset.x = 0.5f / DepthShadow::TEXTURE_WIDTH;
+	tmpOffset.y = 0.5f / DepthShadow::TEXTURE_HEIGHT;
 	tmpOffset.z = 0.0f;
 	tmpOffset.w = 0.0f;
 
+	//  バイアス値の取得
+	float bias = DepthShadow::GetBias( );
+
 	//  シェーダーに必要な情報の設定
 	//shader3D->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix , lightDirectLocal , lightDiffuseColor );
-	shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
-										lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
 
 	UINT textureSampler = shader3DDepthShadow->GetSamplerTextureIndex( );
 	UINT shadowSampler = shader3DDepthShadow->GetSamplerShadowIndex( );
@@ -503,25 +507,15 @@ void SceneModel::Draw( void )
 		}
 		else
 		{
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャ拡大時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャ縮小時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MINFILTER , D3DTEXF_POINT );		// テクスチャ拡大時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( shadowSampler , D3DSAMP_MAGFILTER , D3DTEXF_POINT );		// テクスチャ縮小時の補間設定
-
 			//  シャドウマップテクスチャの設定
 			pDevice->SetTexture( shadowSampler , DepthShadow::GetRendereTargetTexture( ) );
 			
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャ拡大時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャ縮小時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );		// テクスチャ拡大時の補間設定
-			SceneManager::GetRenderer( )->GetDevice( )->SetSamplerState( textureSampler , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );		// テクスチャ縮小時の補間設定
-
 			//  テクスチャの設定
 			pDevice->SetTexture( textureSampler , pTexture->GetTextureImage( m_aTextureName[ nCntMaterial ] ) );
 
 			//  シェーダーに必要な情報の設定
 			shader3DDepthShadow->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix ,
-												lightDirectLocal , lightViewProjectionMatrix , tmpOffset );
+												lightDirectLocal , lightViewProjectionMatrix , tmpOffset , bias );
 			//shader3D->SetShaderInfo( mtxWorld , viewMatrix ,projectionMatrix , lightDirectLocal , lightDiffuseColor );
 
 			////  シェーダー3Dの描画開始
@@ -535,6 +529,31 @@ void SceneModel::Draw( void )
 		//  シェーダー描画の終了
 		ShaderManager::DrawEnd( );
 	}
+
+	//  シェーダー情報の取得
+	Shader3DOutline* shader3DOutline = ( Shader3DOutline* )ShaderManager::GetShader( ShaderManager::TYPE::SHADER_3D_OUTLINE );
+
+	//  レンダーステートの設定
+    pDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CW );				//  裏面描画
+
+	//  マテリアルの数分のループ
+	for( int nCntMaterial = 0; nCntMaterial < ( int )m_nNumMatModel; nCntMaterial++ )
+	{
+		//  シェーダーに必要な情報の設定
+		shader3DOutline->SetShaderInfo( mtxWorld , viewMatrix , projectionMatrix );
+
+		//  シェーダー描画開始
+		shader3DOutline->DrawBegin( );
+
+		//  メッシュの描画
+		m_pMeshModel->DrawSubset( nCntMaterial );
+
+		//  シェーダー3Dの描画終了
+		ShaderManager::DrawEnd( );
+	}
+
+	//  レンダーステートの設定
+    pDevice->SetRenderState( D3DRS_CULLMODE , D3DCULL_CCW );			//  表面描画
 }
 
 //--------------------------------------------------------------------------------------

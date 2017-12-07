@@ -16,6 +16,8 @@
 #include "shader3DRimLightTexture.h"
 #include "shader3DDepthShadow.h"
 #include "shader3DShadowMap.h"
+#include "shader3DThun.h"
+#include "shader3DOutline.h"
 
 //--------------------------------------------------------------------------------------
 //  É}ÉNÉçíËã`
@@ -40,6 +42,8 @@ public:
 		SHADER_3D_RIM_LIGHT_TEXTURE ,
 		SHADER_3D_DEPTH_SHADOW ,
 		SHADER_3D_SHADOW_MAP ,
+		SHADER_3D_THUN ,
+		SHADER_3D_OUTLINE ,
 		SHADER_MAX ,
 	};
 

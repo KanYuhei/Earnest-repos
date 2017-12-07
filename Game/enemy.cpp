@@ -92,6 +92,8 @@ Enemy::~Enemy( )
 //--------------------------------------------------------------------------------------
 HRESULT Enemy::Init( void )
 {
+	m_drawDepth = true;
+
 	//  シーンモデル
 	SceneModelAnim::Init( );
 

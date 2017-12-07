@@ -92,6 +92,8 @@ HRESULT Camera::Init( D3DXVECTOR3 posEye , D3DXVECTOR3 posAt , float fFovY , flo
 	//  視野距離最大値の代入
 	m_fFar = fFar;
 
+	m_bFree = false;
+
 	if( bDivide == false )
 	{
 		//  プロジェクション行列の作成
@@ -553,7 +555,7 @@ void Camera::SetCamera( void )
 		//  ビューポート変換の設定
 		pDevice->SetViewport( &vp );
 	}
-	if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+	else
 	{
 		D3DVIEWPORT9 vp;
 
@@ -615,7 +617,7 @@ void Camera::SetViewport( void )
 		//  ビューポート変換の設定
 		pDevice->SetViewport( &vp );
 	}
-	if( Game::GetModeVS( ) == Game::MODE_VS_PLAYER )
+	else
 	{
 		D3DVIEWPORT9 vp;
 

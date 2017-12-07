@@ -108,6 +108,13 @@
       </AdditionalLibraryDirectories>
       <AdditionalDependencies>libfbxsdk-mt.lib;AkSoundEngine.lib;AkMemoryMgr.lib;AkStreamMgr.lib;CommunicationCentral.lib;ws2_32.lib;AkMusicEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <FxCompile>
+      <ObjectFileOutput>
+      </ObjectFileOutput>
+      <ShaderType>
+      </ShaderType>
+      <ShaderModel>4.0_level_9_1</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -146,6 +153,13 @@
       </AdditionalLibraryDirectories>
       <AdditionalDependencies>libfbxsdk-mt.lib;AkSoundEngine.lib;AkMemoryMgr.lib;AkStreamMgr.lib;AkMusicEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <FxCompile>
+      <ObjectFileOutput>
+      </ObjectFileOutput>
+      <ShaderModel>4.0_level_9_1</ShaderModel>
+      <ShaderType>
+      </ShaderType>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -166,19 +180,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\GitHub_Earnest\Game\stencilShadow.cpp" />
-    <ClCompile Include="..\..\NewGame\objectFBX.cpp" />
-    <ClCompile Include="..\..\NewGame\test.cpp" />
     <ClCompile Include="AIManager.cpp" />
     <ClCompile Include="animation.cpp" />
-    <ClCompile Include="behaviorAI.cpp" />
-    <ClCompile Include="behaviorSequence.cpp" />
+    <ClCompile Include="block.cpp" />
+    <ClCompile Include="boneTexture.cpp" />
     <ClCompile Include="brave.cpp" />
     <ClCompile Include="bullet.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="characterAI.cpp" />
     <ClCompile Include="colision.cpp" />
     <ClCompile Include="crystalMagic.cpp" />
+    <ClCompile Include="debugManager.cpp" />
+    <ClCompile Include="depthShadow.cpp" />
     <ClCompile Include="effekseerManager.cpp" />
     <ClCompile Include="emitter.cpp" />
     <ClCompile Include="enemy.cpp" />
@@ -207,15 +220,37 @@
     <ClCompile Include="meshSphere.cpp" />
     <ClCompile Include="meshWall.cpp" />
     <ClCompile Include="metaAI.cpp" />
+    <ClCompile Include="navigationAI.cpp" />
     <ClCompile Include="number.cpp" />
+    <ClCompile Include="objectFBX.cpp" />
     <ClCompile Include="particle.cpp" />
     <ClCompile Include="player.cpp" />
+    <ClCompile Include="playerBend.cpp" />
+    <ClCompile Include="playerBlow.cpp" />
+    <ClCompile Include="playerHPAttack000.cpp" />
+    <ClCompile Include="playerEscape.cpp" />
+    <ClCompile Include="playerGuard.cpp" />
+    <ClCompile Include="playerBraveAttack000After.cpp" />
+    <ClCompile Include="playerBraveAttack000Before.cpp" />
+    <ClCompile Include="playerJump.cpp" />
+    <ClCompile Include="playerLanding.cpp" />
+    <ClCompile Include="playerLockonDash.cpp" />
+    <ClCompile Include="playerMagicActive.cpp" />
+    <ClCompile Include="playerMagicReady.cpp" />
+    <ClCompile Include="playerMove.cpp" />
+    <ClCompile Include="playerNeutral.cpp" />
+    <ClCompile Include="playerPassive.cpp" />
     <ClCompile Include="playerResult.cpp" />
+    <ClCompile Include="playerResultLose.cpp" />
+    <ClCompile Include="playerResultWin.cpp" />
+    <ClCompile Include="playerRushAttack.cpp" />
     <ClCompile Include="playerSelect.cpp" />
+    <ClCompile Include="playerState.cpp" />
     <ClCompile Include="playerUI.cpp" />
     <ClCompile Include="readySelect.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="result.cpp" />
+    <ClCompile Include="rootNodeAI.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="scene2D.cpp" />
     <ClCompile Include="scene2DL.cpp" />
@@ -225,23 +260,30 @@
     <ClCompile Include="sceneModel.cpp" />
     <ClCompile Include="sceneModelAnim.cpp" />
     <ClCompile Include="sceneModelParts.cpp" />
-    <ClCompile Include="selectRuleAI.cpp" />
     <ClCompile Include="selectVSMode.cpp" />
+    <ClCompile Include="shader3D.cpp" />
+    <ClCompile Include="shader3DDepthShadow.cpp" />
+    <ClCompile Include="shader3DNoLight.cpp" />
+    <ClCompile Include="shader3DNoTexture.cpp" />
+    <ClCompile Include="shader3DOutline.cpp" />
+    <ClCompile Include="shader3DRimLightTexture.cpp" />
+    <ClCompile Include="shader3DShadowMap.cpp" />
+    <ClCompile Include="shader3DThun.cpp" />
+    <ClCompile Include="shaderManager.cpp" />
     <ClCompile Include="shadow.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="stageSelect.cpp" />
     <ClCompile Include="stageSelect2D.cpp" />
-    <ClCompile Include="stateAICaution.cpp" />
-    <ClCompile Include="stateAIManager.cpp" />
-    <ClCompile Include="stateAINormal.cpp" />
     <ClCompile Include="stateAnimator.cpp" />
-    <ClCompile Include="stateChase.cpp" />
+    <ClCompile Include="stencilShadow.cpp" />
     <ClCompile Include="teamLogo.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="title.cpp" />
     <ClCompile Include="titlePress.cpp" />
     <ClCompile Include="tool.cpp" />
     <ClCompile Include="tutorial.cpp" />
+    <ClCompile Include="unityFBX.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="vector2D.cpp" />
     <ClCompile Include="vector3D.cpp" />
@@ -258,21 +300,20 @@
     <ClCompile Include="xboxController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\GitHub_Earnest\Game\stencilShadow.h" />
-    <ClInclude Include="..\..\NewGame\objectFBX.h" />
-    <ClInclude Include="..\..\NewGame\test.h" />
     <ClInclude Include="..\..\OpenGL_FBX\math.h" />
-    <ClInclude Include="actionAI.h" />
     <ClInclude Include="AIManager.h" />
     <ClInclude Include="animation.h" />
-    <ClInclude Include="behaviorAIManager.h" />
-    <ClInclude Include="behaviorSequence.h" />
+    <ClInclude Include="block.h" />
+    <ClInclude Include="boneTexture.h" />
     <ClInclude Include="brave.h" />
     <ClInclude Include="bullet.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="characterAI.h" />
     <ClInclude Include="colision.h" />
     <ClInclude Include="crystalMagic.h" />
+    <ClInclude Include="data\wwisePrj_InitialT\GeneratedSoundBanks\Wwise_IDs.h" />
+    <ClInclude Include="debugManager.h" />
+    <ClInclude Include="depthShadow.h" />
     <ClInclude Include="effekseerManager.h" />
     <ClInclude Include="emitter.h" />
     <ClInclude Include="enemy.h" />
@@ -288,6 +329,7 @@
     <ClInclude Include="item.h" />
     <ClInclude Include="joystick.h" />
     <ClInclude Include="keyboard.h" />
+    <ClInclude Include="layerAI.h" />
     <ClInclude Include="life.h" />
     <ClInclude Include="light.h" />
     <ClInclude Include="magic.h" />
@@ -303,15 +345,38 @@
     <ClInclude Include="meshWall.h" />
     <ClInclude Include="metaAI.h" />
     <ClInclude Include="mode.h" />
+    <ClInclude Include="navigationAI.h" />
+    <ClInclude Include="nodeAI.h" />
     <ClInclude Include="number.h" />
+    <ClInclude Include="objectFBX.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="playerBend.h" />
+    <ClInclude Include="playerBlow.h" />
+    <ClInclude Include="playerHPAttack000.h" />
+    <ClInclude Include="playerEscape.h" />
+    <ClInclude Include="playerGuard.h" />
+    <ClInclude Include="playerBraveAttack000After.h" />
+    <ClInclude Include="playerBraveAttack000Before.h" />
+    <ClInclude Include="playerJump.h" />
+    <ClInclude Include="playerLanding.h" />
+    <ClInclude Include="playerLockonDash.h" />
+    <ClInclude Include="playerMagicActive.h" />
+    <ClInclude Include="playerMagicReady.h" />
+    <ClInclude Include="playerMove.h" />
+    <ClInclude Include="playerNeutral.h" />
+    <ClInclude Include="playerPassive.h" />
     <ClInclude Include="playerResult.h" />
+    <ClInclude Include="playerResultLose.h" />
+    <ClInclude Include="playerResultWin.h" />
+    <ClInclude Include="playerRushAttack.h" />
     <ClInclude Include="playerSelect.h" />
+    <ClInclude Include="playerState.h" />
     <ClInclude Include="playerUI.h" />
     <ClInclude Include="readySelect.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="result.h" />
+    <ClInclude Include="rootNodeAI.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene2D.h" />
     <ClInclude Include="scene2DL.h" />
@@ -321,27 +386,36 @@
     <ClInclude Include="sceneModel.h" />
     <ClInclude Include="sceneModelAnim.h" />
     <ClInclude Include="sceneModelParts.h" />
-    <ClInclude Include="selectRuleAI.h" />
     <ClInclude Include="selectVSMode.h" />
+    <ClInclude Include="shader.h" />
+    <ClInclude Include="shader3D.h" />
+    <ClInclude Include="shader3DDepthShadow.h" />
+    <ClInclude Include="shader3DNoLight.h" />
+    <ClInclude Include="shader3DNoTexture.h" />
+    <ClInclude Include="shader3DOutline.h" />
+    <ClInclude Include="shader3DRimLightTexture.h" />
+    <ClInclude Include="shader3DShadowMap.h" />
+    <ClInclude Include="shader3DThun.h" />
+    <ClInclude Include="shaderManager.h" />
     <ClInclude Include="shadow.h" />
     <ClInclude Include="shape.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="stageSelect.h" />
     <ClInclude Include="stageSelect2D.h" />
-    <ClInclude Include="stateAICaution.h" />
-    <ClInclude Include="stateAIChase.h" />
-    <ClInclude Include="stateAIManager.h" />
-    <ClInclude Include="stateAINormal.h" />
     <ClInclude Include="stateAnimator.h" />
+    <ClInclude Include="stateMachinAI.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />
+    <ClInclude Include="stencilShadow.h" />
     <ClInclude Include="teamLogo.h" />
+    <ClInclude Include="test.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="title.h" />
     <ClInclude Include="titlePress.h" />
     <ClInclude Include="tool.h" />
     <ClInclude Include="tutorial.h" />
+    <ClInclude Include="unityFBX.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="vector2D.h" />
     <ClInclude Include="vector3D.h" />
@@ -361,6 +435,63 @@
     <ClInclude Include="Wwise\Wwise_Win32\stdafx.h" />
     <ClInclude Include="xact.h" />
     <ClInclude Include="xboxController.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\basicPS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\basicVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\noLightVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\noTexturePS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\noTextureVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\rimLightTexturePS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\rimLightTextureVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\depthShadowPS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\depthShadowVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\shadowMapPS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\shadowMapVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\thunPS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\thunVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HLSL\3D\outlinePS.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="HLSL\3D\outlineVS.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

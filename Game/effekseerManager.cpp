@@ -276,7 +276,8 @@ void EffekseerManager::Draw( void )
 	// サンプラーステートの設定
 	pDevice->SetSamplerState( 0 , D3DSAMP_ADDRESSU , D3DTADDRESS_WRAP );		// テクスチャＵ値の繰り返し設定
 	pDevice->SetSamplerState( 0 , D3DSAMP_ADDRESSV , D3DTADDRESS_WRAP );		// テクスチャＶ値の繰り返し設定
-	pDevice->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_LINEAR );			// テクスチャ拡大時の補間設定
+	pDevice->SetSamplerState( 0 , D3DSAMP_MINFILTER , D3DTEXF_ANISOTROPIC );	// テクスチャ拡大時の補間設定
+	pDevice->SetSamplerState( 0 , D3DSAMP_MAXANISOTROPY , 8 );					// テクスチャの補間精度の設定
 	pDevice->SetSamplerState( 0 , D3DSAMP_MAGFILTER , D3DTEXF_LINEAR );			// テクスチャ縮小時の補間設定
 	pDevice->SetSamplerState( 0 , D3DSAMP_MIPFILTER , D3DTEXF_LINEAR );			// テクスチャ縮小時の補間設定
 }

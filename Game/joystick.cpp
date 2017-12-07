@@ -46,6 +46,8 @@ HRESULT PS4Controller::Init( HINSTANCE hInstance , HWND hWnd )
 {
 	for( m_nCntJoystick = 0; m_nCntJoystick < MAX_JOYSTICK; m_nCntJoystick++ )
 	{
+		m_bConnectJoystick[ m_nCntJoystick ] = false;
+
 		// 各値0クリア
 		ZeroMemory( &m_diJoystickState[ m_nCntJoystick ] , sizeof( m_diJoystickState[ m_nCntJoystick ] ) );
 		ZeroMemory( &m_diJoystickStateTrigger[ m_nCntJoystick ] , sizeof( m_diJoystickStateTrigger[ m_nCntJoystick ] ) );

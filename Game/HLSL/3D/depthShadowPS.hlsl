@@ -1,6 +1,7 @@
 sampler		samplerTexture;
 sampler		samplerShadow;
 float4		offset;
+float		bias;
 
 struct IN_VERTEX
 {
@@ -22,9 +23,9 @@ float4 main( IN_VERTEX input ) : COLOR0
 
 	// 光源から頂点までの距離を計算
 	float depth = input.positionLight.z / input.positionLight.w;
-	
+
 	// シャドウマップの深度の値と比較
-	if( depth - shadowValue > 0.00061f )
+	if( depth - shadowValue > bias )
 	{
 		// 影になっている
 		returnColor.x = returnColor.x * 0.5f;
